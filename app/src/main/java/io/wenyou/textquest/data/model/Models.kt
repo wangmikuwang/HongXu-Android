@@ -67,7 +67,12 @@ data class ApiProfile(
     val model: String = "",
     val temperature: Double = 0.85,
     val maxTokens: Int = 1024,
-    val note: String = ""
+    val note: String = "",
+    val inputPrice: Double? = null,
+    val outputPrice: Double? = null,
+    val cachedPrice: Double? = null,
+    val cacheWritePrice: Double? = null,
+    val priceCurrency: String = "CNY"
 )
 
 // ---------------------------------------------------------------------------

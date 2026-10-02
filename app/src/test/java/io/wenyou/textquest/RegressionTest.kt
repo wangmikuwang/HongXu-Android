@@ -5,7 +5,7 @@ import io.wenyou.textquest.data.ai.AiCreator
 import io.wenyou.textquest.data.ai.CreationKind
 import io.wenyou.textquest.data.ai.AiDirector
 import io.wenyou.textquest.data.engine.GameEngine
-import io.wenyou.textquest.data.llm.ChatClient
+import io.wenyou.textquest.data.llm.*
 import io.wenyou.textquest.data.model.*
 import io.wenyou.textquest.data.repo.LocalLibrary
 import io.wenyou.textquest.data.repo.ShareCode
@@ -33,6 +33,55 @@ import java.util.zip.DeflaterOutputStream
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegressionTest {
     @get:Rule val temp = TemporaryFolder()
+
+    @Test fun usageFramesPricesAndPersistenceRemainAccurate() = runBlocking {
+        val p = ApiProfile("p", "test", baseUrl = "http://localhost/v1", model = "test", inputPrice = 2.0, outputPrice = 4.0, cachedPrice = 0.5, cacheWritePrice = 3.0)
+        val usage = TokenUsage().read(ProviderKind.OPENAI_COMPAT, AppJson.parseToJsonElement("""{"usage":{"prompt_tokens":1000,"completion_tokens":200,"prompt_cache_hit_tokens":400}}"""))
+        assertEquals(0.0022, usage.cost(p)!!, 0.00000001)
+        assertNull(usage.cost(p.copy(cachedPrice = null)))
+        assertNull(usage.cost(p.copy(inputPrice = -1.0)))
+        assertNull(TokenUsage().cost(p))
+        var a = TokenUsage().read(ProviderKind.ANTHROPIC, AppJson.parseToJsonElement("""{"message":{"usage":{"input_tokens":10,"cache_read_input_tokens":20,"cache_creation_input_tokens":30,"output_tokens":1}}}"""))
+        a = a.read(ProviderKind.ANTHROPIC, AppJson.parseToJsonElement("""{"usage":{"output_tokens":8}}"""))
+        assertEquals(TokenUsage(60, 8, 20, 30), a)
+        assertEquals(TokenUsage(20, 13, 4), TokenUsage().read(ProviderKind.GEMINI, AppJson.parseToJsonElement("""{"usageMetadata":{"promptTokenCount":20,"candidatesTokenCount":10,"thoughtsTokenCount":3,"cachedContentTokenCount":4}}""")))
+        val file = File(temp.newFolder(), "usage.json")
+        val tracker = UsageTracker(file)
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val body = """data: {"choices":[{"delta":{"content":"answer"}}]}
+
+data: {"choices":[],"usage":{"prompt_tokens":1000,"completion_tokens":200,"prompt_cache_hit_tokens":400}}
+
+data: [DONE]
+
+"""
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK").body(body.toResponseBody()).build()
+        }.build()
+        try {
+            ChatClient(client, tracker).streamText(p, "", "")
+            assertTrue(tracker.active.value.isEmpty())
+            assertEquals(usage, tracker.records.value.single().tokens)
+            assertEquals("完成", tracker.records.value.single().status)
+            assertEquals(tracker.records.value, UsageTracker(file).records.value)
+            assertFalse(file.readText().contains("apiKey"))
+            try { ChatClient(client, tracker).streamText(p.copy(model = ""), "", "") } catch (_: Exception) { }
+            assertEquals("失败", tracker.records.value.last().status)
+            assertNull(tracker.records.value.last().estimatedCost)
+            assertTrue(tracker.active.value.isEmpty())
+            val slow = OkHttpClient.Builder().addInterceptor { chain ->
+                Thread.sleep(300)
+                Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK").body("{}".toResponseBody()).build()
+            }.build()
+            try {
+                val job = launch { ChatClient(slow, tracker).streamText(p, "", "") }
+                withTimeout(3000) { tracker.active.first { it.isNotEmpty() } }
+                job.cancelAndJoin()
+                assertEquals("已取消", tracker.records.value.last().status)
+                assertNull(tracker.records.value.last().estimatedCost)
+                assertTrue(tracker.active.value.isEmpty())
+            } finally { slow.dispatcher.executorService.shutdownNow(); slow.connectionPool.evictAll() }
+        } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+    }
 
     @Test fun continuitySurvivesSaveAndReachesBothAiModes() = runBlocking {
         val director = AiDirector(ChatClient(OkHttpClient()))

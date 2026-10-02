@@ -45,6 +45,7 @@ import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.model.ApiProfile
 import io.wenyou.textquest.ui.HubScaffold
 import io.wenyou.textquest.ui.R
+import io.wenyou.textquest.ui.common.UsagePanel
 import io.wenyou.textquest.ui.common.Pill
 import io.wenyou.textquest.ui.vm.LibraryViewModel
 import io.wenyou.textquest.ui.vm.SettingsViewModel
@@ -73,6 +74,7 @@ fun ProvidersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+                item { UsagePanel(container.chatClient.usage, showLast = false) }
                 if (providers.isEmpty()) {
                     item {
                         Column(Modifier.fillMaxWidth().padding(vertical = 40.dp),

@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.UsagePanel
 import androidx.activity.compose.BackHandler
 
 import io.wenyou.textquest.ui.common.GlassBackdrop
@@ -185,13 +186,13 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
             GlassBackdrop(content = historyContent, controls = {
                 Box(Modifier.align(Alignment.BottomCenter).padding(8.dp).fillMaxWidth()
                     .heightIn(max = panelHeight).onSizeChanged { actionHeight = with(density) { it.height.toDp() } }
-                    .liquidGlass().verticalScroll(rememberScrollState())) { ActionPanel(vm, ui, nav) }
+                    .liquidGlass().verticalScroll(rememberScrollState())) { Column { UsagePanel(container.chatClient.usage); ActionPanel(vm, ui, nav) } }
             })
         } else {
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f)) { historyContent() }
                 Box(Modifier.fillMaxWidth().heightIn(max = panelHeight).verticalScroll(rememberScrollState())) {
-                    ActionPanel(vm, ui, nav)
+                    Column { UsagePanel(container.chatClient.usage); ActionPanel(vm, ui, nav) }
                 }
             }
         }

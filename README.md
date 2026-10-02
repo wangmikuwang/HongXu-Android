@@ -232,3 +232,9 @@ app/src/main/java/io/wenyou/textquest/
 ## 剧情记忆与人物关系
 
 对局右上角人物按钮可查看累计剧情记忆、对玩家的好感和信任、人物之间的关系及变化原因。AI 场景与 AI 导演每轮更新已发生事件的摘要，并在后续续写中带入记忆和当前关系；这些信息随存档保存，兼容旧存档。模型未返回记忆时保留原记录，不额外调用摘要服务。记忆是有限长度的 AI 摘要，不能保证保留所有细节。
+
+## 生成进度、用量与费用
+
+生成过程中显示等待、思考或生成阶段、实际耗时与接收字符数，不显示虚假的完成百分比。AI 服务页、对局和一句话创建可查看本机最近 100 次请求，记录实际服务返回的输入/输出及缓存 tokens、耗时和完成/失败/取消状态，并在本机保存。未知用量和取消/失败请求的费用不按零计。编辑服务时可填写当前模型每百万 tokens 的输入、输出、缓存读取和写入单价及 CNY/USD 等币种；费用为按请求时配置的估算，缺少必需单价时显示未知，不同币种分别汇总。换模型时请核对价格，账单以服务商为准。
+
+协议参考：[DeepSeek 流式用量](https://api-docs.deepseek.com/api/create-chat-completion/)、[Anthropic 流式用量](https://platform.claude.com/docs/en/build-with-claude/streaming)、[Gemini usageMetadata](https://ai.google.dev/api/generate-content#UsageMetadata)。

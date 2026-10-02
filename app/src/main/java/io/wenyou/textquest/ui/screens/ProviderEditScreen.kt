@@ -158,6 +158,19 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
                     )
                 }
             }
+            item { SectionHeader("3 · 费用估算（可选）") }
+            item {
+                TonalCard {
+                    Text("填写当前模型每百万 tokens 的单价。留空显示费用未知；0 表示免费。输入价不含缓存，缓存读写分开填写。换模型后请核对单价。", style = MaterialTheme.typography.bodySmall)
+                    AppField(profile.priceCurrency, vm::setCurrency, "币种（CNY / USD）", singleLine = true)
+                    listOf(Triple("input", "普通输入单价", profile.inputPrice), Triple("output", "输出单价", profile.outputPrice),
+                        Triple("cached", "缓存读取单价", profile.cachedPrice), Triple("write", "缓存写入单价", profile.cacheWritePrice)).forEach { (key, label, value) ->
+                        var text by remember(profile.id, key) { mutableStateOf(value?.toString().orEmpty()) }
+                        AppField(text, { text = it; vm.setPrice(key, it) }, label, singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                    }
+                }
+            }
             item { ModelPickerCard(ui, vm) }
             item { Spacer(Modifier.height(4.dp)) }
             item {

@@ -1,0 +1,56 @@
+package io.wenyou.textquest.ui.common
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import io.wenyou.textquest.data.llm.UsageTracker
+import io.wenyou.textquest.data.llm.UsageRecord
+import kotlinx.coroutines.delay
+import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.Date
+
+private fun UsageRecord.label(): String = "$service · $model · $status · ${elapsedMs / 1000.0} 秒\n输入 ${tokens.input ?: "未知"} / 输出 ${tokens.output ?: "未知"} tokens · 缓存 ${tokens.cached} / 写入 ${tokens.cacheWrite}\n" +
+    (estimatedCost?.let { "估算费用 $currency ${String.format(Locale.ROOT, "%.6f", it)}" } ?: "费用未知（缺少用量或单价，取消/失败可能仍计费）")
+
+@Composable
+fun UsagePanel(tracker: UsageTracker, showLast: Boolean = true) {
+    val active by tracker.active.collectAsStateWithLifecycle()
+    val records by tracker.records.collectAsStateWithLifecycle()
+    var now by remember { mutableLongStateOf(System.nanoTime()) }
+    var open by remember { mutableStateOf(false) }
+    LaunchedEffect(active.isNotEmpty()) { while (active.isNotEmpty()) { now = System.nanoTime(); delay(1000) } }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        active.values.forEach { p ->
+            Text("${p.phase} · ${((now - p.startNanos).coerceAtLeast(0) / 1_000_000_000)} 秒 · 已接收 ${p.characters} 字符", style = MaterialTheme.typography.bodySmall)
+        }
+        if (active.isEmpty() && showLast) records.lastOrNull()?.let {
+            Text("最近一次请求\n${it.label()}", style = MaterialTheme.typography.bodySmall)
+        }
+        TextButton(onClick = { open = true }) { Text("生成用量与费用统计") }
+    }
+    if (open) {
+        val error by tracker.persistenceError.collectAsStateWithLifecycle()
+        AlertDialog(onDismissRequest = { open = false }, title = { Text("生成用量与费用统计") },
+            text = {
+                Column(Modifier.heightIn(max = 500.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("本机最近 ${records.size} 次请求（最多 100 次），包含连接测试。tokens 取自服务返回，字符数不是 tokens。费用仅为按填写单价的估算，实际账单以服务商为准。")
+                    Text("已报告输入 ${records.sumOf { it.tokens.input ?: 0 }} / 输出 ${records.sumOf { it.tokens.output ?: 0 }} tokens；${records.count { it.tokens.input == null || it.tokens.output == null }} 次用量不完整。")
+                    records.filter { it.estimatedCost != null }.groupBy { it.currency }.forEach { (currency, list) ->
+                        Text("已估算 ${list.size} 次：$currency ${String.format(Locale.ROOT, "%.6f", list.sumOf { it.estimatedCost!! })}")
+                    }
+                    Text("${records.count { it.estimatedCost == null }} 次费用未知；未配置单价请到 AI 服务编辑页填写。")
+                    if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)
+                    records.asReversed().forEach { r ->
+                        Text(SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault()).format(Date(r.time)) + "\n" + r.label(), style = MaterialTheme.typography.bodySmall)
+                        HorizontalDivider()
+                    }
+                }
+            }, confirmButton = { TextButton(onClick = { open = false }) { Text("关闭") } })
+    }
+}

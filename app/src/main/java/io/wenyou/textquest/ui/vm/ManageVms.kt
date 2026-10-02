@@ -195,12 +195,26 @@ class ProviderEditorViewModel(
     fun setBase(v: String) = update { it.copy(baseUrl = v) }
     fun setKey(v: String) = update { it.copy(apiKey = v) }
     fun setModel(v: String) = update { it.copy(model = v) }
+    fun setPrice(key: String, text: String) = update {
+        val value = if (text.isBlank()) null else text.toDoubleOrNull() ?: Double.NaN
+        when (key) {
+            "input" -> it.copy(inputPrice = value)
+            "output" -> it.copy(outputPrice = value)
+            "cached" -> it.copy(cachedPrice = value)
+            else -> it.copy(cacheWritePrice = value)
+        }
+    }
+    fun setCurrency(v: String) = update { it.copy(priceCurrency = v.uppercase().take(3)) }
     fun setNote(v: String) = update { it.copy(note = v) }
     fun setTemperature(v: Double) = update { it.copy(temperature = v) }
     fun setMaxTokens(v: Int) = update { it.copy(maxTokens = v) }
 
     fun save() {
         val p = profile()
+        if (listOfNotNull(p.inputPrice, p.outputPrice, p.cachedPrice, p.cacheWritePrice).any { !it.isFinite() || it < 0 } || !p.priceCurrency.matches(Regex("[A-Z]{3}"))) {
+            _ui.update { it.copy(message = "单价需为非负数字，币种需为三位字母（如 CNY / USD）") }
+            return
+        }
         if (p.name.isBlank()) {
             _ui.update { it.copy(message = "服务名称不能为空") }
             return

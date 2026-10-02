@@ -25,7 +25,7 @@ class WenYouApp : Application() {
     class AppContainer(context: Context) {
         val library = LocalLibrary(context)
         val settings = SettingsStore(context)
-        val chatClient = ChatClient()
+        val chatClient = ChatClient(usage = io.wenyou.textquest.data.llm.UsageTracker(File(context.filesDir, "usage.json")))
         val director = AiDirector(chatClient)
     }
 

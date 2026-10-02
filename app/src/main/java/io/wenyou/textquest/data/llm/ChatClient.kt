@@ -46,7 +46,7 @@ data class ChatResult(val content: String, val reasoning: String)
 
 /** 一个响应帧可以同时包含正文和思考。 */
 private data class Delta(val content: String = "", val reasoning: String = "")
-class ChatClient(ok: OkHttpClient = defaultClient()) {
+class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = UsageTracker()) {
 
     private val client = ok
 
@@ -58,16 +58,23 @@ class ChatClient(ok: OkHttpClient = defaultClient()) {
         onDelta: (String) -> Unit = {},
         onReasoning: (String) -> Unit = {}
     ): ChatResult = withContext(Dispatchers.IO) {
+        val started = System.nanoTime()
+        val id = java.util.UUID.randomUUID().toString()
+        usage.start(GenerationProgress(id, profile.name, profile.model, started))
+        var tokens = TokenUsage()
+        var status = "失败"
         val full = StringBuilder()
         val reasoningFull = StringBuilder()
-        val call = buildCall(profile, system, user, options)
+        var call: Call? = null
         // 推理模型（如 deepseek-reasoner）思考耗时更长，放宽超时
         val timeoutMs = if (profile.model.contains("reasoner", ignoreCase = true)) 150_000L else 90_000L
         try {
-            withTimeout(timeoutMs) {
+            call = buildCall(profile, system, user, options)
+            val requestCall = call
+            val result = withTimeout(timeoutMs) {
                 suspendCancellableCoroutine<ChatResult> { cont ->
-                    cont.invokeOnCancellation { call.cancel() }
-                    call.enqueue(object : Callback {
+                    cont.invokeOnCancellation { requestCall.cancel() }
+                    requestCall.enqueue(object : Callback {
                         override fun onFailure(call: Call, e: IOException) {
                             if (cont.isCancelled) return
                             cont.resumeWith(Result.failure(LlmException("网络错误：${e.message}", e)))
@@ -94,20 +101,20 @@ class ChatClient(ok: OkHttpClient = defaultClient()) {
                                         val payload = line.removePrefix("data:").trim()
                                         if (payload == "[DONE]") break
                                         if (payload.isEmpty()) continue
-                                        val d = try { extractDelta(profile.kind, AppJson.parseToJsonElement(payload)) } catch (_: Throwable) { null }
+                                        val d = try { val element = AppJson.parseToJsonElement(payload); tokens = tokens.read(profile.kind, element); extractDelta(profile.kind, element) } catch (_: Throwable) { null }
                                         if (d != null && cont.isActive) {
-                                            if (d.reasoning.isNotEmpty()) { reasoningFull.append(d.reasoning); onReasoning(d.reasoning) }
-                                            if (d.content.isNotEmpty()) { full.append(d.content); onDelta(d.content) }
+                                            if (d.reasoning.isNotEmpty()) { reasoningFull.append(d.reasoning); usage.progress(id, "正在思考", full.length + reasoningFull.length); onReasoning(d.reasoning) }
+                                            if (d.content.isNotEmpty()) { full.append(d.content); usage.progress(id, "正在生成内容", full.length + reasoningFull.length); onDelta(d.content) }
                                         }
                                     } else if (!sawData) {
                                         raw.append(line).append('\n')
                                     }
                                 }
                                 if (!sawData && raw.isNotBlank()) {
-                                    val d = try { extractWhole(profile.kind, AppJson.parseToJsonElement(raw.toString())) } catch (_: Throwable) { null }
+                                    val d = try { val element = AppJson.parseToJsonElement(raw.toString()); tokens = tokens.read(profile.kind, element); extractWhole(profile.kind, element) } catch (_: Throwable) { null }
                                     if (d != null && cont.isActive) {
-                                        if (d.reasoning.isNotEmpty()) { reasoningFull.append(d.reasoning); onReasoning(d.reasoning) }
-                                        if (d.content.isNotEmpty()) { full.append(d.content); onDelta(d.content) }
+                                        if (d.reasoning.isNotEmpty()) { reasoningFull.append(d.reasoning); usage.progress(id, "正在思考", full.length + reasoningFull.length); onReasoning(d.reasoning) }
+                                        if (d.content.isNotEmpty()) { full.append(d.content); usage.progress(id, "正在生成内容", full.length + reasoningFull.length); onDelta(d.content) }
                                     }
                                 }
                                 // 流已结束（[DONE] 或响应流结束）但正文仍为空：视为失败，避免用户看到无提示的空白
@@ -125,12 +132,18 @@ class ChatClient(ok: OkHttpClient = defaultClient()) {
                     })
                 }
             }
+            status = "完成"
+            result
         } catch (e: TimeoutCancellationException) {
             val secs = timeoutMs / 1000
             throw LlmException("AI 响应超时（${secs} 秒未返回内容）。请检查模型配置、Key 与网络，或切换模型重试。")
+        } catch (e: CancellationException) {
+            status = "已取消"
+            throw e
         } finally {
-            full.toString()
-            reasoningFull.toString()
+            call?.cancel()
+            usage.finish(id, UsageRecord(profile.name, profile.model, System.currentTimeMillis(),
+                (System.nanoTime() - started) / 1_000_000, status, tokens, if (status == "完成") tokens.cost(profile) else null, profile.priceCurrency))
         }
     }
     // ---------------- 读取可用模型列表 ----------------
@@ -221,6 +234,7 @@ class ChatClient(ok: OkHttpClient = defaultClient()) {
         val body = buildJsonObject {
             put("model", profile.model)
             put("stream", true)
+            putJsonObject("stream_options") { put("include_usage", true) }
             if (!isReasoner) put("temperature", options.temperature)
             put("max_tokens", if (isReasoner) maxOf(options.maxTokens, 2048) else options.maxTokens)
             putJsonArray("messages") {

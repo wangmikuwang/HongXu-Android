@@ -24,6 +24,7 @@ import androidx.navigation.NavHostController
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.ai.CreationKind
 import io.wenyou.textquest.ui.R
+import io.wenyou.textquest.ui.common.UsagePanel
 import io.wenyou.textquest.ui.common.AppDropdown
 import io.wenyou.textquest.ui.common.AppField
 import io.wenyou.textquest.ui.common.TonalCard
@@ -64,6 +65,7 @@ fun CreationDialog(container: WenYouApp.AppContainer, nav: NavHostController, on
                     LinearProgressIndicator(Modifier.fillMaxWidth())
                     Text(if (ui.draft != null) "正在保存…" else if (ui.kind == CreationKind.STORY) "正在创作剧情与人设…" else "正在创作人物设定…")
                 }
+                if (ui.busy || ui.draft != null || ui.error.isNotBlank()) UsagePanel(container.chatClient.usage)
                 Text(if (profile == null) "还没有配置 AI 服务" else "使用 AI 服务：${profile.name}", style = MaterialTheme.typography.bodySmall)
                 if (ui.kind == CreationKind.STORY) Text("生成 AI 导演剧情：世界观、开场和关联人物，保存后即可游玩。", style = MaterialTheme.typography.bodySmall)
                 if (profile == null) TextButton(onClick = { close(); nav.navigate(R.PROVIDERS) }) { Text("配置 AI 服务") }
