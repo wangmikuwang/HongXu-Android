@@ -12,6 +12,16 @@
 - 分享与导入：剧情与角色可生成分享码（WY2 deflate 压缩文本）或二维码（单张优先，过大自动拆成多片 QR Book 轮播）；支持粘贴分享码、相机扫码、相册一次多选整套二维码导入，按 id 只补不覆盖并提示重复内容。
 - 对局存档：支持随时存档、主页续玩，以及整包 JSON 导出 / 导入。
 
+## 外观与排版
+
+设置 → 外观 → 界面风格可切换 Material You 与 Apple 风格，两者都支持跟随系统、浅色及深色。Apple 风格使用蓝色强调、分组背景、统一圆角和阅读字阶；动态壁纸取色仅适用于 Material You。主题选择保存于本机。
+
+颜色、字体、圆角集中在 `ui/theme/`，公共卡片与输入组件复用主题；设置页直接观察资料库，不再复制服务列表状态。选色面板与设置操作自动换行，结局按钮纵向排列，对局操作区可滚动并避让键盘，系统栏随主题切换。
+
+设计参考：[Apple HIG](https://developer.apple.com/design/human-interface-guidelines)、[compose-cupertino](https://github.com/alexzhirkevich/compose-cupertino)。使用现有 Compose 控件和 Android 字体，无新增 UI 依赖。
+
+验证：19 项回归测试、Android Lint 与构建通过；Pixel 7 / Android 14 虚拟机检查主题切换与重启保持、200% 字号、选色面板、结局和键盘输入。
+
 ## 玩法模式
 
 | 模式 | 玩法 | 是否依赖 AI | 适用场景 |

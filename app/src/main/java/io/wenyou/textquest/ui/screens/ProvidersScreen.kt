@@ -133,7 +133,7 @@ private fun ProviderCard(
     onSetDefault: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = if (isDefault) MaterialTheme.colorScheme.primaryContainer
             else MaterialTheme.colorScheme.surfaceContainerLow

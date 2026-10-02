@@ -26,7 +26,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,17 +48,20 @@ import io.wenyou.textquest.ui.common.AppDropdown
 import io.wenyou.textquest.ui.common.SectionHeader
 import io.wenyou.textquest.ui.common.TonalCard
 import io.wenyou.textquest.ui.theme.ThemeMode
+import io.wenyou.textquest.ui.theme.ThemeStyle
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import io.wenyou.textquest.ui.vm.SettingsViewModel
 import io.wenyou.textquest.ui.vm.Vms
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val vm: SettingsViewModel = viewModel(factory = Vms.factory { SettingsViewModel(it) })
-    val ui by vm.ui.collectAsState()
+    val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -139,7 +142,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             item {
                 Column(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                     Text("文游 · 文字游戏", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                    Text("Material You 动态配色 · 本地数据优先", style = MaterialTheme.typography.bodySmall,
+                    Text("两套外观 · 本地数据优先", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -152,10 +155,15 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 }
             }
 
-            item { SectionHeader("外观（Material You）") }
+            item { SectionHeader("外观") }
             item {
                 TonalCard {
-                    Text("主题模式", style = MaterialTheme.typography.labelLarge)
+                    AppDropdown(
+                        label = "界面风格",
+                        options = listOf("Material You" to ThemeStyle.MATERIAL, "Apple 风格" to ThemeStyle.APPLE),
+                        selected = ui.style,
+                        onSelect = vm::setStyle
+                    )
                     Spacer(Modifier.height(8.dp))
                     AppDropdown(
                         label = "主题模式",
@@ -175,7 +183,8 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         Column(Modifier.weight(1f)) {
                             Text("动态取色（壁纸配色）", style = MaterialTheme.typography.labelLarge)
                             Text(
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                                if (ui.style == ThemeStyle.APPLE) "Apple 风格使用固定蓝色与分组背景"
+                                else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                                     "从壁纸生成整套色调角色（Android 12+）"
                                 else "此设备需要 Android 12+ 才能使用动态取色",
                                 style = MaterialTheme.typography.bodySmall,
@@ -184,7 +193,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         }
                         Switch(checked = ui.dynamicColor,
                             onCheckedChange = { vm.setDynamic(it) },
-                            enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                            enabled = ui.style == ThemeStyle.MATERIAL && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                     }
                 }
             }
@@ -245,7 +254,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(onClick = {
                             exportLauncher.launch("wenyou-backup-${System.currentTimeMillis()}.json")
                         }) { Text("导出备份") }
@@ -264,7 +273,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(onClick = { nav.navigate(R.bottomRuleEdit("new")) }) { Text("新建底层基调") }
                         OutlinedButton(onClick = { nav.navigate(R.BOTTOM_RULES) }) { Text("管理底层基调") }
                     }
@@ -280,7 +289,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(onClick = { crashDirPicker.launch(null) }) { Text("选择系统文档目录") }
                         Button(onClick = {
                             val t = "测试日志 time=${System.currentTimeMillis()}\nversion=${BuildConfig.VERSION_NAME}\n"
@@ -299,7 +308,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 TonalCard {
                     Text("版本", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(6.dp))
-                    Text("v${BuildConfig.VERSION_NAME}（build ${BuildConfig.VERSION_CODE}）\n本地优先：API Key 仅保存在本机，不上传任何远端。\n版本号由 ./gradlew bumpVersion 递增，打包前请先执行。",
+                    Text("v${BuildConfig.VERSION_NAME}（build ${BuildConfig.VERSION_CODE}）\n本地优先：API Key 仅保存在本机，不上传任何远端。\n",
                         modifier = Modifier.clickable(onClick = onVersionTap),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)

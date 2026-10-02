@@ -16,6 +16,7 @@ import io.wenyou.textquest.data.model.SexualOrientation
 import io.wenyou.textquest.data.repo.LocalLibrary
 import io.wenyou.textquest.data.repo.SettingsStore
 import io.wenyou.textquest.ui.theme.ThemeMode
+import io.wenyou.textquest.ui.theme.ThemeStyle
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -354,6 +355,7 @@ class BottomRuleEditorViewModel(
 // ---------------- 设置 ----------------
 
 data class SettingsUi(
+    val style: ThemeStyle = ThemeStyle.MATERIAL,
     val mode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
     val defaultProviderId: String? = null,
@@ -369,23 +371,18 @@ class SettingsViewModel(container: WenYouApp.AppContainer) : ViewModel() {
     private val library: LocalLibrary = container.library
     private val store: SettingsStore = container.settings
 
-    private val _providers = MutableStateFlow(library.providers.value)
     private val _message = MutableStateFlow("")
 
     val ui: StateFlow<SettingsUi> = kotlinx.coroutines.flow.combine(
-        store.state, _providers, _message
+        store.state, library.providers, _message
     ) { prefs: io.wenyou.textquest.data.repo.UiPrefs,
         providers: List<ApiProfile>,
         message: String ->
-        SettingsUi(prefs.themeMode, prefs.dynamicColor, prefs.defaultProviderId, prefs.showLgbt, prefs.adultContent, prefs.contentUnlocked, providers, message)
+        SettingsUi(style = prefs.themeStyle, mode = prefs.themeMode, dynamicColor = prefs.dynamicColor, defaultProviderId = prefs.defaultProviderId, showLgbt = prefs.showLgbt, adultContent = prefs.adultContent, contentUnlocked = prefs.contentUnlocked, providers = providers, message = message)
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, SettingsUi(providers = library.providers.value))
 
-    init {
-        viewModelScope.launch {
-            library.providers.collect { _providers.value = it }
-        }
-    }
 
+    fun setStyle(style: ThemeStyle) = store.setThemeStyle(style)
     fun setMode(mode: ThemeMode) = store.setThemeMode(mode)
     fun setDynamic(on: Boolean) = store.setDynamicColor(on)
     fun setDefaultProvider(id: String?) = store.setDefaultProvider(id)

@@ -6,6 +6,10 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +28,9 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
@@ -53,7 +60,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -90,7 +97,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     val vm: PlayViewModel = viewModel(
         factory = Vms.factory { PlayViewModel(storyId, saveId, it) }
     )
-    val ui by vm.ui.collectAsState()
+    val ui by vm.ui.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
 
@@ -98,11 +105,11 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
         if (ui.lastMessage.isNotBlank()) snackbar.showSnackbar(ui.lastMessage)
     }
     val history = ui.session?.history.orEmpty()
-    val live = (ui.stage == PlayStage.AI_WORKING && ui.aiDelta.isNotBlank())
+    val live = ui.stage == PlayStage.AI_WORKING
     var showProvider by remember { mutableStateOf(false) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    LaunchedEffect(history.size, ui.aiDelta.length) {
+    LaunchedEffect(history.size, live) {
         val last = history.size - 1 + if (live) 1 else 0
         if (last >= 0) listState.scrollToItem(last)
     }
@@ -113,10 +120,10 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
             CenterAlignedTopAppBar(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(ui.story?.title ?: "对局", style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                        Text(ui.story?.title ?: "对局", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         if (ui.nodeTitle.isNotBlank() && ui.nodeTitle != ui.story?.title) {
                             Text(ui.nodeTitle, style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 },
@@ -126,10 +133,10 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                     }
                 },
                 actions = {
-                    TextButton(onClick = { scope.launch { drawerState.open() } }) { Text("状态") }
-                    TextButton(onClick = { showProvider = true },
+                    IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Filled.Person, "角色状态") }
+                    IconButton(onClick = { showProvider = true },
                         enabled = ui.providers.isNotEmpty()) {
-                        Text("模型")
+                        Icon(Icons.Filled.Build, "切换 AI 服务")
                     }
                     IconButton(onClick = { vm.saveNow() }) { Icon(Icons.Filled.Check, "存档") }
                 }
@@ -137,9 +144,9 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
         },
         snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
-        Column(
-            Modifier.padding(padding).fillMaxSize()
-        ) {
+        BoxWithConstraints(Modifier.padding(padding).consumeWindowInsets(padding).imePadding().fillMaxSize()) {
+        val panelHeight = maxHeight * 0.5f
+        Column(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -152,13 +159,16 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                 if (live) {
                     item(key = "live") {
                         if (ui.aiReasoningDelta.isNotBlank()) ThinkingBlock(ui.aiReasoningDelta)
-                        StreamingCard("")
+                        StreamingCard()
                         Spacer(Modifier.height(10.dp))
                     }
                 }
                 item(key = "bottom-space") { Spacer(Modifier.height(8.dp)) }
             }
-            ActionPanel(vm, ui, nav)
+            Box(Modifier.fillMaxWidth().heightIn(max = panelHeight).verticalScroll(rememberScrollState())) {
+                ActionPanel(vm, ui, nav)
+            }
+        }
         }
     }
     }
@@ -237,7 +247,7 @@ private fun ProviderOption(
                 Text(label, style = MaterialTheme.typography.titleSmall)
                 if (sub.isNotBlank())
                     Text(sub, style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (selected) {
                 Icon(Icons.Filled.Check, "当前", tint = MaterialTheme.colorScheme.primary)
@@ -261,7 +271,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
             val color = avatarColor(char?.colorIndex ?: 0)
             val name = entry.speaker.ifBlank { char?.name ?: "角色" }
             Card(
-                shape = RoundedCornerShape(20.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
                     containerColor = Color(color.red, color.green, color.blue, alpha = 0.10f)
                 )
@@ -274,7 +284,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                                 fontSize = 13.sp)
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text("角色内对话 · $name", style = MaterialTheme.typography.titleSmall, color = color,
+                        Text("角色内对话 · $name", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(Modifier.height(8.dp))
@@ -300,7 +310,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
         EntryKind.NARRATION, EntryKind.DM -> {
             if (text.isBlank()) return
             Card(
-                shape = RoundedCornerShape(20.dp),
+                shape = MaterialTheme.shapes.large,
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer
                 )
@@ -339,15 +349,15 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
 }
 
 @Composable
-private fun StreamingCard(delta: String) {
+private fun StreamingCard() {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             CircularProgressIndicator(Modifier.width(18.dp).height(18.dp), strokeWidth = 2.dp)
             Spacer(Modifier.width(10.dp))
-            Text(delta.ifBlank { "AI 正在构思…" }, style = MaterialTheme.typography.bodyLarge,
+            Text("AI 正在构思…", style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("▍", style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.primary)
@@ -461,7 +471,7 @@ private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ui.pendingAiChoices.forEach { c ->
                         FilterChip(selected = false, onClick = { vm.dmSend(c.text) },
-                            label = { Text(c.text, maxLines = 1) })
+                            label = { Text(c.text, maxLines = 1, overflow = TextOverflow.Ellipsis) })
                     }
                 }
             }
@@ -510,18 +520,17 @@ private fun StoppedPanel(ui: PlayUi, vm: PlayViewModel, nav: NavHostController) 
                 style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
             Text(ui.stoppedMessage, style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Button(onClick = { vm.restart() }, modifier = Modifier.weight(1f)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = { vm.restart() }, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Filled.PlayArrow, null)
                     Spacer(Modifier.width(6.dp))
                     Text("再来一次")
                 }
-                FilledTonalButton(onClick = { vm.retryAi() },
-                    enabled = ui.aiTargetExit || ui.story?.nodes?.get(ui.nodeId)?.kind == NodeKind.AI,
-                    modifier = Modifier.weight(1f)) {
+                if (ui.aiTargetExit || ui.story?.nodes?.get(ui.nodeId)?.kind == NodeKind.AI) FilledTonalButton(onClick = { vm.retryAi() },
+                    modifier = Modifier.fillMaxWidth()) {
                     Text("重试")
                 }
-                OutlinedButton(onClick = { nav.popBackStack() }, modifier = Modifier.weight(1f)) {
+                OutlinedButton(onClick = { nav.popBackStack() }, modifier = Modifier.fillMaxWidth()) {
                     Text("返回")
                 }
             }

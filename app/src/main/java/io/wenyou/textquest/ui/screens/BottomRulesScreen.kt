@@ -89,7 +89,7 @@ fun BottomRulesScreen(container: WenYouApp.AppContainer, nav: NavHostController)
                 ) {
                     items(rules, key = { it.id }) { r ->
                         Card(
-                            shape = RoundedCornerShape(20.dp),
+                            shape = MaterialTheme.shapes.large,
                             colors = CardDefaults.cardColors(
                                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                             ),

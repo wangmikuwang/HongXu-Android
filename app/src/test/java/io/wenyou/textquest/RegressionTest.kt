@@ -16,6 +16,7 @@ import okhttp3.Protocol
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.Assert.*
+import androidx.compose.ui.graphics.luminance
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -29,6 +30,19 @@ import java.util.zip.DeflaterOutputStream
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegressionTest {
     @get:Rule val temp = TemporaryFolder()
+
+    @Test fun appleThemeHasSafeDefaultsAndReadableColors() {
+        assertEquals(io.wenyou.textquest.ui.theme.ThemeStyle.MATERIAL, io.wenyou.textquest.ui.theme.ThemeStyle.fromStored("unknown"))
+        assertEquals(io.wenyou.textquest.ui.theme.ThemeStyle.APPLE, io.wenyou.textquest.ui.theme.ThemeStyle.fromStored("APPLE"))
+        for (dark in listOf(false, true)) {
+            val colors = io.wenyou.textquest.ui.theme.appleColors(dark)
+            for ((foreground, background) in listOf(colors.onSurface to colors.surface, colors.onPrimary to colors.primary)) {
+                val a = foreground.luminance()
+                val b = background.luminance()
+                assertTrue((maxOf(a, b) + 0.05f) / (minOf(a, b) + 0.05f) >= 4.5f)
+            }
+        }
+    }
 
     @Test fun aiStateChangesSurviveParsing() {
         val scene = AiDirector(ChatClient()).parseScene(

@@ -1,5 +1,12 @@
 package io.wenyou.textquest.ui.common
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material3.contentColorFor
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -67,7 +74,7 @@ fun Pill(text: String, modifier: Modifier = Modifier, container: Color? = null) 
         Text(
             text,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            color = contentColorFor(container ?: MaterialTheme.colorScheme.secondaryContainer),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
@@ -120,7 +127,7 @@ fun TonalCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -150,6 +157,7 @@ fun AppField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.medium,
         label = { Text(label) },
         singleLine = singleLine,
         minLines = effMin,
@@ -183,8 +191,10 @@ fun <T> AppDropdown(
             value = options.firstOrNull { it.second == selected }?.first ?: "",
             onValueChange = {},
             readOnly = true,
+            enabled = enabled,
             singleLine = true,
-            label = { Text(label) },
+            shape = MaterialTheme.shapes.medium,
+        label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable, enabled).fillMaxWidth(),
             isError = error != null,
@@ -205,6 +215,7 @@ fun <T> AppDropdown(
 }
 
 /** 彩色圆点取色选择。 */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ColorDots(
     colors: List<Color>,
@@ -212,16 +223,16 @@ fun ColorDots(
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier) {
+    FlowRow(modifier = modifier) {
         colors.forEachIndexed { index, color ->
-            Surface(
-                onClick = { onSelect(index) },
-                shape = CircleShape,
-                color = color,
-                modifier = Modifier
-                    .padding(end = 10.dp)
-                    .size(if (index == selected) 30.dp else 24.dp)
-            ) {}
+            Box(
+                Modifier.size(48.dp).selectable(index == selected, role = Role.RadioButton, onClick = { onSelect(index) })
+                    .semantics { contentDescription = "颜色 ${index + 1}" },
+                contentAlignment = Alignment.Center
+            ) {
+                Surface(shape = CircleShape, color = color,
+                    modifier = Modifier.size(if (index == selected) 32.dp else 24.dp)) {}
+            }
         }
     }
 }

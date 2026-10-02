@@ -273,7 +273,7 @@ private fun CharacterCard(
     onDelete: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth()
     ) {

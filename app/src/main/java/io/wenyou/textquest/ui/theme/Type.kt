@@ -65,3 +65,10 @@ val AppTypography = Typography(
         letterSpacing = 0.1.sp
     )
 )
+
+val AppleTypography = AppTypography.copy(
+    displaySmall = AppTypography.displaySmall.copy(fontSize = 34.sp, lineHeight = 41.sp),
+    titleLarge = AppTypography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+    bodyLarge = AppTypography.bodyLarge.copy(fontSize = 17.sp, lineHeight = 27.sp, letterSpacing = 0.sp),
+    bodyMedium = AppTypography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 24.sp, letterSpacing = 0.sp)
+)

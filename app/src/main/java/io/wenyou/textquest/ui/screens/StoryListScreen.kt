@@ -659,7 +659,7 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
     var menuOpen by remember { mutableStateOf(false) }
     val modeText = if (story.mode == StoryMode.AI_DIRECTOR) "AI 导演" else "分支剧本"
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
         Column(Modifier.fillMaxWidth().padding(14.dp)) {

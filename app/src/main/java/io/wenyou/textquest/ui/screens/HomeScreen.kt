@@ -4,6 +4,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -176,7 +178,7 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
 @Composable
 private fun MissingProviderCard(onClick: () -> Unit) {
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
             contentColor = MaterialTheme.colorScheme.onTertiaryContainer
@@ -197,12 +199,13 @@ private fun MissingProviderCard(onClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ContinueCard(card: HomeCard, onClick: () -> Unit, onDelete: () -> Unit) {
     val story = card.story
     val color = avatarColor(story?.colorIndex ?: 0)
     Card(
-        shape = RoundedCornerShape(20.dp),
+        shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -220,10 +223,9 @@ private fun ContinueCard(card: HomeCard, onClick: () -> Unit, onDelete: () -> Un
                 Text(story?.title ?: "（剧情已删除）", style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 Spacer(Modifier.height(4.dp))
-                Row {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Pill(card.stepText)
                     if (story?.mode != null && story.mode.label.isNotEmpty()) {
-                        Spacer(Modifier.width(6.dp))
                         Pill(story.mode.label, container = MaterialTheme.colorScheme.tertiaryContainer)
                     }
                 }

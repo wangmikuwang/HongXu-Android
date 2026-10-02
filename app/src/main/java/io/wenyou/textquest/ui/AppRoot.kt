@@ -11,11 +11,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
+import io.wenyou.textquest.ui.theme.LocalThemeStyle
+import io.wenyou.textquest.ui.theme.ThemeStyle
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -72,9 +77,9 @@ object R {
 
 @Composable
 fun WenYouAppRoot(container: WenYouApp.AppContainer) {
-    val prefs by container.settings.state.collectAsState()
-    WenYouTheme(prefs.themeMode, prefs.dynamicColor) {
-        val writeError by container.library.writeError.collectAsState()
+    val prefs by container.settings.state.collectAsStateWithLifecycle()
+    WenYouTheme(prefs.themeMode, prefs.dynamicColor, prefs.themeStyle) {
+        val writeError by container.library.writeError.collectAsStateWithLifecycle()
         if (writeError != null) {
             AlertDialog(
                 onDismissRequest = container.library::clearWriteError,
@@ -146,9 +151,15 @@ fun HubBottomBar(nav: NavHostController) {
         HubItem(R.PROVIDERS, "AI 服务", Icons.Filled.Build),
         HubItem(R.SETTINGS, "设置", Icons.Filled.Settings)
     )
-    NavigationBar {
+    val apple = LocalThemeStyle.current == ThemeStyle.APPLE
+    NavigationBar(containerColor = if (apple) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer) {
         items.forEach { item ->
             NavigationBarItem(
+                colors = if (apple) NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = Color.Transparent
+                ) else NavigationBarItemDefaults.colors(),
                 selected = current == item.route,
                 onClick = {
                     if (current != item.route) {
