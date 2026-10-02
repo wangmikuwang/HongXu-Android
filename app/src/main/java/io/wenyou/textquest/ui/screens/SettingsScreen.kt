@@ -160,7 +160,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 TonalCard {
                     AppDropdown(
                         label = "界面风格",
-                        options = listOf("Material You" to ThemeStyle.MATERIAL, "Apple 风格" to ThemeStyle.APPLE),
+                        options = listOf("Material You" to ThemeStyle.MATERIAL, "液态玻璃" to ThemeStyle.APPLE),
                         selected = ui.style,
                         onSelect = vm::setStyle
                     )
@@ -183,7 +183,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         Column(Modifier.weight(1f)) {
                             Text("动态取色（壁纸配色）", style = MaterialTheme.typography.labelLarge)
                             Text(
-                                if (ui.style == ThemeStyle.APPLE) "Apple 风格使用固定蓝色与分组背景"
+                                if (ui.style == ThemeStyle.APPLE) "液态玻璃使用固定配色；Android 13+ 支持边缘折射"
                                 else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                                     "从壁纸生成整套色调角色（Android 12+）"
                                 else "此设备需要 Android 12+ 才能使用动态取色",

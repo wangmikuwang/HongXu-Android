@@ -1,6 +1,15 @@
 package io.wenyou.textquest.ui
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import io.wenyou.textquest.ui.common.GlassBackdrop
+import io.wenyou.textquest.ui.common.liquidGlass
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
@@ -152,13 +161,14 @@ fun HubBottomBar(nav: NavHostController) {
         HubItem(R.SETTINGS, "设置", Icons.Filled.Settings)
     )
     val apple = LocalThemeStyle.current == ThemeStyle.APPLE
-    NavigationBar(containerColor = if (apple) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainer) {
+    NavigationBar(containerColor = if (apple) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+        windowInsets = if (apple) WindowInsets(0, 0, 0, 0) else androidx.compose.material3.NavigationBarDefaults.windowInsets) {
         items.forEach { item ->
             NavigationBarItem(
                 colors = if (apple) NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = Color.Transparent
+                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                 ) else NavigationBarItemDefaults.colors(),
                 selected = current == item.route,
                 onClick = {
@@ -184,11 +194,16 @@ fun HubScaffold(
     nav: NavHostController,
     content: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit
 ) {
-    Scaffold(
-        topBar = topBar,
-        bottomBar = { HubBottomBar(nav) }
-    ) { padding ->
-        content(padding)
+    if (LocalThemeStyle.current == ThemeStyle.APPLE) {
+        GlassBackdrop(
+            content = { Scaffold(topBar = topBar) { padding -> content(padding) } },
+            controls = {
+                Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)
+                    .fillMaxWidth().liquidGlass()) { HubBottomBar(nav) }
+            }
+        )
+    } else {
+        Scaffold(topBar = topBar, bottomBar = { HubBottomBar(nav) }) { padding -> content(padding) }
     }
 }
 

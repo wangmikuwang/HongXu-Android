@@ -1,5 +1,11 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.GlassBackdrop
+import io.wenyou.textquest.ui.common.liquidGlass
+import io.wenyou.textquest.ui.theme.LocalThemeStyle
+import io.wenyou.textquest.ui.theme.ThemeStyle
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -146,11 +152,17 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     ) { padding ->
         BoxWithConstraints(Modifier.padding(padding).consumeWindowInsets(padding).imePadding().fillMaxSize()) {
         val panelHeight = maxHeight * 0.5f
-        Column(Modifier.fillMaxSize()) {
+        val glass = LocalThemeStyle.current == ThemeStyle.APPLE
+        val density = LocalDensity.current
+        var actionHeight by remember { mutableStateOf(0.dp) }
+        val historyContent: @Composable () -> Unit = {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp)
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 16.dp, end = 16.dp, top = 16.dp,
+                    bottom = if (glass) actionHeight + 24.dp else 16.dp
+                )
             ) {
                 itemsIndexed(history) { _, entry ->
                     StoryEntry(entry, ui)
@@ -165,8 +177,19 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                 }
                 item(key = "bottom-space") { Spacer(Modifier.height(8.dp)) }
             }
-            Box(Modifier.fillMaxWidth().heightIn(max = panelHeight).verticalScroll(rememberScrollState())) {
-                ActionPanel(vm, ui, nav)
+        }
+        if (glass) {
+            GlassBackdrop(content = historyContent, controls = {
+                Box(Modifier.align(Alignment.BottomCenter).padding(8.dp).fillMaxWidth()
+                    .heightIn(max = panelHeight).onSizeChanged { actionHeight = with(density) { it.height.toDp() } }
+                    .liquidGlass().verticalScroll(rememberScrollState())) { ActionPanel(vm, ui, nav) }
+            })
+        } else {
+            Column(Modifier.fillMaxSize()) {
+                Box(Modifier.weight(1f)) { historyContent() }
+                Box(Modifier.fillMaxWidth().heightIn(max = panelHeight).verticalScroll(rememberScrollState())) {
+                    ActionPanel(vm, ui, nav)
+                }
             }
         }
         }
@@ -461,7 +484,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
 @Composable
 private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
     var text by rememberSaveable { mutableStateOf("") }
-    Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainerLow) {
+    Surface(Modifier.fillMaxWidth(), color = if (LocalThemeStyle.current == ThemeStyle.APPLE) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (ui.pendingAiChoices.isNotEmpty()) {
                 Text("AI 导演给的走向灵感（点一下直接采用，也可自由输入）：",

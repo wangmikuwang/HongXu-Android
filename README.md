@@ -14,13 +14,13 @@
 
 ## 外观与排版
 
-设置 → 外观 → 界面风格可切换 Material You 与 Apple 风格，两者都支持跟随系统、浅色及深色。Apple 风格使用蓝色强调、分组背景、统一圆角和阅读字阶；动态壁纸取色仅适用于 Material You。主题选择保存于本机。
+设置 → 外观 → 界面风格可切换 Material You 与液态玻璃，两者都支持跟随系统、浅色及深色。液态玻璃延续蓝色强调、分组背景和阅读字阶，在浮动导航及对局操作区实时采样背后内容，加入高斯模糊、边缘折射、高光与阴影；文字和图标独立绘制保持清晰；动态壁纸取色仅适用于 Material You。主题选择保存于本机，旧版 Apple 风格自动使用液态玻璃。Android 13+ 支持折射，Android 12 使用模糊，Android 8–11 回退为可读的着色材质。
 
 颜色、字体、圆角集中在 `ui/theme/`，公共卡片与输入组件复用主题；设置页直接观察资料库，不再复制服务列表状态。选色面板与设置操作自动换行，结局按钮纵向排列，对局操作区可滚动并避让键盘，系统栏随主题切换。
 
-设计参考：[Apple HIG](https://developer.apple.com/design/human-interface-guidelines)、[compose-cupertino](https://github.com/alexzhirkevich/compose-cupertino)。使用现有 Compose 控件和 Android 字体，无新增 UI 依赖。
+设计参考：[Apple HIG](https://developer.apple.com/design/human-interface-guidelines)、[compose-cupertino](https://github.com/alexzhirkevich/compose-cupertino)。使用现有 Compose 控件和 Android 字体，无新增 UI 依赖。玻璃渲染使用 Compose GraphicsLayer 与 Android RenderEffect / AGSL，参考 [Apple 材质指南](https://developer.apple.com/design/human-interface-guidelines/materials)，渲染代码为本项目实现。
 
-验证：19 项回归测试、Android Lint 与构建通过；Pixel 7 / Android 14 虚拟机检查主题切换与重启保持、200% 字号、选色面板、结局和键盘输入。
+验证：19 项回归测试、玻璃背景采样与动态更新设备测试、Android Lint 与构建通过；Pixel 7 / Android 14 虚拟机检查主题切换与重启保持、200% 字号、选色面板、结局和键盘输入。
 
 ## 玩法模式
 
