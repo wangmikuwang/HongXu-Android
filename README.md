@@ -36,6 +36,10 @@ Android 16 使用原生 ProgressStyle 未知进度样式；Android 16 QPR2 通�
 
 小米 OS2/OS3 按 `notification_focus_protocol` 添加 `miui.focus.param` 及图标 Bundle，使用官方文本模板，未授权时保留普通通知。Alpha 与 Beta 需要分别申请包名、签名及 `ai_generation` 场景权限；该场景标识是待审核配置，平台若核准其他标识需同步替换。当前只完成代码适配，不代表已获超级岛资格。参考 [小米开发指南](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2131)、[接入流程](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2132)、[Android 实时更新](https://developer.android.com/develop/ui/views/notifications/live-update)。
 
+## 玻璃通透度调整（3.9.2）
+
+减少深浅色表面遮罩和白色高光，模糊半径从 12dp 调整为 6dp，使背后内容更清晰地透出；保留实时采样、边缘折射和独立绘制的文字图标。Android 8–11 仍使用原有可读着色回退。设备检查覆盖浅色/深色背景透出、模糊、背景实时更新及动态取色开关隐藏与恢复。
+
 ## 液态玻璃优化（3.9.1）
 
 选择液态玻璃时隐藏整个动态取色设置，切回 Material You 后恢复显示并保留原有偏好。设置页首次显示直接使用保存的主题，避免默认风格闪现和布局跳动。

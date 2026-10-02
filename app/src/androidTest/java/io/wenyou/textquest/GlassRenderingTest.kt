@@ -31,8 +31,9 @@ class GlassRenderingTest {
     @Test fun glassSamplesAndSoftensTheBackdrop() {
         assumeTrue(Build.VERSION.SDK_INT >= 33)
         val swapped = mutableStateOf(false)
+        val mode = mutableStateOf(ThemeMode.LIGHT)
         compose.setContent {
-            WenYouTheme(mode = ThemeMode.LIGHT, style = ThemeStyle.APPLE) {
+            WenYouTheme(mode = mode.value, style = ThemeStyle.APPLE) {
                 GlassBackdrop(content = {
                     Canvas(Modifier.size(200.dp, 80.dp)) {
                         drawRect(if (swapped.value) Color.Blue else Color.Red, size = Size(size.width / 2, size.height))
@@ -46,6 +47,8 @@ class GlassRenderingTest {
         compose.waitForIdle()
         val pixels = compose.onNodeWithTag("glass").captureToImage().toPixelMap()
         val y = pixels.height / 2
+        assertTrue("Light glass must retain the backdrop color instead of washing it out",
+            pixels[pixels.width / 4, y].red - pixels[pixels.width / 4, y].blue > 0.45f)
         assertTrue("Blue backdrop must blur across the red boundary",
             pixels[pixels.width / 2 - 2, y].blue > pixels[pixels.width / 4, y].blue + 0.01f)
         assertTrue("Red backdrop must blur across the blue boundary",
@@ -55,5 +58,10 @@ class GlassRenderingTest {
         val updated = compose.onNodeWithTag("glass").captureToImage().toPixelMap()
         assertTrue("Glass must update when the content behind it changes",
             updated[pixels.width / 4, y].blue > pixels[pixels.width / 4, y].blue + 0.1f)
+        compose.runOnIdle { mode.value = ThemeMode.DARK }
+        compose.waitForIdle()
+        val dark = compose.onNodeWithTag("glass").captureToImage().toPixelMap()
+        assertTrue("Dark glass must retain the backdrop color",
+            dark[pixels.width / 4, y].blue - dark[pixels.width / 4, y].red > 0.55f)
     }
 }

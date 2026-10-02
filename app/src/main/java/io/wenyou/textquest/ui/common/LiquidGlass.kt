@@ -73,7 +73,7 @@ fun Modifier.liquidGlass(): Modifier {
         .drawWithCache {
             // Cache native effects by size/density; scrolling only updates the sampled content.
             if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
-                val blur = RenderEffect.createBlurEffect(12.dp.toPx(), 12.dp.toPx(), Shader.TileMode.CLAMP)
+                val blur = RenderEffect.createBlurEffect(6.dp.toPx(), 6.dp.toPx(), Shader.TileMode.CLAMP)
                 sample.renderEffect = if (Build.VERSION.SDK_INT >= 33 && shader != null) {
                     shader.setFloatUniform("extent", size.width, size.height)
                     shader.setFloatUniform("radius", minOf(30.dp.toPx(), size.height / 2f))
@@ -81,7 +81,7 @@ fun Modifier.liquidGlass(): Modifier {
                     RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(shader, "backdrop"), blur).asComposeRenderEffect()
                 } else blur.asComposeRenderEffect()
             }
-            val highlight = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.14f else 0.32f), Color.Transparent))
+            val highlight = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.08f else 0.14f), Color.Transparent))
             val border = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.75f), Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.38f)))
             val radius = androidx.compose.ui.geometry.CornerRadius(30.dp.toPx())
             val stroke = Stroke(1.dp.toPx())
@@ -93,7 +93,7 @@ fun Modifier.liquidGlass(): Modifier {
                         translate(-offset.x, -offset.y) { drawLayer(backdrop.layer) }
                     }
                     drawLayer(sample)
-                    drawRect(tint.copy(alpha = if (dark) 0.58f else 0.68f))
+                    drawRect(tint.copy(alpha = if (dark) 0.28f else 0.36f))
                 } else {
                     // ponytail: Android 8–11 retain readable tinted glass; GPU backdrop effects need Android 12+.
                     drawRect(tint.copy(alpha = 0.94f))
