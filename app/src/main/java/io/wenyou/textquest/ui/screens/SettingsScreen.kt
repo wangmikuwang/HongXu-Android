@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -156,7 +157,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         ) {
             item {
                 Column(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-                    EasterEggTitle("文游 · 文字游戏", MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                    EasterEggTitle(stringResource(io.wenyou.textquest.R.string.app_name), MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                         tapMessage = "🎬 幕后导演\n导演悄悄递来一张纸条：最精彩的剧情，往往从你不按套路的选择开始。\n今天，主角的名字叫你。",
                         holdMessage = "🪄 第四面墙\n旁白：你长按了标题。\n角色：等等，谁在故事外面戳我们？\n导演：嘘，这是主角的新能力。")
                     Text("两套外观 · 本地数据优先", style = MaterialTheme.typography.bodySmall,
@@ -289,7 +290,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                     Spacer(Modifier.height(10.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(onClick = {
-                            exportLauncher.launch("wenyou-backup-${System.currentTimeMillis()}.json")
+                            exportLauncher.launch("${BuildConfig.APP_FILE_PREFIX}-backup-${System.currentTimeMillis()}.json")
                         }) { Text("导出备份") }
                         OutlinedButton(onClick = {
                             importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
@@ -341,7 +342,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 TonalCard {
                     Text("版本", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(6.dp))
-                    Text("v${BuildConfig.VERSION_NAME}（build ${BuildConfig.VERSION_CODE}）\n本地优先：API Key 仅保存在本机，不上传任何远端。\n",
+                    Text("v${BuildConfig.VERSION_NAME.substringBefore('-')}（build ${BuildConfig.VERSION_CODE}）\n本地优先：API Key 仅保存在本机，不上传任何远端。\n",
                         modifier = Modifier.clickable(onClick = onVersionTap),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)

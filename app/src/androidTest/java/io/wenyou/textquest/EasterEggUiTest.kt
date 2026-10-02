@@ -10,11 +10,13 @@ class EasterEggUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun discoverThreeSurprisesWithoutChangingSettingsOrAchievements() {
+        assertEquals("虹叙", compose.activity.packageManager.getApplicationLabel(compose.activity.applicationInfo).toString())
+        compose.onNodeWithText("虹叙").assertIsDisplayed()
         val container = (compose.activity.application as WenYouApp).container
         val settings = container.settings.state.value
         val achievements = container.library.achievements.value
         compose.onNodeWithContentDescription("设置", useUnmergedTree = true).performClick()
-        val title = compose.onNodeWithText("文游 · 文字游戏")
+        val title = compose.onNodeWithText(compose.activity.getString(R.string.app_name))
         repeat(4) { title.performClick() }
         compose.onNodeWithText("你发现了彩蛋！").assertDoesNotExist()
         title.performClick()

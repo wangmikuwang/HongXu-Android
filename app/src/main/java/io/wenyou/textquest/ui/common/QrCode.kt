@@ -19,6 +19,7 @@ import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
+import io.wenyou.textquest.BuildConfig
 import io.wenyou.textquest.data.repo.ShareCode
 import java.io.File
 
@@ -108,7 +109,7 @@ object QrCode {
                 val values = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, "$safeTitle.png")
                     put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                    put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/WenYou")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/${BuildConfig.APP_FILE_PREFIX}")
                     put(MediaStore.Images.Media.IS_PENDING, 1)
                 }
                 val uri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values) ?: return null
@@ -119,7 +120,7 @@ object QrCode {
                 values.clear()
                 values.put(MediaStore.Images.Media.IS_PENDING, 0)
                 resolver.update(uri, values, null, null)
-                "Pictures/WenYou"
+                "Pictures/${BuildConfig.APP_FILE_PREFIX}"
             } else {
                 val dir = context.getExternalFilesDir(Environment.DIRECTORY_PICTURES) ?: return null
                 dir.mkdirs()

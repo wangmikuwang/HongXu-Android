@@ -17,6 +17,10 @@ import kotlin.coroutines.resumeWithException
 
 data class AppRelease(val version: String, val notes: String, val fileName: String, val url: String, val size: Long)
 
+// Legacy filename keeps installed versions and earlier official releases compatible.
+internal fun appApkNames(version: String, flavor: String) =
+    listOf("${BuildConfig.APP_FILE_PREFIX}-v$version.apk", "WenYou-$flavor-v$version.apk")
+
 internal fun parseAppRelease(text: String, repository: String, flavor: String, currentVersion: String): AppRelease? {
     fun version(value: String): List<Int> {
         val match = Regex("v?(\\d+)\\.(\\d+)\\.(\\d+)(?:-[αβ])?").matchEntire(value)
@@ -32,10 +36,12 @@ internal fun parseAppRelease(text: String, repository: String, flavor: String, c
     if (tag != "v${latest.joinToString(".")}") throw IOException("发布版本格式无效")
     val current = version(currentVersion)
     if ((latest.zip(current).firstOrNull { it.first != it.second }?.let { it.first.compareTo(it.second) } ?: 0) <= 0) return null
-    val name = "WenYou-$flavor-v${latest.joinToString(".")}.apk"
-    val asset = release.getValue("assets").jsonArray.map { it.jsonObject }.singleOrNull {
+    val names = appApkNames(latest.joinToString("."), flavor)
+    val assets = release.getValue("assets").jsonArray.map { it.jsonObject }
+    val asset = names.firstNotNullOfOrNull { name -> assets.singleOrNull {
         it["name"]?.jsonPrimitive?.content == name && it["state"]?.jsonPrimitive?.content == "uploaded"
-    } ?: throw IOException("新版安装包尚未就绪")
+    } } ?: throw IOException("新版安装包尚未就绪")
+    val name = asset.getValue("name").jsonPrimitive.content
     val url = asset.getValue("browser_download_url").jsonPrimitive.content
     if (url != "https://github.com/$repository/releases/download/$tag/$name") throw IOException("安装包来源无效")
     val size = asset["size"]?.jsonPrimitive?.longOrNull ?: 0L
@@ -72,8 +78,8 @@ class AppUpdates(private val client: OkHttpClient = OkHttpClient.Builder().callT
 /** System downloads survive navigation and process exit; only one active task per asset. */
 internal fun downloadAppRelease(context: Context, release: AppRelease): Long {
     // Validate again at the download boundary, including callers other than the settings UI.
-    val name = "WenYou-${BuildConfig.FLAVOR}-v${release.version}.apk"
-    require(Regex("\\d+\\.\\d+\\.\\d+").matches(release.version) && release.fileName == name)
+    val name = release.fileName
+    require(Regex("\\d+\\.\\d+\\.\\d+").matches(release.version) && name in appApkNames(release.version, BuildConfig.FLAVOR))
     require(release.url == "https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/download/v${release.version}/$name")
     val manager = context.getSystemService(DownloadManager::class.java)
     val prefs = context.getSharedPreferences("app_updates", Context.MODE_PRIVATE)
@@ -90,8 +96,8 @@ internal fun downloadAppRelease(context: Context, release: AppRelease): Long {
             }
         }
     }
-    val request = DownloadManager.Request(Uri.parse(release.url)).setTitle(release.fileName)
-        .setDescription("文游更新安装包").setMimeType("application/vnd.android.package-archive")
+    val request = DownloadManager.Request(Uri.parse(release.url)).setTitle("${context.getString(io.wenyou.textquest.R.string.app_name)} ${release.version}")
+        .setDescription("${context.getString(io.wenyou.textquest.R.string.app_name)}更新安装包").setMimeType("application/vnd.android.package-archive")
         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
     // Android 8/9 use the app's download directory without requesting broad storage access.
     val destinationName = "${System.currentTimeMillis()}-${release.fileName}"

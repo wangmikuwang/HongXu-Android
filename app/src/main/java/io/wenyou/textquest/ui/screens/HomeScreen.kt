@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -80,7 +81,7 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         ) {
             item {
                 Column {
-                    Text("文游 · 文字游戏", style = MaterialTheme.typography.displaySmall,
+                    Text(stringResource(io.wenyou.textquest.R.string.app_name), style = MaterialTheme.typography.displaySmall,
                         color = MaterialTheme.colorScheme.onSurface)
                     Text("自编剧情 · 自定义角色 · 多品牌 AI 演绎", style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)

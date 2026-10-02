@@ -9,14 +9,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AppUpdatesTest {
-    private fun release(version: String = "4.2.0", url: String = "https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/download/v$version/WenYou-${BuildConfig.FLAVOR}-v$version.apk") = """
+    private fun release(version: String = "4.2.0", url: String = "https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/download/v$version/${BuildConfig.APP_FILE_PREFIX}-v$version.apk") = """
         {"tag_name":"v$version","draft":false,"prerelease":false,"body":"更新说明",
-         "assets":[{"name":"WenYou-${BuildConfig.FLAVOR}-v$version.apk","state":"uploaded","size":1024,"browser_download_url":"$url"}]}
+         "assets":[{"name":"${BuildConfig.APP_FILE_PREFIX}-v$version.apk","state":"uploaded","size":1024,"browser_download_url":"$url"}]}
     """.trimIndent()
 
     @Test fun versionsAndDownloadsAreRestrictedToThisApp() {
         fun parse(text: String, current: String = "4.1.0") = parseAppRelease(text, BuildConfig.UPDATE_REPOSITORY, BuildConfig.FLAVOR, current)
         assertEquals("4.2.0", parse(release())!!.version)
+        val legacy = release().replace(BuildConfig.APP_FILE_PREFIX, "WenYou-${BuildConfig.FLAVOR}")
+        assertEquals("WenYou-${BuildConfig.FLAVOR}-v4.2.0.apk", parse(legacy)!!.fileName)
         assertNotNull(parse(release("4.10.0"), "4.9.99"))
         assertNotNull(parse(release("5.0.0"), "4.9.99-α"))
         assertNull(parse(release(), "4.2.0-β"))
@@ -28,7 +30,7 @@ class AppUpdatesTest {
             release().replace("\"size\":1024", "\"size\":0"),
             release().replace("\"state\":\"uploaded\"", "\"state\":\"starter\""),
             release().replace("\"draft\":false", "\"draft\":\"unknown\""),
-            release().replace("WenYou-${BuildConfig.FLAVOR}", "Other"),
+            release().replace("${BuildConfig.APP_FILE_PREFIX}", "Other"),
             release().replace("v4.2.0", "v4.2.0-rc1"))) {
             assertThrows(Exception::class.java) { parse(bad) }
         }
