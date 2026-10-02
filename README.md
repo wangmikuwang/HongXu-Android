@@ -110,11 +110,15 @@ sequenceDiagram
 | Anthropic | `POST {base}/v1/messages` | `content_block_delta` 的 `delta.text` | `GET {base}/v1/models`，取 `data[].id` |
 | Gemini | `POST {base}/models/{model}:streamGenerateContent?alt=sse` | `candidates[0].content.parts[].text` | `GET {base}/models?pageSize=1000`，取 `models[].name`（去 `models/` 前缀） |
 
-模型输出约定为单个 JSON 对象，由 `AiDirector.parseScene` 解析：
+模型输出约定为单个 JSON 对象，由 `AiDirector.parseScene` 解析。思考过程独立折叠，旁白与角色内对话按发生顺序分别展示：
 
 ```json
 {
-  "text": "本幕正文……",
+  "entries": [
+    { "speakerId": "", "text": "本幕旁白……" },
+    { "speakerId": "角色id", "text": "角色台词……" },
+    { "speaker": "临时人物称谓", "text": "临时人物台词……" }
+  ],
   "choices": [
     { "text": "选项一" },
     { "text": "带主线出口的选项[to:node_id]" }
@@ -122,7 +126,7 @@ sequenceDiagram
 }
 ```
 
-`[to:节点id]` 标记仅用于 AI 场景节点接回作者分支；解析失败时整段文本作为正文保留，不中断对局。
+`[to:节点id]` 标记仅用于 AI 场景节点接回作者分支。兼容旧版 `text` 正文格式与存档；旧存档中已混写的正文保留原文。服务返回的思考字段不再回退为旁白。
 
 ## 版本
 
@@ -164,7 +168,7 @@ sequenceDiagram
 
 构建输出默认位于 Gradle 用户目录的 `caches/wnq-build/WenYouTextQuest`，以避开 OneDrive 文件锁；可用环境变量 `WENYOU_BUILD_DIR` 指定其它位置。
 
-回归与静态检查（15 项 JVM 回归测试）：
+回归与静态检查（18 项 JVM 回归测试）：
 
 ```bash
 ./gradlew :app:testAlphaDebugUnitTest :app:lintAlphaDebug

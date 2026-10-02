@@ -10,6 +10,7 @@ import io.wenyou.textquest.ui.vm.PlayViewModel
 import io.wenyou.textquest.ui.vm.PlayStage
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.*
+import kotlinx.coroutines.flow.first
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
@@ -37,9 +38,53 @@ class RegressionTest {
         assertEquals(5.0, scene.stateEffects.single().delta, 0.0)
     }
 
+    @Test fun aiNarrationDialogueAndReasoningRemainSeparate() {
+        val director = AiDirector(ChatClient())
+        val scene = director.parseScene("""{
+            "entries":[{"text":"**门开了。**"},{"speakerId":"c","text":"欢迎回来。"},
+                {"text":"他放下了灯。"},{"speakerId":"missing","text":"远处传来声音。"},
+                {"speaker":"守门人","text":"请进。"}],
+            "choices":[{"text":"进入[to:hall]"}],"state":[{"char":"c","metric":"trust","delta":5}]
+        }""").copy(reasoning = "provider reasoning")
+        val logs = scene.logEntries(listOf(CharacterData("c", "烛影")))
+        assertEquals(listOf(EntryKind.NARRATION, EntryKind.CHARACTER, EntryKind.NARRATION, EntryKind.NARRATION, EntryKind.CHARACTER), logs.map { it.kind })
+        assertEquals("门开了。", logs.first().text)
+        assertEquals("烛影", logs[1].speaker)
+        assertEquals("c", logs[1].speakerId)
+        assertEquals("欢迎回来。", logs[1].text)
+        assertEquals("守门人", logs.last().speaker)
+        assertEquals(listOf("provider reasoning", "", "", "", ""), logs.map { it.reasoning })
+        assertEquals("hall", scene.choices.single().next)
+        assertEquals(5.0, scene.stateEffects.single().delta, 0.0)
+        val state = SessionState("s", history = logs)
+        assertEquals(state, AppJson.decodeFromString(SessionState.serializer(), AppJson.encodeToString(SessionState.serializer(), state)))
+        assertEquals("旧正文", director.parseScene("""{"text":"旧正文"}""").logEntries(emptyList()).single().text)
+    }
+
     @Test fun proseAfterBodyMarkerIsPreserved() {
         val scene = AiDirector(ChatClient()).parseScene("我先构思场景\n【正文】\n门开了。\n----\n他走了进来。")
         assertEquals("门开了。\n\n他走了进来。", scene.text)
+    }
+
+    @Test fun reasoningOnlyResponseNeverBecomesNarration() = runBlocking {
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
+                .code(200).message("OK").body(
+                    """{"choices":[{"message":{"reasoning_content":"provider reasoning"}}]}""".toResponseBody()
+                ).build()
+        }.build()
+        try {
+            val scene = AiDirector(ChatClient(client)).directorTurn(
+                ApiProfile("p", "test", baseUrl = "http://localhost/v1", model = "test"),
+                Story("s", "story"), emptyList(), SessionState("s"), "继续"
+            )
+            val entry = scene.logEntries(emptyList()).single()
+            assertEquals("", entry.text)
+            assertEquals("provider reasoning", entry.reasoning)
+        } finally {
+            client.dispatcher.executorService.shutdownNow()
+            client.connectionPool.evictAll()
+        }
     }
 
     @Test fun shareCodesRejectTruncatedAndOversizedPayloads() {
@@ -199,7 +244,7 @@ class RegressionTest {
                     ChoiceData("留下", "@self", effects = listOf(Effect(EffectType.ADD_VAR, "count", 1.0))),
                     ChoiceData("离开", "end", effects = listOf(Effect(EffectType.ROLL, "die", to = 6.0)))
                 )),
-                "end" to StoryNode("end", NodeKind.ENDING, text = "结局")
+                "end" to StoryNode("end", NodeKind.ENDING, title = "结局标题", text = "结局")
             ))
             library.upsertStory(story)
             val director = AiDirector(ChatClient())
@@ -214,6 +259,10 @@ class RegressionTest {
             runCurrent()
             assertEquals(state.history, loaded.ui.value.session!!.history)
             loaded.chooseAuthored(1)
+            assertEquals("结局标题", loaded.ui.value.nodeTitle)
+            assertTrue(loaded.ui.value.visibleChoices.isEmpty())
+            assertTrue(loaded.ui.value.pendingAiChoices.isEmpty())
+            assertFalse(loaded.ui.value.aiTargetExit)
             assertEquals(1, loaded.ui.value.session!!.history.count { it.text == "离开" })
             assertEquals(1, loaded.ui.value.session!!.history.count { it.kind == EntryKind.SYSTEM })
             val ending = loaded.ui.value.session!!
@@ -247,6 +296,47 @@ class RegressionTest {
             assertEquals(choices.map { it.text }, vm.ui.value.pendingAiChoices.map { it.text })
             assertEquals(state.history, vm.ui.value.session!!.history)
         } finally { Dispatchers.resetMain() }
+    }
+
+    @Test fun consecutiveAiNodesGenerateWithoutGettingStuck() = runBlocking {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+        val requests = java.util.concurrent.atomic.AtomicInteger()
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val scene = if (requests.incrementAndGet() == 1)
+                """{"text":"第一幕","choices":[]}"""
+            else """{"text":"第二幕","choices":[{"text":"留下"}]}"""
+            val body = AppJson.encodeToString(kotlinx.serialization.json.JsonElement.serializer(),
+                kotlinx.serialization.json.buildJsonObject {
+                    put("choices", kotlinx.serialization.json.buildJsonArray {
+                        add(kotlinx.serialization.json.buildJsonObject {
+                            put("message", kotlinx.serialization.json.buildJsonObject {
+                                put("content", kotlinx.serialization.json.JsonPrimitive(scene))
+                            })
+                        })
+                    })
+                })
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1)
+                .code(200).message("OK").body(body.toResponseBody()).build()
+        }.build()
+        try {
+            val library = LocalLibrary(temp.newFolder())
+            library.upsertProvider(ApiProfile("p", "test", baseUrl = "http://localhost/v1", model = "test"))
+            library.upsertStory(Story("chain", "连续 AI", nodes = mapOf(
+                "start" to StoryNode("start", NodeKind.AI, endTarget = "next"),
+                "next" to StoryNode("next", NodeKind.AI)
+            )))
+            val vm = PlayViewModel("chain", "new", library, AiDirector(ChatClient(client))) { "p" }
+            val ready = withTimeout(10_000) {
+                vm.ui.first { it.stage == PlayStage.AUTHORED && it.nodeId == "next" }
+            }
+            assertEquals(2, requests.get())
+            assertEquals(listOf("第一幕", "第二幕"), ready.session!!.history.map { it.text })
+            assertEquals("留下", ready.pendingAiChoices.single().text)
+        } finally {
+            client.dispatcher.executorService.shutdownNow()
+            client.connectionPool.evictAll()
+            Dispatchers.resetMain()
+        }
     }
 
     @Test fun failedWritesKeepMemoryAndExistingData() = runBlocking {

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.ai.AiChoice
 import io.wenyou.textquest.data.ai.AiDirector
+import io.wenyou.textquest.data.ai.AiScene
 import io.wenyou.textquest.data.ai.StateChange
 import io.wenyou.textquest.data.engine.GameEngine
 import io.wenyou.textquest.data.model.ApiProfile
@@ -22,6 +23,7 @@ import io.wenyou.textquest.data.model.StoryMode
 import io.wenyou.textquest.data.model.StoryNode
 import io.wenyou.textquest.data.repo.LocalLibrary
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -176,7 +178,8 @@ class PlayViewModel internal constructor(
                 val rendered = GameEngine.renderTemplate(node.text, s.variables)
                 if (logNarration) appendEntries(listOf(LogEntry(EntryKind.NARRATION, text = rendered)))
                 _ui.update {
-                    it.copy(stage = PlayStage.STOPPED, nodeId = nodeId,
+                    it.copy(stage = PlayStage.STOPPED, nodeId = nodeId, nodeTitle = node.title,
+                        visibleChoices = emptyList(), pendingAiChoices = emptyList(), aiTargetExit = false,
                         stoppedTitle = node.title.ifBlank { "结局" },
                         stoppedMessage = "你抵达了这个故事的结局。")
                 }
@@ -314,7 +317,8 @@ class PlayViewModel internal constructor(
                     onReasoning = { r -> _ui.update { it.copy(aiReasoningDelta = it.aiReasoningDelta + r) } },
                     onDelta = { delta -> _ui.update { it.copy(aiDelta = it.aiDelta + delta) } })
                 if (job.isActive && aiJob === job) {
-                    finishAiScene(scene.text, scene.choices, scene.reasoning, scene.stateEffects)
+                    aiJob = null
+                    finishAiScene(scene)
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -327,7 +331,7 @@ class PlayViewModel internal constructor(
     /** 在 [viewModelScope] 中串行执行 AI 请求：取消旧的、记录当前任务。 */
     private fun launchAiJob(block: suspend (Job) -> Unit) {
         aiJob?.cancel()
-        val job = viewModelScope.launch {
+        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             val self = coroutineContext[Job] ?: return@launch
             try {
                 block(self)
@@ -336,6 +340,7 @@ class PlayViewModel internal constructor(
             }
         }
         aiJob = job
+        job.start()
     }
 
     /** 应用 AI 建议的角色状态变化，并打印「✨ 状态变化」日志。 */
@@ -374,19 +379,13 @@ class PlayViewModel internal constructor(
         }
     }
 
-    private fun finishAiScene(text: String, choices: List<AiChoice>, reasoning: String = "", stateEffects: List<StateChange> = emptyList()) {
+    private fun finishAiScene(scene: AiScene) {
         val ui = _ui.value
         val story = ui.story ?: return
         val node = story.nodes[ui.nodeId]
-        applyStateChanges(stateEffects)
-        if (text.isNotBlank()) {
-            if (node?.speakerId?.isNotBlank() == true) {
-                val speaker = ui.characters.firstOrNull { it.id == node.speakerId }?.name ?: "角色"
-                appendEntries(listOf(LogEntry(EntryKind.CHARACTER, speaker = speaker, speakerId = node.speakerId, text = text, reasoning = reasoning)))
-            } else {
-                appendEntries(listOf(LogEntry(EntryKind.NARRATION, text = text, reasoning = reasoning)))
-            }
-        }
+        applyStateChanges(scene.stateEffects)
+        appendEntries(scene.logEntries(ui.characters, node?.speakerId.orEmpty()))
+        val choices = scene.choices
         // 只有指向真实存在的其它节点才算有效出口，避免死循环 / 跳到不存在的剧情
         val exit = node?.endTarget?.takeIf { it.isNotBlank() && it != node.id && story.nodes.containsKey(it) }
         if (choices.isEmpty()) {
@@ -442,9 +441,7 @@ class PlayViewModel internal constructor(
                     onReasoning = { r -> _ui.update { it.copy(aiReasoningDelta = it.aiReasoningDelta + r) } },
                     onDelta = { delta -> _ui.update { it.copy(aiDelta = it.aiDelta + delta) } })
                 if (job.isActive && aiJob === job) {
-                    if (scene.text.isNotBlank()) {
-                        appendEntries(listOf(LogEntry(EntryKind.DM, speaker = "AI 导演", text = scene.text, reasoning = scene.reasoning)))
-                    }
+                    appendEntries(scene.logEntries(ui.characters))
                     applyStateChanges(scene.stateEffects)
                     session = session?.copy(pendingAiChoices = scene.choices.map(::toChoiceData), aiAwaitingChoice = true)
                     _ui.update { it.copy(aiDelta = "", aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = scene.choices) }

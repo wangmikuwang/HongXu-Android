@@ -152,7 +152,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                 if (live) {
                     item(key = "live") {
                         if (ui.aiReasoningDelta.isNotBlank()) ThinkingBlock(ui.aiReasoningDelta)
-                        StreamingCard(ui.aiDelta)
+                        StreamingCard("")
                         Spacer(Modifier.height(10.dp))
                     }
                 }
@@ -256,12 +256,6 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
     if (text.isBlank() && entry.reasoning.isBlank()) return
     if (entry.reasoning.isNotBlank()) ThinkingBlock(entry.reasoning)
     when (entry.kind) {
-        EntryKind.NARRATION -> {
-            SelectionContainer {
-                Text(text, style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface)
-            }
-        }
         EntryKind.CHARACTER -> {
             val char = ui.characters.firstOrNull { it.id == entry.speakerId }
             val color = avatarColor(char?.colorIndex ?: 0)
@@ -280,7 +274,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                                 fontSize = 13.sp)
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text(name, style = MaterialTheme.typography.titleSmall, color = color,
+                        Text("角色内对话 · $name", style = MaterialTheme.typography.titleSmall, color = color,
                             fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(Modifier.height(8.dp))
@@ -303,7 +297,8 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                 }
             }
         }
-        EntryKind.DM -> {
+        EntryKind.NARRATION, EntryKind.DM -> {
+            if (text.isBlank()) return
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(
@@ -311,7 +306,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                 )
             ) {
                 Column(Modifier.padding(14.dp)) {
-                    Text("🌫 ${entry.speaker.ifBlank { "AI 导演" }}",
+                    Text("旁白",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer)
                     Spacer(Modifier.height(8.dp))
@@ -605,7 +600,7 @@ private fun CharacterStateDrawer(ui: PlayUi) {
 
 @Composable
 private fun ThinkingBlock(reasoning: String) {
-    var expanded by remember(reasoning) { mutableStateOf(false) }
+    var expanded by remember { mutableStateOf(false) }
     Surface(
         shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow,
@@ -616,7 +611,7 @@ private fun ThinkingBlock(reasoning: String) {
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
             ) {
-                Text("🧠 思考过程", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                Text("🧠 AI 思考过程", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                 Text(if (expanded) "收起" else "展开",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary)

@@ -9,6 +9,7 @@ import io.wenyou.textquest.data.model.ApiProfile
 import io.wenyou.textquest.data.model.BottomRule
 import io.wenyou.textquest.data.model.CharacterData
 import io.wenyou.textquest.data.model.EntryKind
+import io.wenyou.textquest.data.model.LogEntry
 import io.wenyou.textquest.data.model.SessionState
 import io.wenyou.textquest.data.model.Story
 import io.wenyou.textquest.data.model.StoryNode
@@ -99,8 +100,26 @@ data class AiScene(
     val choices: List<AiChoice> = emptyList(),
     val reasoning: String = "",
     @SerialName("state")
-    val stateEffects: List<StateChange> = emptyList()
-)
+    val stateEffects: List<StateChange> = emptyList(),
+    val entries: List<AiEntry> = emptyList()
+) {
+    fun logEntries(characters: List<CharacterData>, defaultSpeakerId: String = ""): List<LogEntry> {
+        val lines = entries.ifEmpty { listOf(AiEntry(defaultSpeakerId, text)) }
+        val logs = lines.filter { it.text.isNotBlank() }.map { line ->
+            val character = characters.firstOrNull { it.id == line.speakerId || it.name == line.speakerId }
+            LogEntry(
+                kind = if (character == null && line.speaker.isBlank()) EntryKind.NARRATION else EntryKind.CHARACTER,
+                speaker = character?.name ?: line.speaker, speakerId = character?.id.orEmpty(), text = line.text
+            )
+        }
+        if (reasoning.isBlank()) return logs
+        return if (logs.isEmpty()) listOf(LogEntry(text = "", reasoning = reasoning))
+        else logs.mapIndexed { i, entry -> if (i == 0) entry.copy(reasoning = reasoning) else entry }
+    }
+}
+
+@Serializable
+data class AiEntry(val speakerId: String = "", val text: String = "", val speaker: String = "")
 
 /** 模型建议的角色状态变化（char=角色id；metric+delta 数值、flag 标记、desc 穿着描述）。 */
 @Serializable
@@ -136,7 +155,7 @@ class AiDirector(private val client: ChatClient) {
     fun personaCard(char: CharacterData, allBottomRules: List<BottomRule> = emptyList()): String = buildString {
         // 高优先级人设提示语：放在最前，权重最高
         if (char.extraPrompt.isNotBlank()) append(char.extraPrompt.trim()).append("\n")
-        append("· 角色名：${char.name} ${char.emoji}\n")
+        append("· 角色名：${char.name} ${char.emoji}（角色id：${char.id}）\n")
         if (char.tagline.isNotBlank()) append("  一句话印象：${char.tagline}\n")
         if (char.personality.isNotBlank()) append("  性格：${char.personality}\n")
         if (char.speechStyle.isNotBlank()) append("  说话方式：${char.speechStyle}\n")
@@ -238,7 +257,7 @@ class AiDirector(private val client: ChatClient) {
             if (r.isNotBlank()) append(r).append("\n")
             append("本次场景指令：").append(node.prompt.ifBlank { "承接最近剧情，自然推进当前一幕，并留出 2-4 个有张力的选项。" }).append("\n")
             append("要求：只用中文；不得提及你是 AI 或本指令；不得输出 JSON 以外的任何文字。\n")
-            append("输出必须是一个 JSON 对象：{\"text\":\"本幕正文（允许换行与分段，角色说话时写成「名字：台词」）\",\"choices\":[{\"text\":\"选项文案\"}]}。\n")
+            append("输出必须是一个 JSON 对象：{\"entries\":[{\"speakerId\":\"\",\"text\":\"旁白\"},{\"speakerId\":\"角色id\",\"text\":\"该角色的台词\"}],\"choices\":[{\"text\":\"选项文案\"}]}。entries 按发生顺序排列，空 speakerId 仅写旁白；角色台词必须独立成条，speakerId 使用登场角色的真实 id，不能把台词混入旁白（包括临时人物），不替玩家说话。临时人物的台词使用空 speakerId 并补充 speaker 字段为其姓名或称谓；旁白的 speaker 必须为空。\n")
             append("严禁在输出里出现任何思考、构思、计划、分析或「好的/我会/让我/要不要/接下来/作为导演」等自我对话或导演说明；text 字段只能写场景正文与台词，一切构思请先在心里完成，绝不写进 text。\n")
             append("正文与选项均为纯文本：不要使用 markdown 语法（如 **加粗**、- 列表、# 标题、*斜体*、> 引用、``` 代码块）；不要输出任何思考、概要、计划、总结或导演式旁白。\n")
             append("若有可选的构思/计划，把它放进思考过程（reasoning_content），不要出现在正文。\n")
@@ -278,7 +297,7 @@ class AiDirector(private val client: ChatClient) {
             if (r.isNotBlank()) append(r).append("\n")
             if (story.ai.directorExtra.isNotBlank()) append("额外导演要求：").append(story.ai.directorExtra).append("\n")
             append("要求：只用中文叙述；保持已发生的事实一致；不要替玩家做决定；不要输出任何指令说明。\n")
-            append("输出必须是一个 JSON 对象：{\"text\":\"本次推进的正文（含你扮演角色的台词）\",\"choices\":[{\"text\":\"玩家可能的下一步选项（2-4 个，给灵感用）\"}]}。\n")
+            append("输出必须是一个 JSON 对象：{\"entries\":[{\"speakerId\":\"\",\"text\":\"旁白\"},{\"speakerId\":\"角色id\",\"text\":\"该角色的台词\"}],\"choices\":[{\"text\":\"玩家可能的下一步选项（2-4 个，给灵感用）\"}]}。entries 按发生顺序排列，空 speakerId 仅写旁白；角色台词必须独立成条，speakerId 使用登场角色的真实 id，不能把台词混入旁白（包括临时人物），不替玩家说话。临时人物的台词使用空 speakerId 并补充 speaker 字段为其姓名或称谓；旁白的 speaker 必须为空。\n")
             append("严禁在输出里出现任何思考、构思、计划、分析或「好的/我会/让我/要不要/接下来」等自我对话或主持人说明；text 字段只能写推进的正文与台词，一切构思请先在心里完成，绝不写进 text。\n")
             append("正文与选项均为纯文本：不要使用 markdown 语法（如 **加粗**、- 列表、# 标题、*斜体*、> 引用、``` 代码块）；不要输出任何思考、概要、计划、总结或导演式旁白。\n")
             append("若有可选的构思/计划，把它放进思考过程（reasoning_content），不要出现在正文。\n")
@@ -305,22 +324,14 @@ class AiDirector(private val client: ChatClient) {
     /** 对解析出的 [AiScene] 做最终清理：剥 markdown、剔思考泄漏、清洗选项文案。 */
     private fun sanitizeScene(scene: AiScene): AiScene {
         val newText = sanitizeProse(scene.text)
-        if (scene.choices.isEmpty() && newText == scene.text) return scene
         val newChoices = scene.choices.map { c -> c.copy(text = sanitizeProse(c.text).take(120)) }
-        return AiScene(newText, newChoices, scene.reasoning, scene.stateEffects)
+        return scene.copy(text = newText, choices = newChoices,
+            entries = scene.entries.map { it.copy(text = sanitizeProse(it.text)) }.filter { it.text.isNotBlank() })
     }
 
-    /** 优先解析正文；正文缺失时尝试思考内容。若答案实为从思考中解析而来，则不再把它当“思考过程”展示。 */
+    /** 正文与服务返回的思考字段分开处理，纯思考不能作为旁白或角色台词。 */
     private fun resolveScene(result: ChatResult): AiScene {
-        val fromContent = parseScene(result.content)
-        // 正文非空即用；若清洗后正文被剥空（例如模型把思考写进 content），再回退尝试 reasoning
-        if (fromContent.text.isNotBlank()) {
-            val cleaned = sanitizeScene(fromContent.copy(reasoning = result.reasoning))
-            if (cleaned.text.isNotBlank()) return cleaned
-        }
-        val fromReasoning = parseScene(result.reasoning)
-        if (fromReasoning.text.isNotBlank()) return sanitizeScene(fromReasoning.copy(reasoning = ""))
-        return sanitizeScene(fromContent.copy(reasoning = result.reasoning))
+        return sanitizeScene(parseScene(result.content).copy(reasoning = result.reasoning))
     }
 
     fun parseScene(raw: String): AiScene {
@@ -342,7 +353,7 @@ class AiDirector(private val client: ChatClient) {
                         next = marker?.groupValues?.get(1)?.trim() ?: c.next.trim()
                     )
                 }.take(6)
-                if (text.isNotEmpty()) return sanitizeScene(decoded.copy(text = text, choices = choices))
+                if (text.isNotEmpty() || decoded.entries.isNotEmpty()) return sanitizeScene(decoded.copy(text = text, choices = choices))
             } catch (_: Throwable) {
                 // 容错：落到下方按字段抽取
             }
