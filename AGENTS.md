@@ -1,5 +1,5 @@
-# Alpha / Beta synchronization
+# Project maintenance
 
-Alpha and Beta are independent projects and repositories. Every shared feature, bug fix, layout or architecture change must be applied to both projects. Counterpart: `../WenYouTextQuest-Beta`. Inspect both working trees first; preserve project-specific application IDs, flavors, content settings and preset assets. Validate and build each affected project separately, then synchronize both GitHub repositories. Never copy API keys or private app data into either repository.
+Follow the user's session instructions for coordinating changes. Inspect the working tree before editing; preserve this project's application ID, flavor, content settings and preset assets. Validate affected code and build this project before publishing. Never copy API keys or private app data into the repository.
 
-Keep `versionMajor`, `versionMinor`, `versionPatch` and `versionCode` aligned across Alpha and Beta releases. Retain each flavor suffix and package ID. For shared changes, increment both versions together before configuring the build; documentation-only changes do not require an APK rebuild.
+Retain the flavor suffix and package ID. Follow the version policy supplied in the session; increment the version before configuring a changed application build. Documentation-only changes do not require an APK rebuild.

@@ -45,7 +45,7 @@
 
 ## 剧情分支树（3.9.0）
 
-验证：24 项单元测试、Android Lint、独立 APK 构建与 Pixel 7 / Android 14 折叠、展开、节点选择设备测试通过。Alpha 检查内置分支剧情的实际连线及跳转编辑；Beta 检查 AI 导演动态分支。
+验证：24 项单元测试、Android Lint、独立 APK 构建与 Pixel 7 / Android 14 折叠、展开、节点选择设备测试通过。已检查内置分支剧情的实际连线及跳转编辑。
 
 剧情库 → 编辑剧情 → 顶部「分支图」。按起点展开作者配置的选项、条件出口、自动跳转及 AI 回到主线连接；分支可折叠或全部展开，点击节点返回对应编辑区域，使用当前未保存的编辑内容实时生成图。
 
@@ -53,13 +53,13 @@
 
 ## 生成实时通知（3.8.0）
 
-验证：23 项单元测试、Android Lint、独立 APK 构建及 Pixel 7 / Android 14 通知生命周期设备测试通过。两版使用已有 DeepSeek 配置实际生成成功，普通完成通知可见；Beta 验证拒绝权限保持关闭、重新授权开启。实际小米超级岛及 Android 16 系统提升效果尚未实机验证。
+验证：23 项单元测试、Android Lint、独立 APK 构建及 Pixel 7 / Android 14 通知生命周期设备测试通过。使用已有 DeepSeek 配置实际生成成功，普通完成通知可见。实际小米超级岛及 Android 16 系统提升效果尚未实机验证。
 
 设置 → 生成实时通知，可开启用户主动发起的 AI 请求进度提示。原生通知显示当前阶段、真实耗时和并行请求数，点击回到应用；通知不含剧情、思考正文、服务密钥或提示词。生成期间启用短时 dataSync 前台服务；请求结束、取消、关闭开关或禁用通知通道后退出，不自动重启任务。完成/失败使用普通通知，15 秒后清除；取消不留下完成提示。进程被强制停止后任务不会恢复。
 
 Android 16 使用原生 ProgressStyle 未知进度样式；Android 16 QPR2 通过官方 extras 请求实时更新，是否提升由系统及用户设置决定。旧设备显示普通持续进度通知，不推测完成百分比。
 
-小米 OS2/OS3 按 `notification_focus_protocol` 添加 `miui.focus.param` 及图标 Bundle，使用官方文本模板，未授权时保留普通通知。Alpha 与 Beta 需要分别申请包名、签名及 `ai_generation` 场景权限；该场景标识是待审核配置，平台若核准其他标识需同步替换。当前只完成代码适配，不代表已获超级岛资格。参考 [小米开发指南](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2131)、[接入流程](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2132)、[Android 实时更新](https://developer.android.com/develop/ui/views/notifications/live-update)。
+小米 OS2/OS3 按 `notification_focus_protocol` 添加 `miui.focus.param` 及图标 Bundle，使用官方文本模板，未授权时保留普通通知。本应用需要申请包名、签名及 `ai_generation` 场景权限；该场景标识是待审核配置，平台若核准其他标识需同步替换。当前只完成代码适配，不代表已获超级岛资格。参考 [小米开发指南](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2131)、[接入流程](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2132)、[Android 实时更新](https://developer.android.com/develop/ui/views/notifications/live-update)。
 
 ## 玻璃通透度调整（3.9.2）
 

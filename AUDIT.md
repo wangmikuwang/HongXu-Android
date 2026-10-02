@@ -33,11 +33,11 @@
 
 ## 验证
 
-- α/β 各 11 项 JVM 回归测试，均通过。测试文件：`app/src/test/java/io/wenyou/textquest/RegressionTest.kt`。
+- 11 项 JVM 回归测试通过。测试文件：`app/src/test/java/io/wenyou/textquest/RegressionTest.kt`。
 - `lintAlphaDebug`、`assembleAlphaDebug` 均通过，没有通过 baseline 或禁用规则绕过错误。
 - 写盘测试包含 80 次并发新增、重新加载一致性、序列化失败及目标路径无法替换时保护已有数据。
 - AI 测试使用 OkHttp 拦截器模拟流式和非流式响应，不调用外部模型。
-- Pixel 7 / Android 34 模拟器：最终 α/β Debug APK 均安装并冷启动成功，崩溃缓冲区没有新增记录。α 版完成“雨夜咖啡馆 → 帮忙打烊 → 掷骰 → 存档 → 重启应用 → 主页续玩 → 再存档”，两次存档均为 4 条记录，选择、掷骰和正文未丢失或重复。
+- Pixel 7 / Android 34 模拟器：Debug APK 安装并冷启动成功，崩溃缓冲区没有新增记录。完成“雨夜咖啡馆 → 帮忙打烊 → 掷骰 → 存档 → 重启应用 → 主页续玩 → 再存档”，两次存档均为 4 条记录，选择、掷骰和正文未丢失或重复。
 
 复现命令：
 
