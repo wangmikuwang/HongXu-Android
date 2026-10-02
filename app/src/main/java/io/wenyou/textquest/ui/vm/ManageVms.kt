@@ -387,13 +387,16 @@ class SettingsViewModel(container: WenYouApp.AppContainer) : ViewModel() {
 
     private val _message = MutableStateFlow("")
 
+    private fun settingsSnapshot(prefs: io.wenyou.textquest.data.repo.UiPrefs, providers: List<ApiProfile>, message: String = "") =
+        SettingsUi(style = prefs.themeStyle, mode = prefs.themeMode, dynamicColor = prefs.dynamicColor, defaultProviderId = prefs.defaultProviderId, showLgbt = prefs.showLgbt, adultContent = prefs.adultContent, contentUnlocked = prefs.contentUnlocked, providers = providers, message = message)
+
     val ui: StateFlow<SettingsUi> = kotlinx.coroutines.flow.combine(
         store.state, library.providers, _message
     ) { prefs: io.wenyou.textquest.data.repo.UiPrefs,
         providers: List<ApiProfile>,
         message: String ->
-        SettingsUi(style = prefs.themeStyle, mode = prefs.themeMode, dynamicColor = prefs.dynamicColor, defaultProviderId = prefs.defaultProviderId, showLgbt = prefs.showLgbt, adultContent = prefs.adultContent, contentUnlocked = prefs.contentUnlocked, providers = providers, message = message)
-    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, SettingsUi(providers = library.providers.value))
+        settingsSnapshot(prefs, providers, message)
+    }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, settingsSnapshot(store.state.value, library.providers.value))
 
 
     fun setStyle(style: ThemeStyle) = store.setThemeStyle(style)

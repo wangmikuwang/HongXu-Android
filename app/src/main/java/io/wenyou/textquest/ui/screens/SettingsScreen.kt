@@ -177,14 +177,13 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                     )
                 }
             }
-            item {
+            if (ui.style == ThemeStyle.MATERIAL) item {
                 TonalCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text("动态取色（壁纸配色）", style = MaterialTheme.typography.labelLarge)
                             Text(
-                                if (ui.style == ThemeStyle.APPLE) "液态玻璃使用固定配色；Android 13+ 支持边缘折射"
-                                else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                                     "从壁纸生成整套色调角色（Android 12+）"
                                 else "此设备需要 Android 12+ 才能使用动态取色",
                                 style = MaterialTheme.typography.bodySmall,
@@ -193,7 +192,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         }
                         Switch(checked = ui.dynamicColor,
                             onCheckedChange = { vm.setDynamic(it) },
-                            enabled = ui.style == ThemeStyle.MATERIAL && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                            enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                     }
                 }
             }

@@ -36,6 +36,14 @@ Android 16 使用原生 ProgressStyle 未知进度样式；Android 16 QPR2 通�
 
 小米 OS2/OS3 按 `notification_focus_protocol` 添加 `miui.focus.param` 及图标 Bundle，使用官方文本模板，未授权时保留普通通知。Alpha 与 Beta 需要分别申请包名、签名及 `ai_generation` 场景权限；该场景标识是待审核配置，平台若核准其他标识需同步替换。当前只完成代码适配，不代表已获超级岛资格。参考 [小米开发指南](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2131)、[接入流程](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2132)、[Android 实时更新](https://developer.android.com/develop/ui/views/notifications/live-update)。
 
+## 液态玻璃优化（3.9.1）
+
+选择液态玻璃时隐藏整个动态取色设置，切回 Material You 后恢复显示并保留原有偏好。设置页首次显示直接使用保存的主题，避免默认风格闪现和布局跳动。
+
+玻璃的模糊、折射滤镜与高光画笔按尺寸缓存；边缘折射直接计算圆角矩形法线，减少重复距离计算。文字、图标、边框及玻璃背景保持原始分辨率，背景继续实时更新。
+
+验证：24 项单元测试、Android Lint、独立构建及 Pixel 7 / Android 14 的玻璃实时更新、主题切换设备测试。滚动和页面切换各测量两轮，模拟器仍有明显掉帧，尚未测得稳定的帧耗时改善，需继续在真机排查。
+
 ## 外观与排版
 
 设置 → 外观 → 界面风格可切换 Material You 与液态玻璃，两者都支持跟随系统、浅色及深色。液态玻璃延续蓝色强调、分组背景和阅读字阶，在浮动导航及对局操作区实时采样背后内容，加入高斯模糊、边缘折射、高光与阴影；文字和图标独立绘制保持清晰；动态壁纸取色仅适用于 Material You。主题选择保存于本机，旧版 Apple 风格自动使用液态玻璃。Android 13+ 支持折射，Android 12 使用模糊，Android 8–11 回退为可读的着色材质。

@@ -19,6 +19,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -69,37 +70,38 @@ fun Modifier.liquidGlass(): Modifier {
     }
     val shape = RoundedCornerShape(30.dp)
     return this.shadow(12.dp, shape, clip = false).clip(shape).onGloballyPositioned { origin = it.positionInRoot() }
-        .drawWithContent {
+        .drawWithCache {
+            // Cache native effects by size/density; scrolling only updates the sampled content.
             if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
-                val offset = origin - backdrop.origin
-                sample.record {
-                    drawRect(tint)
-                    translate(-offset.x, -offset.y) { drawLayer(backdrop.layer) }
-                }
+                val blur = RenderEffect.createBlurEffect(12.dp.toPx(), 12.dp.toPx(), Shader.TileMode.CLAMP)
                 sample.renderEffect = if (Build.VERSION.SDK_INT >= 33 && shader != null) {
                     shader.setFloatUniform("extent", size.width, size.height)
                     shader.setFloatUniform("radius", minOf(30.dp.toPx(), size.height / 2f))
                     shader.setFloatUniform("density", density)
-                    RenderEffect.createChainEffect(
-                        RenderEffect.createRuntimeShaderEffect(shader, "backdrop"),
-                        RenderEffect.createBlurEffect(12.dp.toPx(), 12.dp.toPx(), Shader.TileMode.CLAMP)
-                    ).asComposeRenderEffect()
-                } else {
-                    RenderEffect.createBlurEffect(12.dp.toPx(), 12.dp.toPx(), Shader.TileMode.CLAMP).asComposeRenderEffect()
-                }
-                drawLayer(sample)
-                drawRect(tint.copy(alpha = if (dark) 0.58f else 0.68f))
-            } else {
-                // ponytail: Android 8–11 retain readable tinted glass; GPU backdrop effects need Android 12+.
-                drawRect(tint.copy(alpha = 0.94f))
+                    RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(shader, "backdrop"), blur).asComposeRenderEffect()
+                } else blur.asComposeRenderEffect()
             }
-            drawRect(Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.14f else 0.32f), Color.Transparent)))
-            drawRoundRect(
-                Brush.linearGradient(listOf(Color.White.copy(alpha = 0.75f), Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.38f))),
-                cornerRadius = androidx.compose.ui.geometry.CornerRadius(30.dp.toPx()),
-                style = Stroke(1.dp.toPx())
-            )
-            drawContent()
+            val highlight = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.14f else 0.32f), Color.Transparent))
+            val border = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.75f), Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.38f)))
+            val radius = androidx.compose.ui.geometry.CornerRadius(30.dp.toPx())
+            val stroke = Stroke(1.dp.toPx())
+            onDrawWithContent {
+                if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
+                    val offset = origin - backdrop.origin
+                    sample.record {
+                        drawRect(tint)
+                        translate(-offset.x, -offset.y) { drawLayer(backdrop.layer) }
+                    }
+                    drawLayer(sample)
+                    drawRect(tint.copy(alpha = if (dark) 0.58f else 0.68f))
+                } else {
+                    // ponytail: Android 8–11 retain readable tinted glass; GPU backdrop effects need Android 12+.
+                    drawRect(tint.copy(alpha = 0.94f))
+                }
+                drawRect(highlight)
+                drawRoundRect(border, cornerRadius = radius, style = stroke)
+                drawContent()
+            }
         }
 }
 
@@ -109,16 +111,15 @@ uniform shader backdrop;
 uniform float2 extent;
 uniform float radius;
 uniform float density;
-float distanceToEdge(float2 p) {
-    float2 q = abs(p - extent * 0.5) - (extent * 0.5 - radius);
-    return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - radius;
-}
 half4 main(float2 p) {
-    float d = distanceToEdge(p);
-    float e = max(density, 1.0);
-    float2 gradient = float2(distanceToEdge(p + float2(e, 0)) - distanceToEdge(p - float2(e, 0)),
-                              distanceToEdge(p + float2(0, e)) - distanceToEdge(p - float2(0, e)));
-    float2 normal = gradient / max(length(gradient), 0.001);
+    float2 centered = p - extent * 0.5;
+    float2 q = abs(centered) - (extent * 0.5 - radius);
+    float2 outside = max(q, 0.0);
+    float outsideLength = length(outside);
+    float d = outsideLength + min(max(q.x, q.y), 0.0) - radius;
+    // Exact rounded-rectangle normal: one distance calculation instead of five finite differences.
+    float2 axis = q.x > q.y ? float2(1, 0) : float2(0, 1);
+    float2 normal = (outsideLength > 0.001 ? outside / outsideLength : axis) * sign(centered);
     float rim = exp(-abs(d) / (7.0 * density));
     float2 uv = clamp(p - normal * rim * 8.0 * density, float2(0.5), extent - 0.5);
     half4 c = backdrop.eval(uv);
