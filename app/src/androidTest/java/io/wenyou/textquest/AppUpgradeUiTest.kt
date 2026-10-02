@@ -36,13 +36,15 @@ class AppUpgradeUiTest {
             override fun getSharedPreferences(name: String, mode: Int) = super.getSharedPreferences("$prefix-$name", mode)
         }
         val application = TestApplication(context)
-        val minimum = AtomicInteger(91)
+        val current = BuildConfig.VERSION_NAME.substringBefore('-')
+        val next = current.substringBeforeLast('.') + "." + (current.substringAfterLast('.').toInt() + 1)
+        val minimum = AtomicInteger(BuildConfig.VERSION_CODE + 1)
         val offline = AtomicBoolean(false)
         val updates = AppUpdates(OkHttpClient.Builder().addInterceptor { chain ->
             if (offline.get()) throw IOException("offline test")
             val body = if (chain.request().url.host == "raw.githubusercontent.com")
-                """{"minimumVersionCode":${minimum.get()},"minimumVersion":"${if (minimum.get() == 90) "5.0.0" else "5.0.1"}"}"""
-            else """{"tag_name":"v5.0.1","draft":false,"prerelease":false,"assets":[{"name":"${BuildConfig.APP_FILE_PREFIX}-v5.0.1.apk","state":"uploaded","size":1024,"digest":"sha256:${"0".repeat(64)}","browser_download_url":"https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/download/v5.0.1/${BuildConfig.APP_FILE_PREFIX}-v5.0.1.apk"}]}"""
+                """{"minimumVersionCode":${minimum.get()},"minimumVersion":"${if (minimum.get() == BuildConfig.VERSION_CODE) current else next}"}"""
+            else """{"tag_name":"v$next","draft":false,"prerelease":false,"assets":[{"name":"${BuildConfig.APP_FILE_PREFIX}-v$next.apk","state":"uploaded","size":1024,"digest":"sha256:${"0".repeat(64)}","browser_download_url":"https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/download/v$next/${BuildConfig.APP_FILE_PREFIX}-v$next.apk"}]}"""
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("test")
                 .body(body.toResponseBody()).build()
         }.build())
@@ -61,7 +63,7 @@ class AppUpgradeUiTest {
         compose.waitUntil(15_000) { compose.onAllNodesWithText("检查失败", substring = true).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("需要升级后才能使用").assertIsDisplayed()
         compose.onNodeWithContentDescription("剧情", useUnmergedTree = true).assertDoesNotExist()
-        offline.set(false); minimum.set(90)
+        offline.set(false); minimum.set(BuildConfig.VERSION_CODE)
         compose.runOnIdle { restarted.check() }
         compose.waitUntil(15_000) { compose.onAllNodesWithContentDescription("剧情", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
         assertFalse(restarted.ui.value.required)
