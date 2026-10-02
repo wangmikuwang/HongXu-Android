@@ -1,5 +1,6 @@
 package io.wenyou.textquest
 
+import io.wenyou.textquest.data.ai.withContinuity
 import io.wenyou.textquest.data.ai.AiCreator
 import io.wenyou.textquest.data.ai.CreationKind
 import io.wenyou.textquest.data.ai.AiDirector
@@ -32,6 +33,34 @@ import java.util.zip.DeflaterOutputStream
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegressionTest {
     @get:Rule val temp = TemporaryFolder()
+
+    @Test fun continuitySurvivesSaveAndReachesBothAiModes() = runBlocking {
+        val director = AiDirector(ChatClient(OkHttpClient()))
+        val scene = director.parseScene("""{"text":"一起调查","memory":"约定明日在钟楼见面","relationships":[{"from":"a","to":"b","description":"盟友","reason":"共享线索"},{"from":"a","to":"missing","description":"无效"},{"from":"a","to":"a","description":"无效"}]}""")
+        val state = scene.withContinuity(SessionState("s"), setOf("a", "b"))
+        assertEquals("约定明日在钟楼见面", state.memory)
+        assertEquals(mapOf("b" to "盟友（共享线索）"), state.characterStates.getValue("a").relationships)
+        assertEquals(state, AppJson.decodeFromString(SessionState.serializer(), AppJson.encodeToString(SessionState.serializer(), state)))
+        assertEquals(state.memory, director.parseScene("""{"text":"后续"}""").withContinuity(state, setOf("a", "b")).memory)
+        assertEquals("", AppJson.decodeFromString(SessionState.serializer(), """{"storyId":"s"}""").memory)
+        val requests = mutableListOf<String>()
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val buffer = okio.Buffer(); chain.request().body!!.writeTo(buffer); requests.add(buffer.readUtf8())
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body("""{"choices":[{"message":{"content":"{\"text\":\"继续\"}"}}]}""".toResponseBody()).build()
+        }.build()
+        try {
+            val ai = AiDirector(ChatClient(client))
+            val story = Story("s", "test", characterIds = listOf("a", "b"))
+            val characters = listOf(CharacterData("a", "甲"), CharacterData("b", "乙"))
+            val old = state.copy(history = List(150) { LogEntry(text = "新回合$it") })
+            val profile = ApiProfile("p", "test", baseUrl = "http://localhost/v1", model = "test")
+            ai.generateScene(profile, story, StoryNode("start"), characters, old)
+            ai.directorTurn(profile, story, characters, old, "继续")
+            assertEquals(2, requests.size)
+            requests.forEach { assertTrue(it.contains(state.memory)); assertTrue(it.contains("盟友")) }
+        } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
+    }
 
     @Test fun oneLineCreationProducesPlayableLinkedContentAndRejectsBrokenDrafts() = runBlocking {
         val creator = AiCreator(ChatClient())

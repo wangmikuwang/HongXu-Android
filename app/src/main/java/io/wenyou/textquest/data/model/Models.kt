@@ -288,7 +288,9 @@ data class LogEntry(
 data class CharacterState(
     val metrics: Map<String, Double> = emptyMap(),
     val flags: Set<String> = emptySet(),
-    val description: String = ""
+    val description: String = "",
+    val relationships: Map<String, String> = emptyMap(),
+    val lastChangeReason: String = ""
 ) {
     fun metric(key: String, def: Double = 0.0): Double = metrics[key] ?: def
 }
@@ -308,7 +310,8 @@ data class SessionState(
     /** AI 已生成、等待玩家选择的动态选项；放进存档以避免读档时重复请求模型。 */
     val pendingAiChoices: List<ChoiceData> = emptyList(),
     /** 即使模型没有返回选项，也记录本轮已完成，读档后展示“继续生成”而非自动重跑。 */
-    val aiAwaitingChoice: Boolean = false
+    val aiAwaitingChoice: Boolean = false,
+    val memory: String = ""
 )
 
 @Serializable

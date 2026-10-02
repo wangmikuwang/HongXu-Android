@@ -6,6 +6,7 @@ import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.ai.AiChoice
 import io.wenyou.textquest.data.ai.AiDirector
 import io.wenyou.textquest.data.ai.AiScene
+import io.wenyou.textquest.data.ai.withContinuity
 import io.wenyou.textquest.data.ai.StateChange
 import io.wenyou.textquest.data.engine.GameEngine
 import io.wenyou.textquest.data.model.ApiProfile
@@ -356,19 +357,19 @@ class PlayViewModel internal constructor(
             var metrics = st.metrics
             var flags = st.flags
             var desc = st.description
-            if (c.metric.isNotBlank() && c.delta != 0.0) {
+            if (CharacterMetrics.byKey(c.metric) != null && c.delta.isFinite() && c.delta != 0.0) {
                 val ov = metrics[c.metric] ?: 0.0
                 val nv = CharacterMetrics.clamp(ov + c.delta)
                 if (nv != ov) {
                     metrics = metrics + (c.metric to nv)
                     val sign = if (c.delta > 0) "+" else ""
-                    parts += "${CharacterMetrics.icon(c.metric)}${char.name} ${CharacterMetrics.label(c.metric)}$sign${GameEngine.formatNumber(c.delta)}"
+                    parts += "${CharacterMetrics.icon(c.metric)}${char.name} ${CharacterMetrics.label(c.metric)}$sign${GameEngine.formatNumber(nv - ov)}"
                 }
             }
-            if (c.flag.isNotBlank()) flags = flags + c.flag
-            if (c.desc.isNotBlank()) desc = c.desc
+            if (c.flag.isNotBlank() && flags.size < 100) flags = flags + c.flag.take(120)
+            if (c.desc.isNotBlank()) desc = c.desc.take(1000)
             if (metrics != st.metrics || flags != st.flags || desc != st.description) {
-                charStates = charStates + (c.char to st.copy(metrics = metrics, flags = flags, description = desc))
+                charStates = charStates + (c.char to st.copy(metrics = metrics, flags = flags, description = desc, lastChangeReason = c.reason.trim().take(240)))
             }
         }
         if (parts.isNotEmpty() || charStates != s.characterStates) {
@@ -383,6 +384,7 @@ class PlayViewModel internal constructor(
         val ui = _ui.value
         val story = ui.story ?: return
         val node = story.nodes[ui.nodeId]
+        session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
         applyStateChanges(scene.stateEffects)
         appendEntries(scene.logEntries(ui.characters, node?.speakerId.orEmpty()))
         val choices = scene.choices
@@ -442,6 +444,7 @@ class PlayViewModel internal constructor(
                     onDelta = { delta -> _ui.update { it.copy(aiDelta = it.aiDelta + delta) } })
                 if (job.isActive && aiJob === job) {
                     appendEntries(scene.logEntries(ui.characters))
+                    session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
                     applyStateChanges(scene.stateEffects)
                     session = session?.copy(pendingAiChoices = scene.choices.map(::toChoiceData), aiAwaitingChoice = true)
                     _ui.update { it.copy(aiDelta = "", aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = scene.choices) }

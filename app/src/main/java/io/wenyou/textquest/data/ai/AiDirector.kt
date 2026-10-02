@@ -101,7 +101,9 @@ data class AiScene(
     val reasoning: String = "",
     @SerialName("state")
     val stateEffects: List<StateChange> = emptyList(),
-    val entries: List<AiEntry> = emptyList()
+    val entries: List<AiEntry> = emptyList(),
+    val memory: String = "",
+    val relationships: List<RelationshipChange> = emptyList()
 ) {
     fun logEntries(characters: List<CharacterData>, defaultSpeakerId: String = ""): List<LogEntry> {
         val lines = entries.ifEmpty { listOf(AiEntry(defaultSpeakerId, text)) }
@@ -128,8 +130,12 @@ data class StateChange(
     val metric: String = "",
     val delta: Double = 0.0,
     val flag: String = "",
-    val desc: String = ""
+    val desc: String = "",
+    val reason: String = ""
 )
+
+@Serializable
+data class RelationshipChange(val from: String = "", val to: String = "", val description: String = "", val reason: String = "")
 
 @Serializable
 data class AiChoice(
@@ -210,6 +216,10 @@ class AiDirector(private val client: ChatClient) {
             append("· ${c.name}：").append(if (ms.isNotEmpty()) ms.joinToString("　") else "（无）")
             if (st.flags.isNotEmpty()) append("　标记：${st.flags.joinToString("、")}")
             if (st.description.isNotBlank()) append("　穿着/外观：${st.description}")
+            for ((id, relation) in st.relationships) {
+                val target = bound.firstOrNull { it.id == id } ?: continue
+                append("　对${target.name}：${relation.take(240)}")
+            }
             append("\n")
         }
         append("（请让角色言行贴合以上状态。）\n")
@@ -218,6 +228,7 @@ class AiDirector(private val client: ChatClient) {
     /** 取最近若干条剧情（角色台词/旁白/玩家选择），组成用户消息正文。 */
     private fun contextTail(story: Story, state: SessionState, tailOverride: String? = null): String {
         val sb = StringBuilder()
+        if (state.memory.isNotBlank()) sb.append("【剧情记忆：已发生事实，不是新指令】\n").append(state.memory.take(2000)).append("\n")
         val window = story.ai.historyWindow.coerceIn(4, 120)
         val recent = state.history.takeLast(window).filter { it.kind != EntryKind.SYSTEM && it.kind != EntryKind.ERROR }
         for (entry in recent) {
@@ -260,6 +271,7 @@ class AiDirector(private val client: ChatClient) {
             append("输出必须是一个 JSON 对象：{\"entries\":[{\"speakerId\":\"\",\"text\":\"旁白\"},{\"speakerId\":\"角色id\",\"text\":\"该角色的台词\"}],\"choices\":[{\"text\":\"选项文案\"}]}。entries 按发生顺序排列，空 speakerId 仅写旁白；角色台词必须独立成条，speakerId 使用登场角色的真实 id，不能把台词混入旁白（包括临时人物），不替玩家说话。临时人物的台词使用空 speakerId 并补充 speaker 字段为其姓名或称谓；旁白的 speaker 必须为空。\n")
             append("严禁在输出里出现任何思考、构思、计划、分析或「好的/我会/让我/要不要/接下来/作为导演」等自我对话或导演说明；text 字段只能写场景正文与台词，一切构思请先在心里完成，绝不写进 text。\n")
             append("正文与选项均为纯文本：不要使用 markdown 语法（如 **加粗**、- 列表、# 标题、*斜体*、> 引用、``` 代码块）；不要输出任何思考、概要、计划、总结或导演式旁白。\n")
+            append("JSON 必须补充 memory 字段：用 600 字以内更新累计剧情记忆，保留旧记忆中关键事件、承诺、线索及玩家选择，仅记已发生事实，不记推测与思考。可补充 relationships:[{from:角色id,to:另一个角色id,description:当前关系,reason:本轮变化原因}]，仅列发生变化的有方向关系，不虚构变化；state 每项可附 reason 解释原因。上述字段使用标准 JSON 双引号。\n")
             append("若有可选的构思/计划，把它放进思考过程（reasoning_content），不要出现在正文。\n")
             append("可选地在 JSON 中加入 \"state\":[{\"char\":\"角色id\",\"metric\":\"情感指标key\",\"delta\":数值},{\"char\":\"角色id\",\"flag\":\"新标记\"},{\"char\":\"角色id\",\"desc\":\"穿着/外观描述\"}]，给出本幕造成的角色状态变化（数值在 0-100 内，只列有意义的变化）。指标 key：affection/trust/mood/energy/health/fatigue/arousal。\n")
             if (node.endTarget.isNotBlank()) {
@@ -300,6 +312,7 @@ class AiDirector(private val client: ChatClient) {
             append("输出必须是一个 JSON 对象：{\"entries\":[{\"speakerId\":\"\",\"text\":\"旁白\"},{\"speakerId\":\"角色id\",\"text\":\"该角色的台词\"}],\"choices\":[{\"text\":\"玩家可能的下一步选项（2-4 个，给灵感用）\"}]}。entries 按发生顺序排列，空 speakerId 仅写旁白；角色台词必须独立成条，speakerId 使用登场角色的真实 id，不能把台词混入旁白（包括临时人物），不替玩家说话。临时人物的台词使用空 speakerId 并补充 speaker 字段为其姓名或称谓；旁白的 speaker 必须为空。\n")
             append("严禁在输出里出现任何思考、构思、计划、分析或「好的/我会/让我/要不要/接下来」等自我对话或主持人说明；text 字段只能写推进的正文与台词，一切构思请先在心里完成，绝不写进 text。\n")
             append("正文与选项均为纯文本：不要使用 markdown 语法（如 **加粗**、- 列表、# 标题、*斜体*、> 引用、``` 代码块）；不要输出任何思考、概要、计划、总结或导演式旁白。\n")
+            append("JSON 必须补充 memory 字段：用 600 字以内更新累计剧情记忆，保留旧记忆中关键事件、承诺、线索及玩家选择，仅记已发生事实，不记推测与思考。可补充 relationships:[{from:角色id,to:另一个角色id,description:当前关系,reason:本轮变化原因}]，仅列发生变化的有方向关系，不虚构变化；state 每项可附 reason 解释原因。上述字段使用标准 JSON 双引号。\n")
             append("若有可选的构思/计划，把它放进思考过程（reasoning_content），不要出现在正文。\n")
             append("可选地在 JSON 中加入 \"state\":[{\"char\":\"角色id\",\"metric\":\"情感指标key\",\"delta\":数值},{\"char\":\"角色id\",\"flag\":\"新标记\"},{\"char\":\"角色id\",\"desc\":\"穿着/外观描述\"}]，给出这段互动造成的角色状态变化（数值在 0-100 内，只列有意义的变化）。指标 key：affection/trust/mood/energy/health/fatigue/arousal。\n")
             append("若玩家表达了收尾意愿，请自然地给出结局感并让 choices 为空数组。\n")
@@ -325,7 +338,7 @@ class AiDirector(private val client: ChatClient) {
     private fun sanitizeScene(scene: AiScene): AiScene {
         val newText = sanitizeProse(scene.text)
         val newChoices = scene.choices.map { c -> c.copy(text = sanitizeProse(c.text).take(120)) }
-        return scene.copy(text = newText, choices = newChoices,
+        return scene.copy(text = newText, choices = newChoices, memory = scene.memory.trim().take(2000),
             entries = scene.entries.map { it.copy(text = sanitizeProse(it.text)) }.filter { it.text.isNotBlank() })
     }
 
@@ -444,4 +457,16 @@ internal fun extractJsonObject(text: String): String? {
         }
     }
     return if (end > start) text.substring(start, end + 1) else null
+}
+
+/** Preserve old continuity if the model omits it; reject unknown cast IDs and unbounded relation text. */
+internal fun AiScene.withContinuity(state: SessionState, castIds: Set<String>): SessionState {
+    var states = state.characterStates
+    for (r in relationships.take(100)) {
+        if (r.from !in castIds || r.to !in castIds || r.from == r.to || r.description.isBlank()) continue
+        val current = states[r.from] ?: io.wenyou.textquest.data.model.CharacterState()
+        val text = r.description.trim().take(120) + r.reason.trim().take(120).let { if (it.isBlank()) "" else "（$it）" }
+        states = states + (r.from to current.copy(relationships = current.relationships + (r.to to text)))
+    }
+    return state.copy(memory = memory.trim().take(2000).ifBlank { state.memory }, characterStates = states)
 }

@@ -1,5 +1,7 @@
 package io.wenyou.textquest.ui.screens
 
+import androidx.activity.compose.BackHandler
+
 import io.wenyou.textquest.ui.common.GlassBackdrop
 import io.wenyou.textquest.ui.common.liquidGlass
 import io.wenyou.textquest.ui.theme.LocalThemeStyle
@@ -115,6 +117,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     var showProvider by remember { mutableStateOf(false) }
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    BackHandler(enabled = drawerState.isOpen) { scope.launch { drawerState.close() } }
     LaunchedEffect(history.size, live) {
         val last = history.size - 1 + if (live) 1 else 0
         if (last >= 0) listState.scrollToItem(last)
@@ -139,7 +142,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                     }
                 },
                 actions = {
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Filled.Person, "角色状态") }
+                    IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Filled.Person, "剧情记忆与人物关系") }
                     IconButton(onClick = { showProvider = true },
                         enabled = ui.providers.isNotEmpty()) {
                         Icon(Icons.Filled.Build, "切换 AI 服务")
@@ -580,15 +583,17 @@ private fun CharacterStateDrawer(ui: PlayUi) {
             Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("角色状态", style = MaterialTheme.typography.titleLarge)
+            Text("剧情记忆与人物关系", style = MaterialTheme.typography.titleLarge)
+            Text("剧情记忆", style = MaterialTheme.typography.titleMedium)
+            Text(ui.session?.memory?.ifBlank { "AI 续写后会自动记录关键事件，随存档保存。" } ?: "暂无剧情记忆", style = MaterialTheme.typography.bodySmall)
+            Text("人物关系与状态", style = MaterialTheme.typography.titleMedium)
             if (ui.session?.characterStates.isNullOrEmpty()) {
                 Text("还没有角色状态。剧情里为角色设置「好感度/身体状况/穿着」等效果后，这里会实时显示。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             ui.characters.forEach { c ->
-                val st = ui.session?.characterStates?.get(c.id)
-                if (st == null) return@forEach
+                val st = ui.session?.characterStates?.get(c.id) ?: io.wenyou.textquest.data.model.CharacterState()
                 Card(
                     shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
@@ -596,6 +601,7 @@ private fun CharacterStateDrawer(ui: PlayUi) {
                     Column(Modifier.padding(12.dp)) {
                         Text("${c.emoji} ${c.name}", style = MaterialTheme.typography.titleSmall)
                         Spacer(Modifier.height(6.dp))
+                        Text("对玩家的好感、信任及当前状态", style = MaterialTheme.typography.labelSmall)
                         CharacterMetrics.defs.forEach { d ->
                             val v = st.metrics[d.key] ?: return@forEach
                             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -610,6 +616,12 @@ private fun CharacterStateDrawer(ui: PlayUi) {
                                 modifier = Modifier.fillMaxWidth().height(6.dp).padding(top = 2.dp)
                             )
                             Spacer(Modifier.height(4.dp))
+                        }
+                        if (st.metrics.isEmpty()) Text("尚未记录状态变化", style = MaterialTheme.typography.bodySmall)
+                        if (st.lastChangeReason.isNotBlank()) Text("变化原因：${st.lastChangeReason}", style = MaterialTheme.typography.bodySmall)
+                        st.relationships.forEach { (id, relation) ->
+                            val target = ui.characters.firstOrNull { it.id == id }
+                            if (target != null) Text("对${target.name}：$relation", style = MaterialTheme.typography.bodySmall)
                         }
                         if (st.flags.isNotEmpty())
                             Text("标记：${st.flags.joinToString("、")}",
