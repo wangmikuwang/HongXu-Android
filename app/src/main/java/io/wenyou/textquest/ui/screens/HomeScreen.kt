@@ -35,6 +35,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,6 +64,7 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val cards by vm.homeCards.collectAsState()
     val stories by vm.stories.collectAsState()
     val providers by vm.providers.collectAsState()
+    var creationOpen by rememberSaveable { mutableStateOf(false) }
     var pendingDelete by remember { mutableStateOf<HomeCard?>(null) }
 
     HubScaffold(topBar = {}, nav = nav) { padding ->
@@ -100,6 +102,12 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         Spacer(Modifier.width(6.dp))
                         Text(if (stories.isNotEmpty()) "快速开始" else "去剧情库")
                     }
+                }
+            }
+
+            item {
+                OutlinedButton(onClick = { creationOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("✨ AI 一句话创建剧情 / 人物")
                 }
             }
 
@@ -156,6 +164,8 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             }
         }
     }
+
+    if (creationOpen) CreationDialog(container, nav, onDismiss = { creationOpen = false })
 
     pendingDelete?.let { card ->
         AlertDialog(

@@ -1,5 +1,7 @@
 package io.wenyou.textquest
 
+import io.wenyou.textquest.data.ai.AiCreator
+import io.wenyou.textquest.data.ai.CreationKind
 import io.wenyou.textquest.data.ai.AiDirector
 import io.wenyou.textquest.data.engine.GameEngine
 import io.wenyou.textquest.data.llm.ChatClient
@@ -30,6 +32,31 @@ import java.util.zip.DeflaterOutputStream
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegressionTest {
     @get:Rule val temp = TemporaryFolder()
+
+    @Test fun oneLineCreationProducesPlayableLinkedContentAndRejectsBrokenDrafts() = runBlocking {
+        val creator = AiCreator(ChatClient())
+        val json = """{"story":{"title":"雨城","worldSummary":"寻找记忆","opening":"她说：\"你是谁？\" {旧物}"},"characters":[{"name":" 少女 ","personality":"敏锐","background":"旧物店店主"}]}"""
+        val draft = creator.parse("```json\n$json\n```", CreationKind.STORY)
+        val story = draft.stories.single()
+        assertEquals(StoryMode.AI_DIRECTOR, story.mode)
+        assertEquals(draft.characters.map { it.id }, story.characterIds)
+        assertEquals("少女", draft.characters.single().name)
+        assertEquals("她说：\"你是谁？\" {旧物}", story.nodes.getValue(story.startNodeId).text)
+        assertFalse(creator.parse(json, CreationKind.STORY).stories.single().id == story.id)
+        assertTrue(creator.parse(json, CreationKind.CHARACTERS).stories.isEmpty())
+        for (broken in listOf("{}", json.dropLast(1), json.replace("少女", " "), json.replace("敏锐", ""))) {
+            assertTrue(runCatching { creator.parse(broken, CreationKind.STORY) }.isFailure)
+        }
+        assertTrue(runCatching { creator.parse(json.replace("\"background\"", "\"adult\":true,\"background\""), CreationKind.STORY, adultContent = false) }.isFailure)
+        val folder = temp.newFolder()
+        val library = LocalLibrary(folder)
+        library.upsertStory(Story("existing", "旧剧情"))
+        library.importShared(draft)
+        library.importShared(draft)
+        assertEquals(2, library.stories.value.size)
+        assertEquals(1, library.characters.value.size)
+        assertEquals(story, LocalLibrary(folder).stories.value.first { it.id == story.id })
+    }
 
     @Test fun appleThemeHasSafeDefaultsAndReadableColors() {
         assertEquals(io.wenyou.textquest.ui.theme.ThemeStyle.MATERIAL, io.wenyou.textquest.ui.theme.ThemeStyle.fromStored("unknown"))

@@ -337,7 +337,7 @@ class AiDirector(private val client: ChatClient) {
     fun parseScene(raw: String): AiScene {
         val cleaned = raw.trim()
         if (cleaned.isEmpty()) return AiScene()
-        val json = extractJson(cleaned)
+        val json = extractJsonObject(cleaned)
         if (json != null) {
             try {
                 val decoded = sceneJson.decodeFromString(AiScene.serializer(), json)
@@ -410,31 +410,6 @@ class AiDirector(private val client: ChatClient) {
         return t
     }
 
-    private fun extractJson(text: String): String? {
-        val start = text.indexOf('{')
-        if (start < 0) return null
-        var depth = 0
-        var inString = false
-        var escaped = false
-        var end = -1
-        for (i in start until text.length) {
-            val c = text[i]
-            when {
-                inString -> {
-                    if (escaped) escaped = false
-                    else if (c == '\\') escaped = true
-                    else if (c == '"') inString = false
-                }
-                c == '"' -> inString = true
-                c == '{' -> depth++
-                c == '}' -> {
-                    depth--
-                    if (depth == 0) { end = i; break }
-                }
-            }
-        }
-        return if (end > start) text.substring(start, end + 1) else null
-    }
 
     companion object {
         fun errorMessage(t: Throwable): String = when (t) {
@@ -443,4 +418,30 @@ class AiDirector(private val client: ChatClient) {
             else -> t.message ?: "未知错误"
         }
     }
+}
+
+internal fun extractJsonObject(text: String): String? {
+    val start = text.indexOf('{')
+    if (start < 0) return null
+    var depth = 0
+    var inString = false
+    var escaped = false
+    var end = -1
+    for (i in start until text.length) {
+        val c = text[i]
+        when {
+            inString -> {
+                if (escaped) escaped = false
+                else if (c == '\\') escaped = true
+                else if (c == '"') inString = false
+            }
+            c == '"' -> inString = true
+            c == '{' -> depth++
+            c == '}' -> {
+                depth--
+                if (depth == 0) { end = i; break }
+            }
+        }
+    }
+    return if (end > start) text.substring(start, end + 1) else null
 }

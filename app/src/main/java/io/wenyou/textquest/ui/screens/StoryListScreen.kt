@@ -85,6 +85,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import io.wenyou.textquest.data.ai.CreationKind
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.model.ContentClass
 import io.wenyou.textquest.data.model.NodeKind
@@ -117,6 +118,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     var shareCodeStory by remember { mutableStateOf<Story?>(null) }
     var shareQrStory by remember { mutableStateOf<Story?>(null) }
     // 导入：先选「粘贴分享码 or 扫码识别」
+    var creationOpen by remember { mutableStateOf(false) }
     var importPicker by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -138,11 +140,14 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         }
     }
 
+    if (creationOpen) CreationDialog(container, nav, { creationOpen = false }, initialKind = CreationKind.STORY)
+
     HubScaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("剧情库") },
                 actions = {
+                    TextButton(onClick = { creationOpen = true }) { Text("AI 创建") }
                     TextButton(onClick = { importPicker = true }) { Text("导入码") }
                 }
             )
