@@ -15,6 +15,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wenyou.textquest.data.engine.Achievement
+import io.wenyou.textquest.ui.common.EasterEggTitle
 import io.wenyou.textquest.data.model.AchievementRecord
 import io.wenyou.textquest.data.repo.LocalLibrary
 import java.text.DateFormat
@@ -32,7 +33,10 @@ fun AchievementsDialog(library: LocalLibrary, onDismiss: () -> Unit) {
 @Composable
 internal fun AchievementsContent(records: List<AchievementRecord>, onDismiss: () -> Unit) {
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("成就馆") },
+        topBar = { CenterAlignedTopAppBar(title = {
+            val secret = "🏅 隐藏奖杯：好奇心万岁\n你找到了奖杯柜后的秘密隔间。里面没有积分，只有一句话：愿你永远对下一个故事保持好奇。"
+            EasterEggTitle("成就馆", MaterialTheme.typography.titleLarge, secret, secret)
+        },
             navigationIcon = { IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, "关闭成就馆") } }) }
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("achievements-list"), contentPadding = PaddingValues(16.dp),

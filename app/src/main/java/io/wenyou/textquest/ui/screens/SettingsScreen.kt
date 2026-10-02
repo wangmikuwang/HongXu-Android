@@ -45,6 +45,7 @@ import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.ui.HubScaffold
 import io.wenyou.textquest.ui.R
 import io.wenyou.textquest.ui.common.AppDropdown
+import io.wenyou.textquest.ui.common.EasterEggTitle
 import io.wenyou.textquest.ui.common.SectionHeader
 import io.wenyou.textquest.ui.common.TonalCard
 import io.wenyou.textquest.ui.theme.ThemeMode
@@ -141,7 +142,9 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         ) {
             item {
                 Column(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-                    Text("文游 · 文字游戏", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
+                    EasterEggTitle("文游 · 文字游戏", MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                        tapMessage = "🎬 幕后导演\n导演悄悄递来一张纸条：最精彩的剧情，往往从你不按套路的选择开始。\n今天，主角的名字叫你。",
+                        holdMessage = "🪄 第四面墙\n旁白：你长按了标题。\n角色：等等，谁在故事外面戳我们？\n导演：嘘，这是主角的新能力。")
                     Text("两套外观 · 本地数据优先", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
