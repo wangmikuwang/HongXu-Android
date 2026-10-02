@@ -17,6 +17,7 @@ data class UiPrefs(
     val adultContent: Boolean = true,
     /** 是否已通过「连点版本号 10 次」解锁内容开关（α 版此项默认隐藏）。 */
     val contentUnlocked: Boolean = false,
+    val generationNotifications: Boolean = false,
     val themeStyle: ThemeStyle = ThemeStyle.MATERIAL
 )
 
@@ -30,6 +31,7 @@ class SettingsStore(context: Context) {
     val state: StateFlow<UiPrefs> = _state.asStateFlow()
 
     private fun load(): UiPrefs = UiPrefs(
+        generationNotifications = prefs.getBoolean("generation_notifications", false),
         themeStyle = ThemeStyle.fromStored(prefs.getString(KEY_STYLE, null)),
         themeMode = themeOf(prefs.getString(KEY_THEME, ThemeMode.SYSTEM.name)),
         dynamicColor = prefs.getBoolean(KEY_DYNAMIC, true),
@@ -44,6 +46,11 @@ class SettingsStore(context: Context) {
         ThemeMode.valueOf(raw ?: "")
     } catch (_: Throwable) {
         ThemeMode.SYSTEM
+    }
+
+    fun setGenerationNotifications(on: Boolean) {
+        prefs.edit().putBoolean("generation_notifications", on).apply()
+        _state.value = _state.value.copy(generationNotifications = on)
     }
 
     fun setThemeStyle(style: ThemeStyle) {

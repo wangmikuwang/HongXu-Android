@@ -18,6 +18,16 @@
 
 剧情生成 AI 导演模式的标题、简介、世界观、开场和关联人物；人物包含性格、背景、说话习惯及台词示例。应用生成独立 ID 并绑定人物，新增内容不覆盖已有资料；保存失败后可重试同一草稿。支持取消生成，异常保留输入供重试；缺失字段、重复名字、过长内容及关闭成人内容时的不兼容结果会被拒绝。
 
+## 生成实时通知（3.8.0）
+
+验证：23 项单元测试、Android Lint、独立 APK 构建及 Pixel 7 / Android 14 通知生命周期设备测试通过。两版使用已有 DeepSeek 配置实际生成成功，普通完成通知可见；Beta 验证拒绝权限保持关闭、重新授权开启。实际小米超级岛及 Android 16 系统提升效果尚未实机验证。
+
+设置 → 生成实时通知，可开启用户主动发起的 AI 请求进度提示。原生通知显示当前阶段、真实耗时和并行请求数，点击回到应用；通知不含剧情、思考正文、服务密钥或提示词。生成期间启用短时 dataSync 前台服务；请求结束、取消、关闭开关或禁用通知通道后退出，不自动重启任务。完成/失败使用普通通知，15 秒后清除；取消不留下完成提示。进程被强制停止后任务不会恢复。
+
+Android 16 使用原生 ProgressStyle 未知进度样式；Android 16 QPR2 通过官方 extras 请求实时更新，是否提升由系统及用户设置决定。旧设备显示普通持续进度通知，不推测完成百分比。
+
+小米 OS2/OS3 按 `notification_focus_protocol` 添加 `miui.focus.param` 及图标 Bundle，使用官方文本模板，未授权时保留普通通知。Alpha 与 Beta 需要分别申请包名、签名及 `ai_generation` 场景权限；该场景标识是待审核配置，平台若核准其他标识需同步替换。当前只完成代码适配，不代表已获超级岛资格。参考 [小米开发指南](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2131)、[接入流程](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2132)、[Android 实时更新](https://developer.android.com/develop/ui/views/notifications/live-update)。
+
 ## 外观与排版
 
 设置 → 外观 → 界面风格可切换 Material You 与液态玻璃，两者都支持跟随系统、浅色及深色。液态玻璃延续蓝色强调、分组背景和阅读字阶，在浮动导航及对局操作区实时采样背后内容，加入高斯模糊、边缘折射、高光与阴影；文字和图标独立绘制保持清晰；动态壁纸取色仅适用于 Material You。主题选择保存于本机，旧版 Apple 风格自动使用液态玻璃。Android 13+ 支持折射，Android 12 使用模糊，Android 8–11 回退为可读的着色材质。

@@ -14,6 +14,7 @@ import io.wenyou.textquest.data.sample.SampleData
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.PrintWriter
@@ -38,6 +39,21 @@ class WenYouApp : Application() {
         super.onCreate()
         container = AppContainer(this)
         installCrashLogger()
+        appScope.launch {
+            kotlinx.coroutines.flow.combine(container.settings.state, container.chatClient.usage.active) { prefs, active ->
+                prefs.generationNotifications && active.isNotEmpty()
+            }.distinctUntilChanged().collect { running ->
+                if (running) {
+                    val manager = getSystemService(android.app.NotificationManager::class.java)
+                    val allowed = manager.areNotificationsEnabled() && manager.getNotificationChannel(GenerationService.CHANNEL)?.importance != android.app.NotificationManager.IMPORTANCE_NONE &&
+                        (android.os.Build.VERSION.SDK_INT < 33 || checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED)
+                    if (allowed) runCatching { startForegroundService(android.content.Intent(this@WenYouApp, GenerationService::class.java)) }
+                } else if (!container.settings.state.value.generationNotifications) {
+                    stopService(android.content.Intent(this@WenYouApp, GenerationService::class.java))
+                    getSystemService(android.app.NotificationManager::class.java).cancel(GenerationService.FINISHED_ID)
+                }
+            }
+        }
         appScope.launch {
             seedSamplesIfNeeded()
             applyPresetAssets(listOf(

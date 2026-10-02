@@ -43,7 +43,7 @@ internal fun TokenUsage.read(kind: ProviderKind, element: JsonElement): TokenUsa
 data class GenerationProgress(val id: String, val service: String, val model: String, val startNanos: Long, val phase: String = "等待服务响应", val characters: Int = 0)
 @Serializable
 data class UsageRecord(val service: String, val model: String, val time: Long, val elapsedMs: Long, val status: String,
-    val tokens: TokenUsage, val estimatedCost: Double? = null, val currency: String = "CNY")
+    val tokens: TokenUsage, val estimatedCost: Double? = null, val currency: String = "CNY", val requestId: String = "")
 
 /** ponytail: retain the latest 100 requests; add archived totals only when lifetime accounting is needed. */
 class UsageTracker(private val file: File? = null) {
@@ -61,8 +61,8 @@ class UsageTracker(private val file: File? = null) {
         activeState.value = activeState.value + (id to p.copy(phase = phase, characters = characters))
     }
     @Synchronized fun finish(id: String, record: UsageRecord) {
+        recordsState.value = (recordsState.value + record.copy(requestId = id)).takeLast(100)
         activeState.value = activeState.value - id
-        recordsState.value = (recordsState.value + record).takeLast(100)
         if (file != null) try {
             file.parentFile?.mkdirs()
             val temp = File(file.path + ".tmp")

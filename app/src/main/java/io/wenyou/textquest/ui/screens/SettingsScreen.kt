@@ -198,6 +198,8 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 }
             }
 
+            item { io.wenyou.textquest.ui.common.GenerationNotificationSettings(container.settings) }
+
             item { SectionHeader("AI 默认服务") }
             item {
                 TonalCard {
