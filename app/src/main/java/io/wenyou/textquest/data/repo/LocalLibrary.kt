@@ -8,6 +8,12 @@ import io.wenyou.textquest.data.model.BottomRule
 import io.wenyou.textquest.data.model.CharacterData
 import io.wenyou.textquest.data.model.SaveSlot
 import io.wenyou.textquest.data.model.Story
+import io.wenyou.textquest.data.model.SessionState
+import io.wenyou.textquest.data.model.AchievementRecord
+import io.wenyou.textquest.data.engine.Achievements
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,18 +51,40 @@ class LocalLibrary internal constructor(private val dir: File) {
     private val storiesFile = File(dir, "stories.json")
     private val savesFile = File(dir, "saves.json")
     private val bottomRulesFile = File(dir, "bottom_rules.json")
+    private val achievementsFile = File(dir, "achievements.json")
+    // A finite achievement write belongs to the library, so leaving a play screen cannot cancel it.
+    private val achievementScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _providers = MutableStateFlow(readList(providersFile, ApiProfile.serializer()))
     private val _characters = MutableStateFlow(readList(charactersFile, CharacterData.serializer()))
     private val _stories = MutableStateFlow(readList(storiesFile, Story.serializer()))
     private val _saves = MutableStateFlow(readList(savesFile, SaveSlot.serializer()))
     private val _bottomRules = MutableStateFlow(readList(bottomRulesFile, BottomRule.serializer()))
+    private val _achievements = MutableStateFlow(Achievements.merge(emptyList(), readList(achievementsFile, AchievementRecord.serializer()), System.currentTimeMillis()))
 
     val providers: StateFlow<List<ApiProfile>> = _providers.asStateFlow()
     val characters: StateFlow<List<CharacterData>> = _characters.asStateFlow()
     val stories: StateFlow<List<Story>> = _stories.asStateFlow()
     val saves: StateFlow<List<SaveSlot>> = _saves.asStateFlow()
     val bottomRules: StateFlow<List<BottomRule>> = _bottomRules.asStateFlow()
+    val achievements: StateFlow<List<AchievementRecord>> = _achievements.asStateFlow()
+
+    fun trackAchievements(story: Story, state: SessionState, onUnlocked: (List<String>) -> Unit) {
+        achievementScope.launch {
+            try { onUnlocked(recordAchievements(story, state)) }
+            catch (_: IOException) { /* The existing write-error flow reports the failure. */ }
+        }
+    }
+
+    internal suspend fun recordAchievements(story: Story, state: SessionState): List<String> = write {
+        val previous = _achievements.value
+        val next = Achievements.observe(previous, story, state, System.currentTimeMillis())
+        if (next != previous) {
+            persistList(achievementsFile, next, AchievementRecord.serializer())
+            _achievements.value = next
+        }
+        next.filter { it.unlockedAt > 0L && previous.none { old -> old.id == it.id && old.unlockedAt > 0L } }.map { it.id }
+    }
 
     // ---------------- CRUD ----------------
 
@@ -135,7 +163,8 @@ class LocalLibrary internal constructor(private val dir: File) {
         characters = _characters.value,
         stories = _stories.value,
         saves = _saves.value,
-        bottomRules = _bottomRules.value
+        bottomRules = _bottomRules.value,
+        achievements = _achievements.value
     ) }
 
     suspend fun importBundle(bundle: AppBundle): Int = write {
@@ -149,6 +178,11 @@ class LocalLibrary internal constructor(private val dir: File) {
         _saves.value = bundle.saves
         persistList(bottomRulesFile, bundle.bottomRules, BottomRule.serializer())
         _bottomRules.value = bundle.bottomRules
+        val merged = Achievements.merge(_achievements.value, bundle.achievements, System.currentTimeMillis())
+        if (merged != _achievements.value) {
+            persistList(achievementsFile, merged, AchievementRecord.serializer())
+            _achievements.value = merged
+        }
         bundle.providers.size + bundle.characters.size + bundle.stories.size + bundle.saves.size + bundle.bottomRules.size
     }
 

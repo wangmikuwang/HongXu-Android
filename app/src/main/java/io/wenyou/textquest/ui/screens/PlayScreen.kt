@@ -38,6 +38,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.filled.Check
@@ -113,6 +115,16 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     LaunchedEffect(ui.lastMessage) {
         if (ui.lastMessage.isNotBlank()) snackbar.showSnackbar(ui.lastMessage)
     }
+    val achievementMessage = ui.achievementMessages.firstOrNull()
+    LaunchedEffect(achievementMessage) {
+        if (achievementMessage != null) {
+            val title = io.wenyou.textquest.data.engine.Achievement.entries.firstOrNull { it.name == achievementMessage }?.title
+            if (title != null) snackbar.showSnackbar("🏆 解锁成就：$title")
+            vm.consumeAchievementMessage()
+        }
+    }
+    var achievementsOpen by rememberSaveable { mutableStateOf(false) }
+    if (achievementsOpen) AchievementsDialog(container.library, onDismiss = { achievementsOpen = false })
     val history = ui.session?.history.orEmpty()
     val live = ui.stage == PlayStage.AI_WORKING
     var showProvider by remember { mutableStateOf(false) }
@@ -143,6 +155,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                     }
                 },
                 actions = {
+                    IconButton(onClick = { achievementsOpen = true }) { Text("🏆", Modifier.semantics { contentDescription = "成就馆" }, fontSize = 20.sp) }
                     IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Filled.Person, "剧情记忆与人物关系") }
                     IconButton(onClick = { showProvider = true },
                         enabled = ui.providers.isNotEmpty()) {

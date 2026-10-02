@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.model.SaveSlot
@@ -65,6 +66,8 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val stories by vm.stories.collectAsState()
     val providers by vm.providers.collectAsState()
     var creationOpen by rememberSaveable { mutableStateOf(false) }
+    var achievementsOpen by rememberSaveable { mutableStateOf(false) }
+    val achievements by container.library.achievements.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<HomeCard?>(null) }
 
     HubScaffold(topBar = {}, nav = nav) { padding ->
@@ -117,6 +120,12 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 }
             }
 
+            item {
+                OutlinedButton(onClick = { achievementsOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("🏆 成就馆 · ${achievements.count { it.unlockedAt > 0L }} / ${io.wenyou.textquest.data.engine.Achievement.entries.size}")
+                }
+            }
+
             if (cards.isEmpty()) {
                 item {
                     Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -166,6 +175,7 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     }
 
     if (creationOpen) CreationDialog(container, nav, onDismiss = { creationOpen = false })
+    if (achievementsOpen) AchievementsDialog(container.library, onDismiss = { achievementsOpen = false })
 
     pendingDelete?.let { card ->
         AlertDialog(

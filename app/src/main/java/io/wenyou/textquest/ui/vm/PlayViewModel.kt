@@ -55,7 +55,8 @@ data class PlayUi(
     val activeSaveId: String? = null,
     val saveName: String = "",
     val providers: List<ApiProfile> = emptyList(),
-    val selectedProviderId: String? = null
+    val selectedProviderId: String? = null,
+    val achievementMessages: List<String> = emptyList()
 )
 
 /**
@@ -81,6 +82,10 @@ class PlayViewModel internal constructor(
         set(value) {
             field = value
             _ui.update { it.copy(session = value) }
+            val story = _ui.value.story
+            if (story != null && value != null) library.trackAchievements(story, value) { unlocked ->
+                if (unlocked.isNotEmpty()) _ui.update { it.copy(achievementMessages = it.achievementMessages + unlocked) }
+            }
         }
 
     /** 当前 AI 生成任务。发起新请求前会取消旧任务，避免重试等场景产生并发覆盖。 */
@@ -384,6 +389,7 @@ class PlayViewModel internal constructor(
         val ui = _ui.value
         val story = ui.story ?: return
         val node = story.nodes[ui.nodeId]
+        session = session?.let { it.copy(aiTurns = (it.aiTurns.coerceAtLeast(0).toLong() + 1).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
         session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
         applyStateChanges(scene.stateEffects)
         appendEntries(scene.logEntries(ui.characters, node?.speakerId.orEmpty()))
@@ -443,6 +449,7 @@ class PlayViewModel internal constructor(
                     onReasoning = { r -> _ui.update { it.copy(aiReasoningDelta = it.aiReasoningDelta + r) } },
                     onDelta = { delta -> _ui.update { it.copy(aiDelta = it.aiDelta + delta) } })
                 if (job.isActive && aiJob === job) {
+                    session = session?.let { it.copy(aiTurns = (it.aiTurns.coerceAtLeast(0).toLong() + 1).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
                     appendEntries(scene.logEntries(ui.characters))
                     session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
                     applyStateChanges(scene.stateEffects)
@@ -508,6 +515,10 @@ class PlayViewModel internal constructor(
         _ui.update { it.copy(selectedProviderId = id) }
     }
 
+    fun consumeAchievementMessage() {
+        _ui.update { it.copy(achievementMessages = it.achievementMessages.drop(1)) }
+    }
+
     private fun logSystem(notes: List<String>) {
         if (notes.isEmpty()) return
         appendEntries(notes.map { LogEntry(EntryKind.SYSTEM, speaker = "系统", text = it) })
@@ -517,7 +528,9 @@ class PlayViewModel internal constructor(
         val s = session ?: return
         val now = System.currentTimeMillis()
         val stamped = entries.map { if (it.ts == 0L) it.copy(ts = now) else it }
-        session = s.copy(history = (s.history + stamped).takeLast(600), updatedAt = now)
+        val choices = maxOf(s.choicesTaken, s.history.count { it.kind == EntryKind.CHOICE })
+        session = s.copy(history = (s.history + stamped).takeLast(600), updatedAt = now,
+            choicesTaken = (choices.coerceAtLeast(0).toLong() + entries.count { it.kind == EntryKind.CHOICE }).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
     }
 
     private fun toChoiceData(choice: AiChoice) = ChoiceData(choice.text, choice.next)

@@ -316,7 +316,10 @@ data class SessionState(
     val pendingAiChoices: List<ChoiceData> = emptyList(),
     /** 即使模型没有返回选项，也记录本轮已完成，读档后展示“继续生成”而非自动重跑。 */
     val aiAwaitingChoice: Boolean = false,
-    val memory: String = ""
+    val memory: String = "",
+    /** Lifetime counts within this journey, independent of the bounded history window. */
+    val choicesTaken: Int = 0,
+    val aiTurns: Int = 0
 )
 
 @Serializable
@@ -340,7 +343,16 @@ data class AppBundle(
     val characters: List<CharacterData> = emptyList(),
     val stories: List<Story> = emptyList(),
     val saves: List<SaveSlot> = emptyList(),
-    val bottomRules: List<BottomRule> = emptyList()
+    val bottomRules: List<BottomRule> = emptyList(),
+    val achievements: List<AchievementRecord> = emptyList()
+)
+
+@Serializable
+data class AchievementRecord(
+    val id: String,
+    val progress: Int = 0,
+    val unlockedAt: Long = 0L,
+    val milestones: Set<String> = emptySet()
 )
 
 /** 把任意 JSON 安全解析为 [JsonElement] 的辅助（用于导入校验）。 */

@@ -449,6 +449,8 @@ data: [DONE]
                 vm.ui.first { it.stage == PlayStage.AUTHORED && it.nodeId == "next" }
             }
             assertEquals(2, requests.get())
+            assertEquals(2, ready.session!!.aiTurns)
+            withTimeout(5_000) { library.achievements.first { records -> records.any { it.id == "FIRST_AI" && it.unlockedAt > 0L } } }
             assertEquals(listOf("第一幕", "第二幕"), ready.session!!.history.map { it.text })
             assertEquals("留下", ready.pendingAiChoices.single().text)
         } finally {
