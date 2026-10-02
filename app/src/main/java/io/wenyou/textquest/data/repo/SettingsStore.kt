@@ -20,11 +20,10 @@ data class UiPrefs(
     val contentUnlocked: Boolean = false,
     val generationNotifications: Boolean = false,
     val themeStyle: ThemeStyle = ThemeStyle.MATERIAL,
-    val prideTapCount: Int = 0,
+    val prideThemesUnlocked: Boolean = false,
+    val prideThemesEnabled: Boolean = false,
     val prideTheme: PrideTheme? = null
-) {
-    val prideThemesUnlocked: Boolean get() = prideTapCount >= 15
-}
+)
 
 /** 轻量应用设置（SharedPreferences），变更同步发布到 [state] 供主题实时响应。 */
 class SettingsStore(context: Context) {
@@ -35,7 +34,13 @@ class SettingsStore(context: Context) {
     private val _state = MutableStateFlow(load())
     val state: StateFlow<UiPrefs> = _state.asStateFlow()
 
-    private fun load(): UiPrefs = UiPrefs(
+    private fun load(): UiPrefs {
+        val unlocked = prefs.getBoolean("pride_unlocked", false) ||
+            prefs.getInt("pride_unlock_version", -1) >= 0 || prefs.getInt("pride_tag_taps", 0) >= 15
+        val enabled = unlocked && prefs.getBoolean("pride_enabled", true)
+        prefs.edit().putBoolean("pride_unlocked", unlocked)
+            .remove("pride_tag_taps").remove("pride_unlock_version").apply()
+        return UiPrefs(
         generationNotifications = prefs.getBoolean("generation_notifications", false),
         themeStyle = ThemeStyle.fromStored(prefs.getString(KEY_STYLE, null)),
         themeMode = themeOf(prefs.getString(KEY_THEME, ThemeMode.SYSTEM.name)),
@@ -43,10 +48,12 @@ class SettingsStore(context: Context) {
         defaultProviderId = prefs.getString(KEY_PROVIDER, null),
         showLgbt = prefs.getBoolean(KEY_SHOW_LGBT, true),
         adultContent = prefs.getBoolean(KEY_ADULT, true),
-        prideTapCount = prefs.getInt("pride_tag_taps", 0).coerceIn(0, 15),
-        prideTheme = if (prefs.getInt("pride_tag_taps", 0) >= 15) PrideTheme.fromStored(prefs.getString("pride_theme", null)) else null,
+        prideThemesUnlocked = unlocked,
+        prideThemesEnabled = enabled,
+        prideTheme = if (enabled) PrideTheme.fromStored(prefs.getString("pride_theme", null)) else null,
         contentUnlocked = prefs.getBoolean(KEY_CONTENT_UNLOCKED, false)
-    )
+        )
+    }
 
     /** 旧版本可能写入过未知枚举值（主题改名/清理残留），损坏时回退跟随系统。 */
     private fun themeOf(raw: String?): ThemeMode = try {
@@ -60,15 +67,20 @@ class SettingsStore(context: Context) {
         _state.value = _state.value.copy(generationNotifications = on)
     }
 
-    fun tapPrideTag() {
-        if (_state.value.prideThemesUnlocked) return
-        val taps = (_state.value.prideTapCount + 1).coerceAtMost(15)
-        prefs.edit().putInt("pride_tag_taps", taps).apply()
-        _state.value = _state.value.copy(prideTapCount = taps)
+    fun unlockPrideThemes() {
+        prefs.edit().putBoolean("pride_unlocked", true).putBoolean("pride_enabled", true).apply()
+        _state.value = _state.value.copy(prideThemesUnlocked = true, prideThemesEnabled = true)
+    }
+
+    fun setPrideThemesEnabled(on: Boolean) {
+        if (!_state.value.prideThemesUnlocked) return
+        prefs.edit().putBoolean("pride_enabled", on).apply()
+        _state.value = _state.value.copy(prideThemesEnabled = on,
+            prideTheme = if (on) PrideTheme.fromStored(prefs.getString("pride_theme", null)) else null)
     }
 
     fun setPrideTheme(theme: PrideTheme?) {
-        if (theme != null && !_state.value.prideThemesUnlocked) return
+        if (theme != null && !_state.value.prideThemesEnabled) return
         prefs.edit().putString("pride_theme", theme?.name).apply()
         _state.value = _state.value.copy(prideTheme = theme)
     }

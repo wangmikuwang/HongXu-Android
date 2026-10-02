@@ -120,7 +120,7 @@ fun WenYouTheme(
         dark -> DarkColors
         else -> LightColors
     }
-    val colorScheme = prideTheme?.let { prideColors(baseColors, it, dark) } ?: baseColors
+    val colorScheme = prideTheme?.let { prideColors(baseColors, it) } ?: baseColors
     CompositionLocalProvider(LocalThemeStyle provides style) {
         MaterialTheme(
             colorScheme = colorScheme,

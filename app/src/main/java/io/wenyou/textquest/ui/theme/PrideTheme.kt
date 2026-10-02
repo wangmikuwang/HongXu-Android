@@ -2,7 +2,6 @@ package io.wenyou.textquest.ui.theme
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 
 /** Common flag designs; names are stable preference keys, not content classifications. */
@@ -30,6 +29,29 @@ enum class PrideTheme(val label: String, private val accentIndex: Int, vararg st
 
     val colors = stripes.map { Color(it) }
     val accent get() = colors[accentIndex]
+    val description: String get() = when (this) {
+        GAY -> "性取向：对男性产生情感或性吸引的男性也可认同这一身份。绿、青、白、蓝、紫七色旗代表男同性恋社群，涵盖跨性别和非二元成员，强调多元与归属。"
+        LESBIAN -> "性取向：通常指被女性吸引的女性，也有非二元者使用此身份。橙、白、粉五色旗由日落旗简化而来，表达独立、社群、与女性身份的联系及爱。"
+        TRANS -> "性别身份：自我性别与出生时被指定的性别不一致，不决定性取向。蓝与粉沿用传统性别色，白色包含非二元、过渡中或尚在探索的人；对称排列寓意自我认同。"
+        RAINBOW -> "社群旗帜：代表整个 LGBTQ+ 社群，并非单一性取向。六色常解释为红色生命、橙色疗愈、黄色阳光、绿色自然、蓝色和谐、紫色精神，象征多元与共同的骄傲。"
+        BI -> "性取向：可能对两种或更多性别产生吸引，不要求程度或方式相同。粉与蓝原指向同性及不同性别的吸引，交叠的紫色象征双性恋；身份并不限于二元性别。"
+        PAN -> "性取向：可能被任何性别的人吸引，性别并非决定因素。粉、黄、蓝三色旗常分别联系女性、非二元者和男性，强调超越性别边界的吸引。"
+        ASEXUAL -> "性取向：很少或不体验性吸引，不等于不能恋爱或选择禁欲。黑色象征无性恋，灰色涵盖灰性恋与半性恋，白色联系有性吸引者，紫色象征社群。"
+        DEMISEXUAL -> "性取向：通常在形成深厚情感联系后才可能体验性吸引；建立联系不保证出现吸引。黑三角与白、紫、灰条纹沿用无性恋光谱色彩，表达半性恋的归属。"
+        GRAYSEXUAL -> "性取向：在有性与无性体验之间，可能很少、较弱或只在特定情境下体验性吸引。紫、灰、白相间的旗帜是灰性恋及无性恋光谱的社群识别符号。"
+        OMNI -> "性取向：可能对所有性别产生吸引，同时仍可能注意性别差异或有所偏好。粉、深紫、蓝组成的五色旗代表全性恋社群，强调多元吸引与自我表达。"
+        POLY -> "性取向：可能对多种、但不一定所有性别产生吸引。粉、绿、蓝三色旗代表多性恋社群；它与描述关系安排的多伴侣关系并非同一概念。"
+        ABRO -> "性取向：吸引的对象或体验可能随时间变化。绿、白、粉渐变旗是流动性取向社群的标志；逐色含义没有一致解释，不将后来的诠释当作统一定义。"
+        AROMANTIC -> "浪漫取向：很少或不体验浪漫吸引，与是否体验性吸引不同。深浅绿象征无浪漫光谱，白色联系友谊及柏拉图式关系，灰黑涵盖不同的性吸引体验。"
+        NONBINARY -> "性别身份：不完全属于男性或女性的二元划分。黄色指二元之外，白色指多种性别，紫色指男性与女性经验的混合，黑色指无性别；每个人的认同各不相同。"
+        GENDERFLUID -> "性别身份：性别体验可能随时间流动，不等于性取向变化。粉、白、紫、黑、蓝五色旗涵盖女性、多个性别、混合性别、无性别及男性经验。"
+        GENDERQUEER -> "性别身份：不受传统二元性别规范限制，可涵盖多种身份。紫色联系混合或模糊的性别经验，白色联系无性别，绿色联系二元之外。"
+        AGENDER -> "性别身份：认同没有性别、性别中性或不以性别描述自己。黑白联系无性别，灰色联系部分无性别体验，绿色联系非二元经验；它不等于无性恋。"
+        INTERSEX -> "身体性征：先天性征存在不符合典型男女二分的变异，不是性取向，也不规定性别身份。黄底避开传统粉蓝分类，紫色完整圆环象征完整、自主与不被缺损化。"
+        UNLABELLED -> "自我描述：选择不用单一标签定义性取向或性别，也可能仍在探索。浅绿、米白、浅蓝、浅黄四色旗代表不贴标签的自我表达；不规定每种颜色的唯一含义。"
+        STRAIGHT -> "性取向：通常指被不同性别的人吸引。黑白相间旗用于表示异性恋，但不是统一的 LGBTQ+ 社群或盟友旗；身份本身不代表是否支持平等。"
+    }
+
     val stripeWeights get() = if (this == BI || this == DEMISEXUAL) listOf(2f, 1f, 2f) else colors.map { 1f }
 
     companion object {
@@ -37,33 +59,22 @@ enum class PrideTheme(val label: String, private val accentIndex: Int, vararg st
     }
 }
 
-private fun readableAccent(seed: Color, dark: Boolean): Color {
-    // WCAG 4.5:1 for white text in light mode and black text in dark mode.
-    var color = seed
-    var step = 0
-    while (if (dark) color.luminance() < 0.175f else color.luminance() > 0.1833f) {
-        step++
-        color = lerp(seed, if (dark) Color.White else Color.Black, (step * 0.05f).coerceAtMost(1f))
+/** Flag colors remain exact; only foreground text chooses black or white. */
+internal fun prideColors(base: ColorScheme, theme: PrideTheme): ColorScheme {
+    val colors = (listOf(theme.accent) + theme.colors + if (theme == PrideTheme.DEMISEXUAL) listOf(Color.Black) else emptyList()).distinct()
+    fun accent(index: Int) = colors[index % colors.size]
+    fun text(color: Color): Color {
+        val luminance = color.luminance() + 0.05f
+        return if (luminance / 0.05f >= 1.05f / luminance) Color.Black else Color.White
     }
-    return color
-}
-
-internal fun prideColors(base: ColorScheme, theme: PrideTheme, dark: Boolean): ColorScheme {
-    val accents = theme.colors.filter { it != Color.White && it != Color.Black }.distinct().ifEmpty { theme.colors }
-    val primary = readableAccent(theme.accent, dark)
-    val secondary = readableAccent(accents.last(), dark)
-    val tertiary = readableAccent(accents[accents.size / 2], dark)
-    val text = if (dark) Color.Black else Color.White
+    val primary = accent(0); val secondary = accent(1); val tertiary = accent(2)
+    val primaryContainer = accent(3); val secondaryContainer = accent(4); val tertiaryContainer = accent(5)
+    val inverse = accent(6)
     return base.copy(
-        primary = primary, onPrimary = text, primaryContainer = lerp(base.surface, primary, 0.14f), onPrimaryContainer = base.onSurface,
-        secondary = secondary, onSecondary = text, secondaryContainer = lerp(base.surface, secondary, 0.14f), onSecondaryContainer = base.onSurface,
-        tertiary = tertiary, onTertiary = text, tertiaryContainer = lerp(base.surface, tertiary, 0.14f), onTertiaryContainer = base.onSurface,
-        surfaceTint = primary, background = lerp(base.background, theme.accent, 0.025f),
-        surface = lerp(base.surface, theme.accent, 0.025f),
-        surfaceContainerLowest = base.surface,
-        surfaceContainerLow = lerp(base.surface, theme.accent, 0.025f),
-        surfaceContainer = lerp(base.surface, theme.accent, 0.04f),
-        surfaceContainerHigh = lerp(base.surface, theme.accent, 0.06f),
-        surfaceContainerHighest = lerp(base.surface, theme.accent, 0.08f)
+        primary = primary, onPrimary = text(primary), primaryContainer = primaryContainer, onPrimaryContainer = text(primaryContainer),
+        secondary = secondary, onSecondary = text(secondary), secondaryContainer = secondaryContainer, onSecondaryContainer = text(secondaryContainer),
+        tertiary = tertiary, onTertiary = text(tertiary), tertiaryContainer = tertiaryContainer, onTertiaryContainer = text(tertiaryContainer),
+        inversePrimary = inverse, inverseSurface = text(inverse), inverseOnSurface = if (text(inverse) == Color.Black) Color.White else Color.Black,
+        surfaceTint = Color.Transparent
     )
 }

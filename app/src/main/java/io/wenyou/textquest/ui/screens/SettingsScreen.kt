@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +57,7 @@ import io.wenyou.textquest.ui.common.EasterEggTitle
 import io.wenyou.textquest.ui.common.SectionHeader
 import io.wenyou.textquest.ui.common.TonalCard
 import io.wenyou.textquest.ui.theme.PrideTheme
-import io.wenyou.textquest.ui.common.LocalPrideTagClick
+import io.wenyou.textquest.ui.common.LocalPrideGalleryOpen
 import io.wenyou.textquest.ui.theme.ThemeMode
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -99,14 +100,19 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
     // 连点版本号解锁内容开关（α 版默认隐藏 LGBT/18+ 开关）
     var lastTapAt by remember { mutableStateOf(0L) }
     var tapCount by remember { mutableStateOf(0) }
+    val openPrideGallery = LocalPrideGalleryOpen.current
     val onVersionTap = {
-        val now = System.currentTimeMillis()
-        if (now - lastTapAt > 2000L) tapCount = 0
-        lastTapAt = now
-        tapCount++
-        if (tapCount >= 10) {
-            tapCount = 0
-            vm.unlockContentPrefs()
+        if (ui.prideUnlocked) openPrideGallery()
+        else {
+            val now = System.currentTimeMillis()
+            if (now - lastTapAt > 2000L) tapCount = 0
+            lastTapAt = now
+            tapCount++
+            if (tapCount >= 10) {
+                tapCount = 0
+                vm.unlockContentPrefs()
+                openPrideGallery()
+            }
         }
     }
 
@@ -150,7 +156,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
         nav = nav
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.padding(padding),
+            modifier = Modifier.testTag("settings-list").padding(padding),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
@@ -201,12 +207,12 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                     )
                 }
             }
-            if (ui.prideUnlocked) item {
+            if (ui.prideUnlocked && ui.prideEnabled) item {
                 TonalCard {
                     AppDropdown(label = "旗帜配色",
                         options = listOf("默认配色" to null) + PrideTheme.entries.map { it.label to it },
                         selected = ui.prideTheme, onSelect = vm::setPrideTheme)
-                    TextButton(onClick = LocalPrideTagClick.current) { Text("打开旗帜馆") }
+                    ui.prideTheme?.let { Text(it.description, style = MaterialTheme.typography.bodySmall) }
                 }
             }
             if (ui.style == ThemeStyle.MATERIAL && ui.prideTheme == null) item {
@@ -246,8 +252,8 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 }
             }
 
-            // 内容开关默认隐藏，连点版本号解锁。
-            if (ui.contentUnlocked) {
+            // 解锁后，LGBT 内容开关仅在旗帜墙显示。
+            if (ui.contentUnlocked && !ui.prideUnlocked) {
                 item { SectionHeader("内容偏好") }
                 item {
                     TonalCard {
@@ -342,7 +348,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                     Text("版本", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(6.dp))
                     Text("v${BuildConfig.VERSION_NAME.substringBefore('-')}（build ${BuildConfig.VERSION_CODE}）\n本地优先：API Key 仅保存在本机，不上传任何远端。\n",
-                        modifier = Modifier.clickable(onClick = onVersionTap),
+                        modifier = Modifier.testTag("pride-version").clickable(onClickLabel = "版本号", onClick = onVersionTap),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

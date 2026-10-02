@@ -2,6 +2,9 @@ package io.wenyou.textquest
 
 import android.content.Context
 import android.content.ContextWrapper
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.test.platform.app.InstrumentationRegistry
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
@@ -26,48 +29,124 @@ import java.util.UUID
 class PrideUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
-    @Test fun tenThenFiveTapsUnlockPersistentThemesWithoutChangingContentPrefs() {
+    @Test fun silentOrderedUnlockAndPermanentSecondarySettings() {
         val prefix = "pride-test-${UUID.randomUUID()}"
         val context = object : ContextWrapper(compose.activity.applicationContext) {
             override fun getFilesDir() = File(cacheDir, prefix).apply { mkdirs() }
             override fun getSharedPreferences(name: String, mode: Int) = super.getSharedPreferences("$prefix-$name", mode)
         }
+        val prefs = context.getSharedPreferences("wenyou_settings", Context.MODE_PRIVATE)
+        prefs.edit().putInt("pride_tag_taps", 14).putString("pride_theme", "TRANS")
+            .putBoolean("adult_content", false).putBoolean("content_unlocked_v1", true).commit()
         val container = WenYouApp.AppContainer(context)
         val original = container.settings.state.value
+        assertFalse(original.prideThemesUnlocked)
+        assertNull(original.prideTheme)
         container.settings.setPrideTheme(PrideTheme.TRANS)
         assertNull(container.settings.state.value.prideTheme)
         compose.runOnIdle { compose.activity.setContent { WenYouAppRoot(container) } }
         compose.onNodeWithContentDescription("剧情", useUnmergedTree = true).performClick()
         val label = compose.onNodeWithTag("pride-filter")
         label.performScrollTo()
-        repeat(9) { label.performClick() }
-        compose.onNodeWithText("骄傲旗帜馆").assertDoesNotExist()
-        label.performClick()
-        compose.onNodeWithText("骄傲旗帜馆").assertIsDisplayed()
-        compose.onNodeWithContentDescription("男同性恋旗帜").assertIsDisplayed()
-        compose.onNodeWithContentDescription("女同性恋旗帜").assertIsDisplayed()
-        compose.onNodeWithContentDescription("跨性别旗帜").assertIsDisplayed()
-        repeat(4) { compose.onNodeWithTag("pride-gallery-tap").performClick() }
-        compose.onNodeWithText("应用配色").assertDoesNotExist()
-        compose.onNodeWithTag("pride-gallery-tap").performClick()
-        compose.onNodeWithText("已解锁 20 款旗帜配色", substring = true).assertIsDisplayed()
-        compose.onNodeWithTag("pride-flags").performScrollToKey("TRANS")
-        compose.onAllNodesWithText("应用配色").onFirst().performClick()
-        compose.onNodeWithText("关闭旗帜馆").performClick()
+        repeat(10) { label.performClick() }
+        compose.onNodeWithText("旗帜墙").assertDoesNotExist()
         compose.onNodeWithContentDescription("设置", useUnmergedTree = true).performClick()
-        compose.onNodeWithText("旗帜配色").performScrollTo().assertIsDisplayed()
+        val version = compose.onNodeWithTag("pride-version")
+        compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("pride-version"))
+        repeat(9) { version.performClick() }
+        compose.onNodeWithText("旗帜墙").assertDoesNotExist()
+        version.performClick()
+        compose.onNodeWithText("旗帜墙").assertIsDisplayed()
+        compose.onNodeWithText(PrideTheme.GAY.description).assertExists()
+        compose.onNodeWithText(PrideTheme.LESBIAN.description).assertExists()
+        InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { bitmap ->
+            File(compose.activity.cacheDir, "pride-grid-preview.png").outputStream().use {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+        }
+        val first = compose.onNodeWithTag("pride-flag-GAY").fetchSemanticsNode().boundsInRoot
+        val second = compose.onNodeWithTag("pride-flag-LESBIAN").fetchSemanticsNode().boundsInRoot
+        val third = compose.onNodeWithTag("pride-flag-TRANS").fetchSemanticsNode().boundsInRoot
+        assertTrue(first.left < second.left && first.top == second.top && third.top > first.top)
+        compose.onNodeWithTag("pride-flag-LESBIAN").performClick()
+        compose.onNodeWithText("顺序", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("已完成", substring = true).assertDoesNotExist()
+        compose.onNodeWithText("已点击", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("pride-enabled").assertDoesNotExist()
+        assertFalse(container.settings.state.value.prideThemesUnlocked)
+        PrideTheme.entries.forEachIndexed { index, theme ->
+            compose.onNodeWithTag("pride-flags").performScrollToIndex(index)
+            compose.onNodeWithTag("pride-flag-${theme.name}").performClick()
+            assertEquals(index == PrideTheme.entries.lastIndex, container.settings.state.value.prideThemesUnlocked)
+        }
+        compose.onNodeWithText("已解锁", substring = true).assertDoesNotExist()
+        compose.onNodeWithTag("pride-enabled").assertIsOn()
+        compose.onNodeWithTag("pride-content").assertIsOn()
+        compose.onNodeWithTag("pride-flags").performScrollToIndex(2)
+        compose.onNodeWithTag("pride-flag-TRANS").performClick()
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithTag("settings-list").performScrollToNode(hasText("旗帜配色"))
+        compose.onNodeWithText("旗帜配色").assertIsDisplayed()
         compose.onNodeWithText("动态取色（壁纸配色）").assertDoesNotExist()
         val saved = container.settings.state.value
         assertTrue(saved.prideThemesUnlocked)
-        assertNotNull(saved.prideTheme)
+        assertEquals(PrideTheme.TRANS, saved.prideTheme)
         assertEquals(saved.prideTheme, SettingsStore(context).state.value.prideTheme)
-        assertEquals(15, SettingsStore(context).state.value.prideTapCount)
         assertEquals(original.showLgbt, saved.showLgbt)
         assertEquals(original.adultContent, saved.adultContent)
         assertEquals(original.contentUnlocked, saved.contentUnlocked)
         compose.runOnIdle { container.settings.setPrideTheme(null) }
-        compose.onNodeWithText("动态取色（壁纸配色）").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("settings-list").performScrollToNode(hasText("动态取色（壁纸配色）"))
+        compose.onNodeWithText("动态取色（壁纸配色）").assertIsDisplayed()
         assertEquals(original.dynamicColor, container.settings.state.value.dynamicColor)
+        container.settings.setPrideTheme(PrideTheme.TRANS)
+        compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("pride-version"))
+        version.performClick()
+        compose.onNodeWithText("旗帜墙").assertIsDisplayed()
+        compose.onNodeWithTag("pride-enabled").performClick().assertIsOff()
+        assertNull(container.settings.state.value.prideTheme)
+        assertFalse(SettingsStore(context).state.value.prideThemesEnabled)
+        compose.onNodeWithTag("pride-content").performClick().assertIsOff()
+        assertFalse(container.settings.state.value.showLgbt)
+        compose.onNodeWithContentDescription("返回").performClick()
+        compose.onNodeWithTag("settings-list").performScrollToNode(hasText("动态取色（壁纸配色）"))
+        compose.onNodeWithText("旗帜配色").assertDoesNotExist()
+        compose.onNodeWithText("动态取色（壁纸配色）").assertIsDisplayed()
+        compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("pride-version"))
+        compose.onNodeWithText("显示 LGBT（LGBTQ+）内容").assertDoesNotExist()
+        version.performClick()
+        compose.onNodeWithTag("pride-enabled").performClick().assertIsOn()
+        compose.onNodeWithTag("pride-content").assertIsOff()
+        assertEquals(PrideTheme.TRANS, container.settings.state.value.prideTheme)
+        compose.onNodeWithTag("pride-flags").performScrollToIndex(0)
+        InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { bitmap ->
+            File(compose.activity.cacheDir, "pride-grid-preview.png").outputStream().use {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+        }
+        prefs.edit().putInt("pride_unlock_version", BuildConfig.VERSION_CODE - 1).commit()
+        val upgraded = SettingsStore(context)
+        assertTrue(upgraded.state.value.prideThemesUnlocked)
+        assertTrue(upgraded.state.value.prideThemesEnabled)
+        assertEquals(PrideTheme.TRANS, upgraded.state.value.prideTheme)
+        assertFalse(upgraded.state.value.showLgbt)
+        assertEquals(original.adultContent, upgraded.state.value.adultContent)
+        assertEquals(original.dynamicColor, upgraded.state.value.dynamicColor)
+        // Users who already unlocked the old entry keep their unlock after upgrading.
+        prefs.edit().remove("pride_unlocked").putInt("pride_tag_taps", 15).commit()
+        assertTrue(SettingsStore(context).state.value.prideThemesUnlocked)
+        val style = mutableStateOf(ThemeStyle.MATERIAL)
+        compose.runOnIdle { compose.activity.setContent {
+            WenYouTheme(mode = if (style.value == ThemeStyle.APPLE) ThemeMode.DARK else ThemeMode.LIGHT,
+                dynamicColor = true, style = style.value, prideTheme = PrideTheme.TRANS) {
+                Button(onClick = {}, modifier = Modifier.testTag("raw-flag-button")) { Text("原色") }
+            }
+        } }
+        for (appearance in listOf(ThemeStyle.MATERIAL, ThemeStyle.APPLE)) {
+            compose.runOnIdle { style.value = appearance }
+            val image = compose.onNodeWithTag("raw-flag-button").captureToImage()
+            assertEquals(PrideTheme.TRANS.accent.toArgb(), image.toPixelMap()[(image.width * 0.1f).toInt(), image.height / 2].toArgb())
+        }
     }
 
     @Test fun flagsRenderStripesTriangleAndRingInsteadOfEmojiFallbacks() {

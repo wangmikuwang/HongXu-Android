@@ -371,6 +371,7 @@ class BottomRuleEditorViewModel(
 
 data class SettingsUi(
     val prideUnlocked: Boolean = false,
+    val prideEnabled: Boolean = false,
     val prideTheme: PrideTheme? = null,
     val style: ThemeStyle = ThemeStyle.MATERIAL,
     val mode: ThemeMode = ThemeMode.SYSTEM,
@@ -391,7 +392,7 @@ class SettingsViewModel(container: WenYouApp.AppContainer) : ViewModel() {
     private val _message = MutableStateFlow("")
 
     private fun settingsSnapshot(prefs: io.wenyou.textquest.data.repo.UiPrefs, providers: List<ApiProfile>, message: String = "") =
-        SettingsUi(prideUnlocked = prefs.prideThemesUnlocked, prideTheme = prefs.prideTheme, style = prefs.themeStyle, mode = prefs.themeMode, dynamicColor = prefs.dynamicColor, defaultProviderId = prefs.defaultProviderId, showLgbt = prefs.showLgbt, adultContent = prefs.adultContent, contentUnlocked = prefs.contentUnlocked, providers = providers, message = message)
+        SettingsUi(prideUnlocked = prefs.prideThemesUnlocked, prideEnabled = prefs.prideThemesEnabled, prideTheme = prefs.prideTheme, style = prefs.themeStyle, mode = prefs.themeMode, dynamicColor = prefs.dynamicColor, defaultProviderId = prefs.defaultProviderId, showLgbt = prefs.showLgbt, adultContent = prefs.adultContent, contentUnlocked = prefs.contentUnlocked, providers = providers, message = message)
 
     val ui: StateFlow<SettingsUi> = kotlinx.coroutines.flow.combine(
         store.state, library.providers, _message

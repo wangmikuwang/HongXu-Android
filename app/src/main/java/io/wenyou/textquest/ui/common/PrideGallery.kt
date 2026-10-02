@@ -3,8 +3,9 @@ package io.wenyou.textquest.ui.common
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -15,13 +16,19 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.wenyou.textquest.ui.theme.PrideTheme
 
-val LocalPrideTagClick = staticCompositionLocalOf<() -> Unit> { {} }
+val LocalPrideGalleryOpen = staticCompositionLocalOf<() -> Unit> { {} }
 
 @Composable
 internal fun PrideFlag(theme: PrideTheme, modifier: Modifier = Modifier) {
@@ -46,30 +53,51 @@ internal fun PrideFlag(theme: PrideTheme, modifier: Modifier = Modifier) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PrideGallery(taps: Int, selected: PrideTheme?, onTap: () -> Unit, onSelect: (PrideTheme) -> Unit, onDismiss: () -> Unit) {
-    val unlocked = taps >= 15
-    AlertDialog(onDismissRequest = onDismiss,
-        title = { Text("骄傲旗帜馆") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AssistChip(onClick = onTap, label = { Text("LGBT") }, modifier = Modifier.testTag("pride-gallery-tap"))
-                Text(if (unlocked) "已解锁 ${PrideTheme.entries.size} 款旗帜配色，可立即应用或在设置中切换。"
-                     else "再点击上方 LGBT 标签 ${15 - taps} 次，解锁全部旗帜配色。")
-                LazyColumn(Modifier.weight(1f, fill = false).heightIn(max = 420.dp).testTag("pride-flags"), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(PrideTheme.entries, key = { it.name }) { theme ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            PrideFlag(theme, Modifier.width(90.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(theme.label, style = MaterialTheme.typography.titleSmall)
-                                if (unlocked) TextButton(onClick = { onSelect(theme) }) {
-                                    Text(if (selected == theme) "已应用" else "应用配色")
-                                }
+internal fun PrideGallery(unlocked: Boolean, enabled: Boolean, showLgbt: Boolean,
+    onUnlock: () -> Unit, onEnabledChange: (Boolean) -> Unit, onShowLgbtChange: (Boolean) -> Unit,
+    onSelect: (PrideTheme) -> Unit, onDismiss: () -> Unit) {
+    var nextIndex by rememberSaveable { mutableIntStateOf(0) }
+    Scaffold(topBar = {
+        CenterAlignedTopAppBar(title = { Text("旗帜墙") }, navigationIcon = {
+            IconButton(onClick = onDismiss) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
+        })
+    }) { padding ->
+        Column(Modifier.padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (unlocked) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("骄傲主题选项", Modifier.weight(1f))
+                    Switch(checked = enabled, onCheckedChange = onEnabledChange, modifier = Modifier.testTag("pride-enabled"))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("显示 LGBT（LGBTQ+）内容", Modifier.weight(1f))
+                    Switch(checked = showLgbt, onCheckedChange = onShowLgbtChange, modifier = Modifier.testTag("pride-content"))
+                }
+            }
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+                LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.weight(1f).testTag("pride-flags"),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    itemsIndexed(PrideTheme.entries, key = { _, theme -> theme.name }) { index, theme ->
+                        Surface(onClick = {
+                            if (unlocked) onSelect(theme)
+                            else {
+                                nextIndex = if (index == nextIndex) nextIndex + 1 else if (index == 0) 1 else 0
+                                if (nextIndex == PrideTheme.entries.size) onUnlock()
+                            }
+                        }, enabled = !unlocked || enabled, modifier = Modifier.testTag("pride-flag-${theme.name}"),
+                            shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                            Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                PrideFlag(theme, Modifier.fillMaxWidth())
+                                Text(theme.label, style = MaterialTheme.typography.labelMedium)
+                                Text(theme.description, style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
                 }
             }
-        },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("关闭旗帜馆") } })
+        }
+    }
 }

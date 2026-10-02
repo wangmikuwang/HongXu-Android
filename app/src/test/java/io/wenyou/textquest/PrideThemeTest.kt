@@ -17,6 +17,7 @@ class PrideThemeTest {
             assertNotNull("Missing ${it.name}", PrideTheme.fromStored(it.name))
         }
         assertEquals(20, PrideTheme.entries.size)
+        assertTrue(PrideTheme.entries.all { it.description.isNotBlank() })
         assertNull(PrideTheme.fromStored("broken"))
         assertNull(PrideTheme.fromStored(null))
     }
@@ -28,7 +29,13 @@ class PrideThemeTest {
         }
         for (dark in listOf(false, true)) for (base in listOf(appleColors(dark), if (dark) darkColorScheme() else lightColorScheme())) {
             for (theme in PrideTheme.entries) {
-                val c = prideColors(base, theme, dark)
+                val c = prideColors(base, theme)
+                val accents = listOf(c.primary, c.secondary, c.tertiary, c.primaryContainer, c.secondaryContainer, c.tertiaryContainer, c.inversePrimary)
+                val flagColors = theme.colors + if (theme == PrideTheme.DEMISEXUAL) listOf(Color.Black) else emptyList()
+                assertTrue("Missing original flag colors: ${theme.name}", accents.containsAll(flagColors.distinct()))
+                assertTrue("Non-flag accent: ${theme.name}", accents.all { it in flagColors })
+                assertEquals(theme.accent, c.primary)
+                assertEquals(Color.Transparent, c.surfaceTint)
                 for ((foreground, background) in listOf(c.onPrimary to c.primary, c.onSecondary to c.secondary,
                     c.onTertiary to c.tertiary, c.onPrimaryContainer to c.primaryContainer,
                     c.onSecondaryContainer to c.secondaryContainer, c.onTertiaryContainer to c.tertiaryContainer,

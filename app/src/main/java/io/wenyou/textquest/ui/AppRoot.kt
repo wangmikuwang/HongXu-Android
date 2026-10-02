@@ -33,10 +33,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import io.wenyou.textquest.ui.common.LocalPrideTagClick
+import io.wenyou.textquest.ui.common.LocalPrideGalleryOpen
 import io.wenyou.textquest.ui.common.PrideGallery
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +68,7 @@ object R {
     const val CHARACTERS = "characters"
     const val PROVIDERS = "providers"
     const val SETTINGS = "settings"
+    const val PRIDE = "pride"
 
     const val ARG_STORY = "storyId"
     const val ARG_SAVE = "saveId"
@@ -97,15 +95,8 @@ object R {
 @Composable
 fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewModel = viewModel()) {
     val prefs by container.settings.state.collectAsStateWithLifecycle()
-    var prideOpen by rememberSaveable { mutableStateOf(false) }
-    val onPrideTap: () -> Unit = {
-        container.settings.tapPrideTag()
-        if (container.settings.state.value.prideTapCount >= 10) prideOpen = true
-    }
     WenYouTheme(prefs.themeMode, prefs.dynamicColor, prefs.themeStyle, prefs.prideTheme) {
         AppUpdateHost(updateVm) {
-            if (prideOpen) PrideGallery(prefs.prideTapCount, prefs.prideTheme, onPrideTap,
-                container.settings::setPrideTheme, { prideOpen = false })
             val writeError by container.library.writeError.collectAsStateWithLifecycle()
             if (writeError != null) {
                 AlertDialog(
@@ -116,7 +107,7 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                 )
             }
             val nav = rememberNavController()
-            CompositionLocalProvider(LocalPrideTagClick provides onPrideTap) {
+            CompositionLocalProvider(LocalPrideGalleryOpen provides { nav.navigate(R.PRIDE) { launchSingleTop = true } }) {
                 NavHost(navController = nav, startDestination = R.HOME) {
                     composable(R.HOME) { HomeScreen(container, nav) }
                     composable(R.STORIES) { StoryListScreen(container, nav) }
@@ -144,6 +135,11 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                         ProviderEditScreen(container, nav, providerId = id)
                     }
                     composable(R.SETTINGS) { SettingsScreen(container, nav, updateVm) }
+                    composable(R.PRIDE) {
+                        PrideGallery(prefs.prideThemesUnlocked, prefs.prideThemesEnabled, prefs.showLgbt,
+                            container.settings::unlockPrideThemes, container.settings::setPrideThemesEnabled,
+                            container.settings::setShowLgbt, container.settings::setPrideTheme, { nav.popBackStack() })
+                    }
                     composable(R.BOTTOM_RULES) { BottomRulesScreen(container, nav) }
                     composable(
                         R.BOTTOM_RULE_EDIT,
@@ -187,9 +183,9 @@ fun HubBottomBar(nav: NavHostController) {
         items.forEach { item ->
             NavigationBarItem(
                 colors = if (apple) NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
                 ) else NavigationBarItemDefaults.colors(),
                 selected = current == item.route,
                 onClick = {
