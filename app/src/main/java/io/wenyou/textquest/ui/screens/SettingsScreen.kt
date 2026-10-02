@@ -1,5 +1,8 @@
 package io.wenyou.textquest.ui.screens
 
+import android.app.DownloadManager
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -44,6 +47,8 @@ import io.wenyou.textquest.CrashLog
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.ui.HubScaffold
 import io.wenyou.textquest.ui.R
+import io.wenyou.textquest.ui.common.AppUpdateCard
+import io.wenyou.textquest.ui.vm.AppUpdateViewModel
 import io.wenyou.textquest.ui.common.AppDropdown
 import io.wenyou.textquest.ui.common.EasterEggTitle
 import io.wenyou.textquest.ui.common.SectionHeader
@@ -65,6 +70,12 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val updateVm: AppUpdateViewModel = viewModel()
+    val updateState by updateVm.ui.collectAsStateWithLifecycle()
+    val openUpdatePage: (Intent) -> Unit = { intent ->
+        try { context.startActivity(intent) }
+        catch (_: Exception) { updateVm.showOpenError() }
+    }
 
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
@@ -148,6 +159,13 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                     Text("两套外观 · 本地数据优先", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
+            }
+
+            item {
+                AppUpdateCard(updateState, updateVm::check, updateVm::download,
+                    onOpenDownloads = { openUpdatePage(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) },
+                    onOpenRelease = { openUpdatePage(Intent(Intent.ACTION_VIEW,
+                        Uri.parse("https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/latest"))) })
             }
 
             if (ui.message.isNotBlank()) {
