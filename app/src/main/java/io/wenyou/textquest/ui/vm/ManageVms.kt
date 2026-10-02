@@ -15,6 +15,7 @@ import io.wenyou.textquest.data.model.ProviderKind
 import io.wenyou.textquest.data.model.SexualOrientation
 import io.wenyou.textquest.data.repo.LocalLibrary
 import io.wenyou.textquest.data.repo.SettingsStore
+import io.wenyou.textquest.ui.theme.PrideTheme
 import io.wenyou.textquest.ui.theme.ThemeMode
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -369,6 +370,8 @@ class BottomRuleEditorViewModel(
 // ---------------- 设置 ----------------
 
 data class SettingsUi(
+    val prideUnlocked: Boolean = false,
+    val prideTheme: PrideTheme? = null,
     val style: ThemeStyle = ThemeStyle.MATERIAL,
     val mode: ThemeMode = ThemeMode.SYSTEM,
     val dynamicColor: Boolean = true,
@@ -388,7 +391,7 @@ class SettingsViewModel(container: WenYouApp.AppContainer) : ViewModel() {
     private val _message = MutableStateFlow("")
 
     private fun settingsSnapshot(prefs: io.wenyou.textquest.data.repo.UiPrefs, providers: List<ApiProfile>, message: String = "") =
-        SettingsUi(style = prefs.themeStyle, mode = prefs.themeMode, dynamicColor = prefs.dynamicColor, defaultProviderId = prefs.defaultProviderId, showLgbt = prefs.showLgbt, adultContent = prefs.adultContent, contentUnlocked = prefs.contentUnlocked, providers = providers, message = message)
+        SettingsUi(prideUnlocked = prefs.prideThemesUnlocked, prideTheme = prefs.prideTheme, style = prefs.themeStyle, mode = prefs.themeMode, dynamicColor = prefs.dynamicColor, defaultProviderId = prefs.defaultProviderId, showLgbt = prefs.showLgbt, adultContent = prefs.adultContent, contentUnlocked = prefs.contentUnlocked, providers = providers, message = message)
 
     val ui: StateFlow<SettingsUi> = kotlinx.coroutines.flow.combine(
         store.state, library.providers, _message
@@ -399,6 +402,7 @@ class SettingsViewModel(container: WenYouApp.AppContainer) : ViewModel() {
     }.stateIn(viewModelScope, kotlinx.coroutines.flow.SharingStarted.Eagerly, settingsSnapshot(store.state.value, library.providers.value))
 
 
+    fun setPrideTheme(theme: PrideTheme?) = store.setPrideTheme(theme)
     fun setStyle(style: ThemeStyle) = store.setThemeStyle(style)
     fun setMode(mode: ThemeMode) = store.setThemeMode(mode)
     fun setDynamic(on: Boolean) = store.setDynamicColor(on)

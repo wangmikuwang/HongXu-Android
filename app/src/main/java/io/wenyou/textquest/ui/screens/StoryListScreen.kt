@@ -74,6 +74,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
@@ -96,6 +97,7 @@ import io.wenyou.textquest.data.repo.ShareCode
 import io.wenyou.textquest.ui.HubScaffold
 import io.wenyou.textquest.ui.R
 import io.wenyou.textquest.ui.common.EmojiBadge
+import io.wenyou.textquest.ui.common.LocalPrideTagClick
 import io.wenyou.textquest.ui.common.Pill
 import io.wenyou.textquest.ui.common.QrCode
 import io.wenyou.textquest.ui.theme.avatarColor
@@ -583,14 +585,16 @@ private fun <T> FilterChipRow(
     label: (T) -> String,
     onSelect: (T) -> Unit
 ) {
+    val prideTap = LocalPrideTagClick.current
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
     ) {
         options.forEach { opt ->
             FilterChip(
+                modifier = if (label(opt) == "LGBT") Modifier.testTag("pride-filter") else Modifier,
                 selected = opt == selected,
-                onClick = { onSelect(opt) },
+                onClick = { onSelect(opt); if (label(opt) == "LGBT") prideTap() },
                 label = { Text(label(opt)) }
             )
         }

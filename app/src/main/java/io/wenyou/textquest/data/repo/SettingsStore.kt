@@ -2,6 +2,7 @@ package io.wenyou.textquest.data.repo
 
 import android.content.Context
 import android.content.SharedPreferences
+import io.wenyou.textquest.ui.theme.PrideTheme
 import io.wenyou.textquest.ui.theme.ThemeMode
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,8 +19,12 @@ data class UiPrefs(
     /** 是否已通过「连点版本号 10 次」解锁内容开关（α 版此项默认隐藏）。 */
     val contentUnlocked: Boolean = false,
     val generationNotifications: Boolean = false,
-    val themeStyle: ThemeStyle = ThemeStyle.MATERIAL
-)
+    val themeStyle: ThemeStyle = ThemeStyle.MATERIAL,
+    val prideTapCount: Int = 0,
+    val prideTheme: PrideTheme? = null
+) {
+    val prideThemesUnlocked: Boolean get() = prideTapCount >= 15
+}
 
 /** 轻量应用设置（SharedPreferences），变更同步发布到 [state] 供主题实时响应。 */
 class SettingsStore(context: Context) {
@@ -38,6 +43,8 @@ class SettingsStore(context: Context) {
         defaultProviderId = prefs.getString(KEY_PROVIDER, null),
         showLgbt = prefs.getBoolean(KEY_SHOW_LGBT, true),
         adultContent = prefs.getBoolean(KEY_ADULT, true),
+        prideTapCount = prefs.getInt("pride_tag_taps", 0).coerceIn(0, 15),
+        prideTheme = if (prefs.getInt("pride_tag_taps", 0) >= 15) PrideTheme.fromStored(prefs.getString("pride_theme", null)) else null,
         contentUnlocked = prefs.getBoolean(KEY_CONTENT_UNLOCKED, false)
     )
 
@@ -51,6 +58,19 @@ class SettingsStore(context: Context) {
     fun setGenerationNotifications(on: Boolean) {
         prefs.edit().putBoolean("generation_notifications", on).apply()
         _state.value = _state.value.copy(generationNotifications = on)
+    }
+
+    fun tapPrideTag() {
+        if (_state.value.prideThemesUnlocked) return
+        val taps = (_state.value.prideTapCount + 1).coerceAtMost(15)
+        prefs.edit().putInt("pride_tag_taps", taps).apply()
+        _state.value = _state.value.copy(prideTapCount = taps)
+    }
+
+    fun setPrideTheme(theme: PrideTheme?) {
+        if (theme != null && !_state.value.prideThemesUnlocked) return
+        prefs.edit().putString("pride_theme", theme?.name).apply()
+        _state.value = _state.value.copy(prideTheme = theme)
     }
 
     fun setThemeStyle(style: ThemeStyle) {

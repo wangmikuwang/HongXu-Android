@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
@@ -53,6 +54,8 @@ import io.wenyou.textquest.ui.common.AppDropdown
 import io.wenyou.textquest.ui.common.EasterEggTitle
 import io.wenyou.textquest.ui.common.SectionHeader
 import io.wenyou.textquest.ui.common.TonalCard
+import io.wenyou.textquest.ui.theme.PrideTheme
+import io.wenyou.textquest.ui.common.LocalPrideTagClick
 import io.wenyou.textquest.ui.theme.ThemeMode
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -66,7 +69,7 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
-    val vm: SettingsViewModel = viewModel(factory = Vms.factory { SettingsViewModel(it) })
+    val vm: SettingsViewModel = viewModel(factory = Vms.factory { SettingsViewModel(container) })
     val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -198,7 +201,15 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                     )
                 }
             }
-            if (ui.style == ThemeStyle.MATERIAL) item {
+            if (ui.prideUnlocked) item {
+                TonalCard {
+                    AppDropdown(label = "旗帜配色",
+                        options = listOf("默认配色" to null) + PrideTheme.entries.map { it.label to it },
+                        selected = ui.prideTheme, onSelect = vm::setPrideTheme)
+                    TextButton(onClick = LocalPrideTagClick.current) { Text("打开旗帜馆") }
+                }
+            }
+            if (ui.style == ThemeStyle.MATERIAL && ui.prideTheme == null) item {
                 TonalCard {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {

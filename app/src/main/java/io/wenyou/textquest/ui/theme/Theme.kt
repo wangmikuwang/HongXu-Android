@@ -93,6 +93,7 @@ fun WenYouTheme(
     mode: ThemeMode = ThemeMode.SYSTEM,
     dynamicColor: Boolean = true,
     style: ThemeStyle = ThemeStyle.MATERIAL,
+    prideTheme: PrideTheme? = null,
     content: @Composable () -> Unit
 ) {
     val dark = when (mode) {
@@ -112,13 +113,14 @@ fun WenYouTheme(
             }
         }
     }
-    val colorScheme = when {
+    val baseColors = when {
         style == ThemeStyle.APPLE -> appleColors(dark)
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+        dynamicColor && prideTheme == null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         dark -> DarkColors
         else -> LightColors
     }
+    val colorScheme = prideTheme?.let { prideColors(baseColors, it, dark) } ?: baseColors
     CompositionLocalProvider(LocalThemeStyle provides style) {
         MaterialTheme(
             colorScheme = colorScheme,

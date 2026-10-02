@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,8 +67,9 @@ fun EmojiBadge(
 /** 小圆角标签。 */
 @Composable
 fun Pill(text: String, modifier: Modifier = Modifier, container: Color? = null) {
+    val prideTap = LocalPrideTagClick.current
     Surface(
-        modifier = modifier,
+        modifier = if (text == "LGBT") modifier.clickable(onClickLabel = "探索骄傲旗帜", onClick = prideTap) else modifier,
         shape = RoundedCornerShape(50),
         color = container ?: MaterialTheme.colorScheme.secondaryContainer
     ) {
