@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +58,8 @@ import io.wenyou.textquest.data.model.EffectType
 import io.wenyou.textquest.data.model.NodeKind
 import io.wenyou.textquest.data.model.StoryMode
 import io.wenyou.textquest.data.model.StoryNode
+import io.wenyou.textquest.ui.common.StoryBranchTreeDialog
+import kotlinx.coroutines.launch
 import io.wenyou.textquest.ui.common.AppDropdown
 import io.wenyou.textquest.ui.common.AppField
 import io.wenyou.textquest.ui.common.ColorDots
@@ -81,17 +85,27 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
     )
     val ui by vm.ui.collectAsState()
     val story = ui.story
+    var treeOpen by remember { mutableStateOf(false) }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    if (treeOpen && story != null) StoryBranchTreeDialog(story,
+        onEdit = { id ->
+            vm.select(id)
+            treeOpen = false
+            scope.launch { listState.animateScrollToItem((listState.layoutInfo.totalItemsCount - 3).coerceAtLeast(0)) }
+        }, onDismiss = { treeOpen = false })
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(story?.title?.ifBlank { "未命名剧情" } ?: "剧情编辑器") },
+                title = { Text(story?.title?.ifBlank { "未命名剧情" } ?: "剧情编辑器", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
                     }
                 },
                 actions = {
+                    TextButton(onClick = { treeOpen = true }, enabled = story != null) { Text("分支图") }
                     IconButton(onClick = { vm.save() }) {
                         Icon(Icons.Filled.Check, "保存剧情")
                     }
@@ -105,6 +119,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
         }
         val chars = ui.characters
         LazyColumn(
+            state = listState,
             modifier = Modifier.padding(padding).fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
