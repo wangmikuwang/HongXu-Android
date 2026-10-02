@@ -3,6 +3,7 @@ package io.wenyou.textquest
 import android.app.DownloadManager
 import android.content.Context
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import io.wenyou.textquest.data.AppRelease
@@ -26,14 +27,22 @@ class AppUpdatesUiTest {
         val release = AppRelease("9.0.0", "一段很长的更新说明。".repeat(100), "update.apk", "", 35_000_000)
         var downloads = 0
         var opens = 0
+        var installs = 0
+        val preview = mutableStateOf(AppUpdateState(release = release, message = "发现新版本 9.0.0"))
         compose.runOnIdle {
             compose.activity.setContent { WenYouTheme {
-                AppUpdateCard(AppUpdateState(release = release, message = "发现新版本 9.0.0"), {}, { downloads++ }, { opens++ }, {})
+                AppUpdateCard(preview.value, {}, { downloads++ }, { opens++ }, {}, { installs++ })
             } }
         }
-        compose.onNodeWithText("下载新版 APK").assertIsDisplayed().performClick()
+        compose.onNodeWithText("下载并升级").assertIsDisplayed().performClick()
         compose.onNodeWithText("查看下载").assertIsDisplayed().performClick()
-        compose.runOnIdle { assertEquals(1, downloads); assertEquals(1, opens) }
+        compose.runOnIdle { preview.value = preview.value.copy(downloaded = true) }
+        compose.onNodeWithText("安装升级").assertIsDisplayed().performClick()
+        compose.runOnIdle { assertEquals(1, downloads); assertEquals(1, opens); assertEquals(1, installs)
+            preview.value = preview.value.copy(downloaded = false, downloading = true, receivedBytes = 17_500_000, totalBytes = 35_000_000)
+        }
+        compose.onNodeWithText("50% ·", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("下载并升级").assertIsNotEnabled()
     }
 
     @Test fun systemDownloadUsesRealOwnApkAndDeduplicates() {
@@ -41,6 +50,7 @@ class AppUpdatesUiTest {
         val prefs = context.getSharedPreferences("app_updates", Context.MODE_PRIVATE)
         val previousId = prefs.getLong("download_id", -1)
         val previousUrl = prefs.getString("download_url", null)
+        val previousRelease = prefs.getString("download_release", null)
         val connection = URL("https://api.github.com/repos/${BuildConfig.UPDATE_REPOSITORY}/releases/latest").openConnection()
         connection.connectTimeout = 20_000; connection.readTimeout = 20_000
         connection.setRequestProperty("User-Agent", "WenYou-update-test")
@@ -79,7 +89,7 @@ class AppUpdatesUiTest {
         } finally {
             // Remove only the task created by this test, never a pre-existing user download.
             if (id >= 0 && id != previousId) manager.remove(id)
-            prefs.edit().putLong("download_id", previousId).putString("download_url", previousUrl).commit()
+            prefs.edit().putLong("download_id", previousId).putString("download_url", previousUrl).putString("download_release", previousRelease).commit()
         }
     }
 }

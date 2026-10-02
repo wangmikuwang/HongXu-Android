@@ -3,6 +3,7 @@
 
     <!-- 多品牌 LLM API 调用（自定义 baseUrl 可能是 http 明文，如本地 Ollama） -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- 相机扫码识别二维码 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
@@ -21,6 +22,11 @@
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
         android:theme="@style/Theme.WenYouTextQuest">
+
+        <provider android:name=".data.AppUpdateFileProvider"
+            android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/update_file_paths" />
+        </provider>
 
         <service android:name=".GenerationService" android:exported="false" android:foregroundServiceType="dataSync" />
 

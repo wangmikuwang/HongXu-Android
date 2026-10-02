@@ -69,12 +69,11 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
+fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, updateVm: AppUpdateViewModel = viewModel()) {
     val vm: SettingsViewModel = viewModel(factory = Vms.factory { SettingsViewModel(container) })
     val ui by vm.ui.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val updateVm: AppUpdateViewModel = viewModel()
     val updateState by updateVm.ui.collectAsStateWithLifecycle()
     val openUpdatePage: (Intent) -> Unit = { intent ->
         try { context.startActivity(intent) }
@@ -166,10 +165,10 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             }
 
             item {
-                AppUpdateCard(updateState, updateVm::check, updateVm::download,
+                AppUpdateCard(updateState, { updateVm.check() }, updateVm::download,
                     onOpenDownloads = { openUpdatePage(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) },
                     onOpenRelease = { openUpdatePage(Intent(Intent.ACTION_VIEW,
-                        Uri.parse("https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/latest"))) })
+                        Uri.parse("https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/latest"))) }, onInstall = updateVm::install)
             }
 
             if (ui.message.isNotBlank()) {

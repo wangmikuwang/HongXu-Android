@@ -1,5 +1,9 @@
 package io.wenyou.textquest.ui
 
+import androidx.lifecycle.viewmodel.compose.viewModel
+import io.wenyou.textquest.ui.vm.AppUpdateViewModel
+import io.wenyou.textquest.ui.common.AppUpdateHost
+
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -91,7 +95,7 @@ object R {
 }
 
 @Composable
-fun WenYouAppRoot(container: WenYouApp.AppContainer) {
+fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewModel = viewModel()) {
     val prefs by container.settings.state.collectAsStateWithLifecycle()
     var prideOpen by rememberSaveable { mutableStateOf(false) }
     val onPrideTap: () -> Unit = {
@@ -99,64 +103,66 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer) {
         if (container.settings.state.value.prideTapCount >= 10) prideOpen = true
     }
     WenYouTheme(prefs.themeMode, prefs.dynamicColor, prefs.themeStyle, prefs.prideTheme) {
-        if (prideOpen) PrideGallery(prefs.prideTapCount, prefs.prideTheme, onPrideTap,
-            container.settings::setPrideTheme, { prideOpen = false })
-        val writeError by container.library.writeError.collectAsStateWithLifecycle()
-        if (writeError != null) {
-            AlertDialog(
-                onDismissRequest = container.library::clearWriteError,
-                title = { Text("保存失败") },
-                text = { Text(writeError.orEmpty()) },
-                confirmButton = { TextButton(onClick = container.library::clearWriteError) { Text("知道了") } }
-            )
-        }
-        val nav = rememberNavController()
-        CompositionLocalProvider(LocalPrideTagClick provides onPrideTap) {
-            NavHost(navController = nav, startDestination = R.HOME) {
-                composable(R.HOME) { HomeScreen(container, nav) }
-                composable(R.STORIES) { StoryListScreen(container, nav) }
-                composable(
-                    R.STORY_EDIT,
-                    arguments = listOf(navArgument(R.ARG_STORY) { type = NavType.StringType })
-                ) { entry ->
-                    val id = entry.arguments?.getString(R.ARG_STORY) ?: "new"
-                    StoryEditScreen(container, nav, storyId = id)
-                }
-                composable(R.CHARACTERS) { CharactersScreen(container, nav) }
-                composable(
-                    R.CHAR_EDIT,
-                    arguments = listOf(navArgument(R.ARG_CHAR) { type = NavType.StringType })
-                ) { entry ->
-                    val id = entry.arguments?.getString(R.ARG_CHAR) ?: "new"
-                    CharacterEditScreen(container, nav, charId = id)
-                }
-                composable(R.PROVIDERS) { ProvidersScreen(container, nav) }
-                composable(
-                    R.PROVIDER_EDIT,
-                    arguments = listOf(navArgument(R.ARG_PROVIDER) { type = NavType.StringType })
-                ) { entry ->
-                    val id = entry.arguments?.getString(R.ARG_PROVIDER) ?: "new"
-                    ProviderEditScreen(container, nav, providerId = id)
-                }
-                composable(R.SETTINGS) { SettingsScreen(container, nav) }
-                composable(R.BOTTOM_RULES) { BottomRulesScreen(container, nav) }
-                composable(
-                    R.BOTTOM_RULE_EDIT,
-                    arguments = listOf(navArgument(R.ARG_RULE) { type = NavType.StringType })
-                ) { entry ->
-                    val id = entry.arguments?.getString(R.ARG_RULE) ?: "new"
-                    BottomRuleEditScreen(container, nav, ruleId = id)
-                }
-                composable(
-                    R.PLAY,
-                    arguments = listOf(
-                        navArgument(R.ARG_STORY) { type = NavType.StringType },
-                        navArgument(R.ARG_SAVE) { type = NavType.StringType }
-                    )
-                ) { entry ->
-                    val storyId = entry.arguments?.getString(R.ARG_STORY).orEmpty()
-                    val saveId = entry.arguments?.getString(R.ARG_SAVE) ?: "new"
-                    PlayScreen(container, nav, storyId = storyId, saveId = saveId)
+        AppUpdateHost(updateVm) {
+            if (prideOpen) PrideGallery(prefs.prideTapCount, prefs.prideTheme, onPrideTap,
+                container.settings::setPrideTheme, { prideOpen = false })
+            val writeError by container.library.writeError.collectAsStateWithLifecycle()
+            if (writeError != null) {
+                AlertDialog(
+                    onDismissRequest = container.library::clearWriteError,
+                    title = { Text("保存失败") },
+                    text = { Text(writeError.orEmpty()) },
+                    confirmButton = { TextButton(onClick = container.library::clearWriteError) { Text("知道了") } }
+                )
+            }
+            val nav = rememberNavController()
+            CompositionLocalProvider(LocalPrideTagClick provides onPrideTap) {
+                NavHost(navController = nav, startDestination = R.HOME) {
+                    composable(R.HOME) { HomeScreen(container, nav) }
+                    composable(R.STORIES) { StoryListScreen(container, nav) }
+                    composable(
+                        R.STORY_EDIT,
+                        arguments = listOf(navArgument(R.ARG_STORY) { type = NavType.StringType })
+                    ) { entry ->
+                        val id = entry.arguments?.getString(R.ARG_STORY) ?: "new"
+                        StoryEditScreen(container, nav, storyId = id)
+                    }
+                    composable(R.CHARACTERS) { CharactersScreen(container, nav) }
+                    composable(
+                        R.CHAR_EDIT,
+                        arguments = listOf(navArgument(R.ARG_CHAR) { type = NavType.StringType })
+                    ) { entry ->
+                        val id = entry.arguments?.getString(R.ARG_CHAR) ?: "new"
+                        CharacterEditScreen(container, nav, charId = id)
+                    }
+                    composable(R.PROVIDERS) { ProvidersScreen(container, nav) }
+                    composable(
+                        R.PROVIDER_EDIT,
+                        arguments = listOf(navArgument(R.ARG_PROVIDER) { type = NavType.StringType })
+                    ) { entry ->
+                        val id = entry.arguments?.getString(R.ARG_PROVIDER) ?: "new"
+                        ProviderEditScreen(container, nav, providerId = id)
+                    }
+                    composable(R.SETTINGS) { SettingsScreen(container, nav, updateVm) }
+                    composable(R.BOTTOM_RULES) { BottomRulesScreen(container, nav) }
+                    composable(
+                        R.BOTTOM_RULE_EDIT,
+                        arguments = listOf(navArgument(R.ARG_RULE) { type = NavType.StringType })
+                    ) { entry ->
+                        val id = entry.arguments?.getString(R.ARG_RULE) ?: "new"
+                        BottomRuleEditScreen(container, nav, ruleId = id)
+                    }
+                    composable(
+                        R.PLAY,
+                        arguments = listOf(
+                            navArgument(R.ARG_STORY) { type = NavType.StringType },
+                            navArgument(R.ARG_SAVE) { type = NavType.StringType }
+                        )
+                    ) { entry ->
+                        val storyId = entry.arguments?.getString(R.ARG_STORY).orEmpty()
+                        val saveId = entry.arguments?.getString(R.ARG_SAVE) ?: "new"
+                        PlayScreen(container, nav, storyId = storyId, saveId = saveId)
+                    }
                 }
             }
         }

@@ -2,6 +2,9 @@ package io.wenyou.textquest
 
 import io.wenyou.textquest.data.AppUpdates
 import io.wenyou.textquest.data.parseAppRelease
+import io.wenyou.textquest.data.UpdatePolicy
+import io.wenyou.textquest.data.parseUpdatePolicy
+import io.wenyou.textquest.data.requiresAppUpdate
 import kotlinx.coroutines.runBlocking
 import okhttp3.*
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -11,7 +14,7 @@ import org.junit.Test
 class AppUpdatesTest {
     private fun release(version: String = "4.2.0", url: String = "https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/download/v$version/${BuildConfig.APP_FILE_PREFIX}-v$version.apk") = """
         {"tag_name":"v$version","draft":false,"prerelease":false,"body":"更新说明",
-         "assets":[{"name":"${BuildConfig.APP_FILE_PREFIX}-v$version.apk","state":"uploaded","size":1024,"browser_download_url":"$url"}]}
+         "assets":[{"name":"${BuildConfig.APP_FILE_PREFIX}-v$version.apk","state":"uploaded","size":1024,"digest":"sha256:${"0".repeat(64)}","browser_download_url":"$url"}]}
     """.trimIndent()
 
     @Test fun versionsAndDownloadsAreRestrictedToThisApp() {
@@ -28,6 +31,8 @@ class AppUpdatesTest {
         for (bad in listOf(release(url = "https://example.com/app.apk"),
             release(url = "https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/download/v4.2.0/other.apk"),
             release().replace("\"size\":1024", "\"size\":0"),
+            release().replace("\"size\":1024", "\"size\":536870913"),
+            release().replace("sha256:", "md5:"),
             release().replace("\"state\":\"uploaded\"", "\"state\":\"starter\""),
             release().replace("\"draft\":false", "\"draft\":\"unknown\""),
             release().replace("${BuildConfig.APP_FILE_PREFIX}", "Other"),
@@ -48,5 +53,34 @@ class AppUpdatesTest {
             try { checker(code, body).check(); fail("Invalid response accepted") } catch (_: Exception) { }
         }
         assertNull(checker(200, release("1.0.0")).check())
+    }
+
+    @Test fun minimumVersionCannotBeBelowFiveAndUsesCodeAndVersion() {
+        val baseline = parseUpdatePolicy("""{"minimumVersionCode":90,"minimumVersion":"5.0.0"}""")
+        assertTrue(requiresAppUpdate(89, "4.3.2", baseline))
+        assertFalse(requiresAppUpdate(90, "5.0.0-α", baseline))
+        assertTrue(requiresAppUpdate(90, "5.0.0", UpdatePolicy(91, "5.0.1")))
+        assertTrue(requiresAppUpdate(91, "5.0.0", UpdatePolicy(91, "5.1.0")))
+        assertFalse(requiresAppUpdate(91, "5.1.0-β", UpdatePolicy(91, "5.1.0")))
+        for (bad in listOf("{}", """{"minimumVersionCode":89,"minimumVersion":"5.0.0"}""",
+            """{"minimumVersionCode":90,"minimumVersion":"4.9.99"}""",
+            """{"minimumVersionCode":90,"minimumVersion":"v5.0.0"}""", " ".repeat(16_385))) {
+            assertThrows(Exception::class.java) { parseUpdatePolicy(bad) }
+        }
+    }
+
+    @Test fun policyUsesOwnPublicRepositoryAndBoundsResponses() = runBlocking {
+        fun checker(code: Int, body: String) = AppUpdates(OkHttpClient.Builder().addInterceptor { chain ->
+            assertEquals("raw.githubusercontent.com", chain.request().url.host)
+            assertEquals("/${BuildConfig.UPDATE_REPOSITORY}/main/update-policy.json", chain.request().url.encodedPath)
+            assertNull(chain.request().header("Authorization"))
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(code).message("test")
+                .body(body.toResponseBody()).build()
+        }.build())
+        assertNull(checker(404, "").policy())
+        assertEquals(UpdatePolicy(), checker(200, """{"minimumVersionCode":90,"minimumVersion":"5.0.0"}""").policy())
+        for ((code, body) in listOf(403 to "limited", 200 to "not-json", 200 to "x".repeat(16_385))) {
+            assertThrows(Exception::class.java) { runBlocking { checker(code, body).policy() } }
+        }
     }
 }
