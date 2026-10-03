@@ -181,7 +181,8 @@ fun HubBottomBar(nav: NavHostController) {
         HubItem(R.SETTINGS, "设置", Icons.Filled.Settings)
     )
     val apple = LocalThemeStyle.current == ThemeStyle.APPLE
-    NavigationBar(containerColor = if (apple) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
+    NavigationBar(modifier = if (apple) Modifier.padding(horizontal = 12.dp) else Modifier,
+        containerColor = if (apple) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
         windowInsets = if (apple) WindowInsets(0, 0, 0, 0) else androidx.compose.material3.NavigationBarDefaults.windowInsets) {
         items.forEach { item ->
             NavigationBarItem(
@@ -229,7 +230,7 @@ fun HubScaffold(
             },
             controls = {
                 Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)
-                    .fillMaxWidth().liquidGlass()) { HubBottomBar(nav) }
+                    .fillMaxWidth().liquidGlass(pill = true)) { HubBottomBar(nav) }
             }
         )
     } else {

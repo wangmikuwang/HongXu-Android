@@ -4,12 +4,17 @@ import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.graphics.Shader
 import android.os.Build
+import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -27,9 +32,22 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.unit.IntSize
+import kotlin.math.ceil
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -40,6 +58,7 @@ import androidx.compose.ui.unit.dp
 
 private class Backdrop(val layer: GraphicsLayer) {
     var origin by mutableStateOf(Offset.Zero)
+    var scrolling by mutableStateOf(false)
 }
 private val LocalBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
@@ -50,12 +69,38 @@ fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScop
     val capturing = LocalScrollCaptureInProgress.current
     val layer = rememberGraphicsLayer()
     val backdrop = remember(layer) { Backdrop(layer) }
+    val scope = rememberCoroutineScope()
+    val scrollObserver = remember(backdrop, scope) {
+        object : NestedScrollConnection {
+            private var lastMovement = 0L
+            private var settle: Job? = null
+            override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset {
+                if (consumed != Offset.Zero) {
+                    lastMovement = SystemClock.uptimeMillis()
+                    backdrop.scrolling = true
+                    if (settle?.isActive != true) settle = scope.launch {
+                        while (true) {
+                            val remaining = 120L - (SystemClock.uptimeMillis() - lastMovement)
+                            if (remaining <= 0) break
+                            delay(remaining)
+                        }
+                        backdrop.scrolling = false
+                    }
+                }
+                return Offset.Zero
+            }
+        }
+    }
     CompositionLocalProvider(LocalBackdrop provides backdrop) {
         Box(Modifier.fillMaxSize()) {
-            Box(Modifier.fillMaxSize().onGloballyPositioned { backdrop.origin = it.positionInRoot() }
+            Box(Modifier.fillMaxSize().nestedScroll(scrollObserver).onGloballyPositioned { backdrop.origin = it.positionInRoot() }
                 .drawWithContent {
-                    layer.record { this@drawWithContent.drawContent() }
-                    drawLayer(layer)
+                    if (backdrop.scrolling || Build.VERSION.SDK_INT < 31) {
+                        drawContent()
+                    } else {
+                        layer.record { this@drawWithContent.drawContent() }
+                        drawLayer(layer)
+                    }
                 }) { content() }
             // Keep control measurements stable while excluding overlays from capture tiles.
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (capturing) 0f else 1f }) { controls() }
@@ -65,7 +110,7 @@ fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScop
 
 /** Background sampling, blur and edge lensing are isolated from readable foreground text. */
 @Composable
-fun Modifier.liquidGlass(): Modifier {
+fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
     val backdrop = LocalBackdrop.current
     val sample = rememberGraphicsLayer()
     var origin by remember { mutableStateOf(Offset.Zero) }
@@ -74,31 +119,57 @@ fun Modifier.liquidGlass(): Modifier {
     val shader = remember {
         if (Build.VERSION.SDK_INT >= 33) RuntimeShader(GLASS_SHADER) else null
     }
-    val shape = RoundedCornerShape(30.dp)
-    return this.shadow(12.dp, shape, clip = false).clip(shape).onGloballyPositioned { origin = it.positionInRoot() }
+    var bounds by remember { mutableStateOf(IntSize.Zero) }
+    var frozen by remember(backdrop, dark, tint) { mutableStateOf<ImageBitmap?>(null) }
+    val densityKey = LocalDensity.current
+    LaunchedEffect(backdrop, sample, bounds, dark, tint, densityKey) {
+        if (Build.VERSION.SDK_INT >= 31 && backdrop != null) {
+            snapshotFlow { backdrop.scrolling }.collectLatest { moving ->
+                if (!moving) {
+                    // Finish a draw before taking a small, already-filtered background snapshot.
+                    withFrameNanos { }
+                    withFrameNanos { }
+                }
+                if (sample.size.width > 0 && sample.size.height > 0) frozen = sample.toImageBitmap()
+            }
+        }
+    }
+    val shape = if (pill) RoundedCornerShape(50) else RoundedCornerShape(30.dp)
+    return this.shadow(12.dp, shape, clip = false).clip(shape).onSizeChanged { bounds = it }.onGloballyPositioned { origin = it.positionInRoot() }
         .drawWithCache {
-            // Cache native effects by size/density; scrolling only updates the sampled content.
+            // Blur/lens only the half-resolution background; text and controls stay full resolution.
+            val sampleScale = 0.5f
+            val sampleSize = IntSize(ceil(size.width * sampleScale).toInt().coerceAtLeast(1), ceil(size.height * sampleScale).toInt().coerceAtLeast(1))
+            val corner = if (pill) minOf(size.width, size.height) / 2f else minOf(30.dp.toPx(), size.height / 2f)
+            sample.clip = true
             if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
-                val blur = RenderEffect.createBlurEffect(6.dp.toPx(), 6.dp.toPx(), Shader.TileMode.CLAMP)
+                val blur = RenderEffect.createBlurEffect(6.dp.toPx() * sampleScale, 6.dp.toPx() * sampleScale, Shader.TileMode.CLAMP)
                 sample.renderEffect = if (Build.VERSION.SDK_INT >= 33 && shader != null) {
-                    shader.setFloatUniform("extent", size.width, size.height)
-                    shader.setFloatUniform("radius", minOf(30.dp.toPx(), size.height / 2f))
-                    shader.setFloatUniform("density", density)
+                    shader.setFloatUniform("extent", sampleSize.width.toFloat(), sampleSize.height.toFloat())
+                    shader.setFloatUniform("radius", corner * sampleScale)
+                    shader.setFloatUniform("density", density * sampleScale)
                     RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(shader, "backdrop"), blur).asComposeRenderEffect()
                 } else blur.asComposeRenderEffect()
             }
             val highlight = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.08f else 0.14f), Color.Transparent))
             val border = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.75f), Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.38f)))
-            val radius = androidx.compose.ui.geometry.CornerRadius(30.dp.toPx())
+            val radius = androidx.compose.ui.geometry.CornerRadius(corner)
             val stroke = Stroke(1.dp.toPx())
             onDrawWithContent {
-                if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
+                if (backdrop != null && backdrop.scrolling && Build.VERSION.SDK_INT >= 31) {
+                    val image = frozen
+                    if (image != null) drawImage(image, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
+                    else drawRect(tint.copy(alpha = 0.82f))
+                    drawRect(tint.copy(alpha = if (dark) 0.28f else 0.36f))
+                } else if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
                     val offset = origin - backdrop.origin
-                    sample.record {
+                    sample.record(size = sampleSize) {
                         drawRect(tint)
-                        translate(-offset.x, -offset.y) { drawLayer(backdrop.layer) }
+                        scale(sampleScale, sampleScale, pivot = Offset.Zero) {
+                            translate(-offset.x, -offset.y) { drawLayer(backdrop.layer) }
+                        }
                     }
-                    drawLayer(sample)
+                    scale(1f / sampleScale, 1f / sampleScale, pivot = Offset.Zero) { drawLayer(sample) }
                     drawRect(tint.copy(alpha = if (dark) 0.28f else 0.36f))
                 } else {
                     // ponytail: Android 8–11 retain readable tinted glass; GPU backdrop effects need Android 12+.
@@ -126,10 +197,11 @@ half4 main(float2 p) {
     // Exact rounded-rectangle normal: one distance calculation instead of five finite differences.
     float2 axis = q.x > q.y ? float2(1, 0) : float2(0, 1);
     float2 normal = (outsideLength > 0.001 ? outside / outsideLength : axis) * sign(centered);
-    float rim = exp(-abs(d) / (7.0 * density));
+    float rim = 1.0 - smoothstep(0.0, 21.0 * density, abs(d));
     float2 uv = clamp(p - normal * rim * 8.0 * density, float2(0.5), extent - 0.5);
     half4 c = backdrop.eval(uv);
-    float glint = pow(max(dot(normal, normalize(float2(-1, -1))), 0.0), 3.0) * rim * 0.22;
+    float light = max(dot(normal, float2(-0.70710678, -0.70710678)), 0.0);
+    float glint = light * light * light * rim * 0.22;
     return half4(min(c.rgb + half3(glint), half3(1.0)), c.a);
 }
 """
