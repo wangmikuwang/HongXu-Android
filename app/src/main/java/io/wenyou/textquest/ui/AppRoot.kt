@@ -1,4 +1,9 @@
 package io.wenyou.textquest.ui
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 import io.wenyou.textquest.ui.theme.distributedAccent
 import io.wenyou.textquest.ui.theme.accentForeground
 import io.wenyou.textquest.ui.theme.LocalAccentPalette
@@ -14,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.WindowInsets
@@ -185,9 +191,7 @@ fun HubBottomBar(nav: NavHostController) {
         HubItem(R.SETTINGS, "设置", Icons.Filled.Settings)
     )
     val apple = LocalThemeStyle.current == ThemeStyle.APPLE
-    NavigationBar(modifier = if (apple) Modifier.padding(horizontal = 12.dp) else Modifier,
-        containerColor = if (apple) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
-        windowInsets = if (apple) WindowInsets(0, 0, 0, 0) else androidx.compose.material3.NavigationBarDefaults.windowInsets) {
+    val navigationItems: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
         items.forEachIndexed { index, item ->
             val indicator = distributedAccent(index + 2, MaterialTheme.colorScheme.primaryContainer)
             NavigationBarItem(
@@ -217,6 +221,17 @@ fun HubBottomBar(nav: NavHostController) {
             )
         }
     }
+    if (apple) {
+        // Material's fixed item gaps squeeze 64dp indicators on a narrow capsule.
+        androidx.compose.foundation.layout.Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 8.dp)
+                .then(Modifier.heightIn(min = 80.dp)),
+            verticalAlignment = Alignment.CenterVertically,
+            content = navigationItems
+        )
+    } else {
+        NavigationBar(content = navigationItems)
+    }
 }
 
 /** 带底部导航的 Hub 页 Scaffold（顶部栏由各页决定：无则传 null）。 */
@@ -227,14 +242,17 @@ fun HubScaffold(
     content: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit
 ) {
     if (LocalThemeStyle.current == ThemeStyle.APPLE) {
+        val density = LocalDensity.current
+        var barHeight by remember { mutableStateOf(112.dp) }
         GlassBackdrop(
             content = {
                 Scaffold(topBar = topBar, bottomBar = {
-                    Spacer(Modifier.fillMaxWidth().navigationBarsPadding().height(96.dp))
+                    Spacer(Modifier.fillMaxWidth().height(barHeight))
                 }) { padding -> content(padding) }
             },
             controls = {
-                Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)
+                Box(Modifier.align(Alignment.BottomCenter)
+                    .onSizeChanged { barHeight = with(density) { it.height.toDp() } }.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)
                     .fillMaxWidth().liquidGlass(pill = true)) { HubBottomBar(nav) }
             }
         )

@@ -1,4 +1,6 @@
 package io.wenyou.textquest.ui.screens
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
 
 import io.wenyou.textquest.ui.theme.readableAccent
 
@@ -124,8 +126,10 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
         nav = nav
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
+            val density = LocalDensity.current
+            var createHeight by remember { mutableStateOf(56.dp) }
             LazyColumn(
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = createHeight + 40.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item {
@@ -155,7 +159,8 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
             }
             ExtendedFloatingActionButton(
                 onClick = { nav.navigate(R.charEdit("new")) },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
+                    .onSizeChanged { createHeight = with(density) { it.height.toDp() } },
                 icon = { Icon(Icons.Filled.Add, null) },
                 text = { Text("新建角色") }
             )

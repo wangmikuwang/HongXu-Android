@@ -6,6 +6,7 @@ import android.graphics.Shader
 import android.os.Build
 import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -65,7 +66,8 @@ private val LocalBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 /** Record only the content behind the controls; never record the glass itself. */
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScope.() -> Unit) {
+fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScope.() -> Unit,
+    footer: (@Composable () -> Unit)? = null) {
     val capturing = LocalScrollCaptureInProgress.current
     val layer = rememberGraphicsLayer()
     val backdrop = remember(layer) { Backdrop(layer) }
@@ -92,7 +94,8 @@ fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScop
         }
     }
     CompositionLocalProvider(LocalBackdrop provides backdrop) {
-        Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
+        Box(Modifier.weight(1f)) {
             Box(Modifier.fillMaxSize().nestedScroll(scrollObserver).onGloballyPositioned { backdrop.origin = it.positionInRoot() }
                 .drawWithContent {
                     if (backdrop.scrolling || Build.VERSION.SDK_INT < 31) {
@@ -104,6 +107,10 @@ fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScop
                 }) { content() }
             // Keep control measurements stable while excluding overlays from capture tiles.
             Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (capturing) 0f else 1f }) { controls() }
+        }
+        footer?.let { bottom ->
+            Box(Modifier.graphicsLayer { alpha = if (capturing) 0f else 1f }) { bottom() }
+        }
         }
     }
 }

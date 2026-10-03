@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import androidx.compose.ui.platform.testTag
 
 import io.wenyou.textquest.ui.theme.readableAccent
 
@@ -177,15 +178,13 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
         BoxWithConstraints(Modifier.padding(padding).consumeWindowInsets(padding).imePadding().fillMaxSize()) {
         val panelHeight = maxHeight * 0.5f
         val glass = LocalThemeStyle.current == ThemeStyle.APPLE
-        val density = LocalDensity.current
-        var actionHeight by remember { mutableStateOf(0.dp) }
         val historyContent: @Composable () -> Unit = {
             LazyColumn(
                 state = listState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().testTag("play-history"),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(
                     start = 16.dp, end = 16.dp, top = 16.dp,
-                    bottom = if (glass) actionHeight + 24.dp else 16.dp
+                    bottom = 16.dp
                 )
             ) {
                 itemsIndexed(history) { _, entry ->
@@ -203,16 +202,17 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
             }
         }
         if (glass) {
-            GlassBackdrop(content = historyContent, controls = {
-                Box(Modifier.align(Alignment.BottomCenter).padding(8.dp).fillMaxWidth()
-                    .heightIn(max = panelHeight).onSizeChanged { actionHeight = with(density) { it.height.toDp() } }
-                    .liquidGlass().verticalScroll(rememberScrollState())) { Column { UsagePanel(container.chatClient.usage); ActionPanel(vm, ui, nav) } }
+            GlassBackdrop(content = historyContent, controls = {}, footer = {
+                Box(Modifier.padding(8.dp).fillMaxWidth().heightIn(max = panelHeight)
+                    .testTag("play-actions").liquidGlass().verticalScroll(rememberScrollState())) {
+                    Column { UsagePanel(container.chatClient.usage, showLast = false); ActionPanel(vm, ui, nav) }
+                }
             })
         } else {
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f)) { historyContent() }
-                Box(Modifier.fillMaxWidth().heightIn(max = panelHeight).verticalScroll(rememberScrollState())) {
-                    Column { UsagePanel(container.chatClient.usage); ActionPanel(vm, ui, nav) }
+                Box(Modifier.fillMaxWidth().heightIn(max = panelHeight).testTag("play-actions").verticalScroll(rememberScrollState())) {
+                    Column { UsagePanel(container.chatClient.usage, showLast = false); ActionPanel(vm, ui, nav) }
                 }
             }
         }

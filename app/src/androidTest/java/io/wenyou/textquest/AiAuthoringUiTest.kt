@@ -1,4 +1,7 @@
 package io.wenyou.textquest
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.unit.dp
 
 import androidx.test.platform.app.InstrumentationRegistry
 import android.graphics.Bitmap
@@ -102,6 +105,81 @@ class AiAuthoringUiTest {
         } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
     }
 
+
+
+    @Test fun glassNavigationAndLastListActionStayUnclipped() {
+        val ok = client()
+        try {
+            val container = container(ok)
+            runBlocking { repeat(15) { index ->
+                container.library.upsertStory(Story("edge-$index", "剧情 $index", nodes = mapOf("start" to StoryNode("start", text = "开场"))))
+            } }
+            container.settings.setThemeStyle(ThemeStyle.APPLE)
+            container.settings.setDynamicColor(false)
+            compose.runOnIdle { compose.activity.setContent {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier
+                    .then(androidx.compose.ui.Modifier.width(360.dp)).fillMaxHeight()) { WenYouAppRoot(container) }
+            } }
+            val density = compose.activity.resources.displayMetrics.density
+            screenshot("capsule-home-unclipped.png")
+            File(compose.activity.cacheDir, "navigation-layout-tree.txt").writeText(compose.onRoot(useUnmergedTree = true).printToString())
+            assertTrue("Each navigation indicator needs its full 64dp width: ${compose.onNode(isSelected(), useUnmergedTree = true).fetchSemanticsNode().size.width / density}",
+                compose.onNode(isSelected(), useUnmergedTree = true).fetchSemanticsNode().size.width / density >= 64f)
+            screenshot("capsule-home-unclipped.png")
+            compose.onNode(hasText("剧情") and hasClickAction()).performClick()
+            compose.onNodeWithText("剧情库").assertIsDisplayed()
+            compose.onNode(hasScrollToIndexAction()).performScrollToIndex(16)
+            screenshot("list-bottom-clear-actions.png")
+            val create = compose.onNode(hasClickAction() and hasAnyDescendant(hasText("新建剧情")), useUnmergedTree = true).fetchSemanticsNode()
+            val play = compose.onAllNodes(hasClickAction() and hasAnyDescendant(hasContentDescription("游玩")), useUnmergedTree = true).fetchSemanticsNodes().maxBy { it.positionInRoot.y }
+            // Use layout coordinates: bitmap-backed glass can report clipped semantics bounds.
+            compose.runOnIdle {
+                assertTrue("The create control must remain within the viewport", create.size.height > 0 && create.positionInRoot.y + create.size.height <= compose.activity.window.decorView.height)
+                assertTrue("The final play button must remain above the floating create button", play.positionInRoot.y + play.size.height < create.positionInRoot.y)
+            }
+            screenshot("list-bottom-clear-actions.png")
+            compose.onNode(hasText("设置") and hasClickAction()).performClick()
+            assertTrue(compose.onNode(isSelected(), useUnmergedTree = true).fetchSemanticsNode().size.width / density >= 64f)
+            screenshot("capsule-settings-unclipped.png")
+        } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+    }
+
+    @Test fun glassConversationViewportReservesTheComposerAndKeyboard() {
+        val ok = client()
+        try {
+            val container = container(ok)
+            val last = "最后一条完整的角色对话。"
+            runBlocking {
+                container.library.upsertStory(Story("edge-play", "对话布局", mode = StoryMode.AI_DIRECTOR,
+                    nodes = mapOf("start" to StoryNode("start", text = "开场"))))
+                container.library.upsertSave(SaveSlot("edge-save", "对话测试", 1, 1, SessionState("edge-play", currentNodeId = "start",
+                    history = (0 until 10).map { LogEntry(text = "消息 $it：不会被输入面板遮挡。") } + LogEntry(EntryKind.CHARACTER, speaker = "测试角色", text = last),
+                    pendingAiChoices = listOf(ChoiceData(text = "这是一个可以横向滚动的剧情灵感选项")))))
+            }
+            compose.runOnIdle { compose.activity.setContent {
+                WenYouTheme(style = ThemeStyle.APPLE, dynamicColor = false) {
+                    io.wenyou.textquest.ui.screens.PlayScreen(container, androidx.navigation.compose.rememberNavController(), "edge-play", "edge-save")
+                }
+            } }
+            compose.onNodeWithTag("play-history").performScrollToNode(hasText(last))
+            compose.onNodeWithText(last).assertIsDisplayed()
+            fun assertSeparated() {
+                val history = compose.onNodeWithTag("play-history").fetchSemanticsNode()
+                val panel = compose.onNodeWithTag("play-actions").fetchSemanticsNode()
+                compose.runOnIdle {
+                    assertTrue("Composer must not overlap the scrolling conversation: history=${history.positionInRoot}/${history.size}, panel=${panel.positionInRoot}/${panel.size}", history.positionInRoot.y + history.size.height <= panel.positionInRoot.y)
+                    assertTrue("Conversation must retain a visible viewport", history.size.height > 0)
+                }
+            }
+            assertSeparated()
+            screenshot("conversation-clear-panel.png")
+            compose.onNode(hasSetTextAction()).performClick().performTextInput("键盘测试")
+            compose.waitForIdle()
+            assertSeparated()
+            compose.onNode(hasSetTextAction()).assertIsDisplayed()
+            screenshot("conversation-keyboard-clear-panel.png")
+        } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+    }
 
     @Test fun longCardTitlesKeepSpaceAndActionsAtLargeFont() {
         val ok = client()
