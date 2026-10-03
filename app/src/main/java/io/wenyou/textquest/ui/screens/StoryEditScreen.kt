@@ -46,6 +46,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import io.wenyou.textquest.WenYouApp
@@ -81,10 +82,12 @@ private val KIND_META = mapOf(
 @Composable
 fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyId: String) {
     val vm: StoryEditorViewModel = viewModel(
-        factory = Vms.factory { StoryEditorViewModel(if (storyId == "new") null else storyId, it) }
+        factory = Vms.factory { StoryEditorViewModel(if (storyId == "new") null else storyId, container) }
     )
     val ui by vm.ui.collectAsState()
+    val bottomRules by container.library.bottomRules.collectAsStateWithLifecycle()
     val story = ui.story
+    var revisionOpen by remember { mutableStateOf(false) }
     var treeOpen by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -94,6 +97,11 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
             treeOpen = false
             scope.launch { listState.animateScrollToItem((listState.layoutInfo.totalItemsCount - 3).coerceAtLeast(0)) }
         }, onDismiss = { treeOpen = false })
+
+    if (revisionOpen && story != null) AiRevisionDialog(container,
+        io.wenyou.textquest.data.model.AppBundle(stories = listOf(story),
+            characters = ui.characters.filter { it.id in story.characterIds }, bottomRules = bottomRules),
+        onApply = vm::applyRevision, onDismiss = { revisionOpen = false })
 
     Scaffold(
         topBar = {
@@ -132,6 +140,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                 }
             }
 
+            item { TextButton(onClick = { revisionOpen = true }) { Text("一句话修改") } }
             item { SectionHeader("基本信息") }
             item {
                 TonalCard {

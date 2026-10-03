@@ -16,6 +16,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.platform.LocalScrollCaptureInProgress
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.draw.clip
@@ -41,8 +44,10 @@ private class Backdrop(val layer: GraphicsLayer) {
 private val LocalBackdrop = staticCompositionLocalOf<Backdrop?> { null }
 
 /** Record only the content behind the controls; never record the glass itself. */
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScope.() -> Unit) {
+    val capturing = LocalScrollCaptureInProgress.current
     val layer = rememberGraphicsLayer()
     val backdrop = remember(layer) { Backdrop(layer) }
     CompositionLocalProvider(LocalBackdrop provides backdrop) {
@@ -52,7 +57,8 @@ fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScop
                     layer.record { this@drawWithContent.drawContent() }
                     drawLayer(layer)
                 }) { content() }
-            controls()
+            // Keep control measurements stable while excluding overlays from capture tiles.
+            Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (capturing) 0f else 1f }) { controls() }
         }
     }
 }

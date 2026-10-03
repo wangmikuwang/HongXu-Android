@@ -281,8 +281,7 @@ class AiDirector(private val client: ChatClient) {
             }
         }
         val user = contextTail(story, state) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult)
-        val result = client.streamText(profile, system, user, ChatOptions(story.ai.temperature, story.ai.maxTokens), onDelta, onReasoning)
-        return resolveScene(result)
+        return requestScene(profile, system, user, ChatOptions(story.ai.temperature, story.ai.maxTokens), onDelta, onReasoning)
     }
 
     // ---------------- AI 导演模式（自由对话） ----------------
@@ -318,7 +317,19 @@ class AiDirector(private val client: ChatClient) {
             append("若玩家表达了收尾意愿，请自然地给出结局感并让 choices 为空数组。\n")
         }
         val user = contextTail(story, state, playerText) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult)
-        val result = client.streamText(profile, system, user, ChatOptions(story.ai.temperature, story.ai.maxTokens), onDelta, onReasoning)
+        return requestScene(profile, system, user, ChatOptions(story.ai.temperature, story.ai.maxTokens), onDelta, onReasoning)
+    }
+
+    private suspend fun requestScene(profile: ApiProfile, system: String, user: String, options: ChatOptions,
+        onDelta: (String) -> Unit, onReasoning: (String) -> Unit): AiScene {
+        val result = client.streamText(profile, system, user, options, onDelta, onReasoning)
+        val deepseek = runCatching { java.net.URI(profile.baseUrl).host?.lowercase() == "api.deepseek.com" }.getOrDefault(false)
+        if (result.content.isBlank() && result.reasoning.isNotBlank() && deepseek &&
+            profile.model in setOf("deepseek-flash", "deepseek-v4-pro")) {
+            // These official models default to thinking; one bounded non-thinking retry reserves output for the scene.
+            val answer = client.streamText(profile, system, user, options.copy(maxTokens = maxOf(options.maxTokens, 2048), thinking = false), onDelta, onReasoning)
+            return resolveScene(answer.copy(reasoning = result.reasoning + answer.reasoning))
+        }
         return resolveScene(result)
     }
 
@@ -344,7 +355,9 @@ class AiDirector(private val client: ChatClient) {
 
     /** 正文与服务返回的思考字段分开处理，纯思考不能作为旁白或角色台词。 */
     private fun resolveScene(result: ChatResult): AiScene {
-        return sanitizeScene(parseScene(result.content).copy(reasoning = result.reasoning))
+        val scene = sanitizeScene(parseScene(result.content).copy(reasoning = result.reasoning))
+        if (scene.text.isBlank() && scene.entries.isEmpty()) throw LlmException("AI 未返回剧情正文，可能输出额度已被思考耗尽；请提高剧情输出上限后重试。")
+        return scene
     }
 
     fun parseScene(raw: String): AiScene {

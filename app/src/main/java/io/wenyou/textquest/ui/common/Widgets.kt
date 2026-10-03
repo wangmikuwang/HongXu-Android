@@ -7,6 +7,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.contentColorFor
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -38,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -70,15 +74,28 @@ fun Pill(text: String, modifier: Modifier = Modifier, container: Color? = null) 
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(50),
-        color = container ?: MaterialTheme.colorScheme.secondaryContainer
+        color = container ?: MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Text(
             text,
+            maxLines = 1, overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.labelMedium,
-            color = contentColorFor(container ?: MaterialTheme.colorScheme.secondaryContainer),
+            color = if (container == null) MaterialTheme.colorScheme.onSurfaceVariant else contentColorFor(container),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
+}
+
+/** Shared, theme-aware selection tags for library filters. */
+@Composable
+fun FilterTag(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    FilterChip(selected = selected, onClick = onClick, modifier = modifier,
+        shape = RoundedCornerShape(50), label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            selectedContainerColor = MaterialTheme.colorScheme.primary,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimary))
 }
 
 /** 分组卡片标题。 */
@@ -89,7 +106,7 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
         color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.padding(start = 4.dp, top = 18.dp, bottom = 8.dp)
+        modifier = modifier.padding(start = 4.dp, top = 12.dp, bottom = 6.dp)
     )
 }
 

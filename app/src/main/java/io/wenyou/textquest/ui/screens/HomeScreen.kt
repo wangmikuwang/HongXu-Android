@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,6 +55,7 @@ import io.wenyou.textquest.ui.HubScaffold
 import io.wenyou.textquest.ui.R
 import io.wenyou.textquest.ui.common.EmojiBadge
 import io.wenyou.textquest.ui.common.Pill
+import io.wenyou.textquest.ui.common.TonalCard
 import io.wenyou.textquest.ui.common.SectionHeader
 import io.wenyou.textquest.ui.theme.avatarColor
 import io.wenyou.textquest.ui.vm.HomeCard
@@ -62,10 +64,10 @@ import io.wenyou.textquest.ui.vm.Vms
 
 @Composable
 fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
-    val vm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(it) })
-    val cards by vm.homeCards.collectAsState()
-    val stories by vm.stories.collectAsState()
-    val providers by vm.providers.collectAsState()
+    val vm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(container) })
+    val cards by vm.homeCards.collectAsStateWithLifecycle()
+    val stories by vm.stories.collectAsStateWithLifecycle()
+    val providers by vm.providers.collectAsStateWithLifecycle()
     var creationOpen by rememberSaveable { mutableStateOf(false) }
     var achievementsOpen by rememberSaveable { mutableStateOf(false) }
     val achievements by container.library.achievements.collectAsStateWithLifecycle()
@@ -80,38 +82,25 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Column {
-                    Text(stringResource(io.wenyou.textquest.R.string.app_name), style = MaterialTheme.typography.displaySmall,
-                        color = MaterialTheme.colorScheme.onSurface)
-                    Text("自编剧情 · 自定义角色 · 多品牌 AI 演绎", style = MaterialTheme.typography.bodyMedium,
+                TonalCard {
+                    Text(stringResource(io.wenyou.textquest.R.string.app_name), style = MaterialTheme.typography.headlineLarge)
+                    Text("让你的故事继续", style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            }
-
-            item {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Button(onClick = { nav.navigate(R.storyEdit("new")) }, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Filled.Add, null)
-                        Spacer(Modifier.width(6.dp))
-                        Text("新建剧情")
-                    }
-                    FilledTonalButton(
-                        onClick = {
-                            if (stories.isNotEmpty()) nav.navigate(R.play(stories.first().id))
-                            else nav.navigate(R.STORIES)
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    Spacer(Modifier.height(16.dp))
+                    Button(onClick = {
+                        val last = cards.firstOrNull { it.story != null }
+                        if (last != null) nav.navigate(R.play(last.slot.state.storyId, last.slot.id))
+                        else if (stories.isNotEmpty()) nav.navigate(R.play(stories.first().id))
+                        else nav.navigate(R.STORIES)
+                    }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Filled.PlayArrow, null)
                         Spacer(Modifier.width(6.dp))
-                        Text(if (stories.isNotEmpty()) "快速开始" else "去剧情库")
+                        Text(if (cards.any { it.story != null }) "继续旅程" else "开始剧情")
                     }
-                }
-            }
-
-            item {
-                OutlinedButton(onClick = { creationOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text("✨ AI 一句话创建剧情 / 人物")
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilledTonalButton(onClick = { creationOpen = true }, modifier = Modifier.weight(1f)) { Text("AI 创建") }
+                        OutlinedButton(onClick = { nav.navigate(R.storyEdit("new")) }, modifier = Modifier.weight(1f)) { Text("新建剧情") }
+                    }
                 }
             }
 
@@ -122,20 +111,15 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             }
 
             item {
-                OutlinedButton(onClick = { achievementsOpen = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text("🏆 成就馆 · ${achievements.count { it.unlockedAt > 0L }} / ${io.wenyou.textquest.data.engine.Achievement.entries.size}")
+                TextButton(onClick = { achievementsOpen = true }) {
+                    Text("成就馆 · ${achievements.count { it.unlockedAt > 0L }} / ${io.wenyou.textquest.data.engine.Achievement.entries.size}")
                 }
             }
 
             if (cards.isEmpty()) {
                 item {
-                    Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("还没有存档", style = MaterialTheme.typography.titleLarge)
-                        Spacer(Modifier.height(8.dp))
-                        Text("新建或选择一个剧情，开始你的第一段旅程。",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+                    Text("暂无存档，开始剧情后可保存进度。", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
                 }
             } else {
                 item { SectionHeader("继续上次的旅程") }
@@ -150,7 +134,10 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
 
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    SectionHeader("剧情库 · ${stories.size}")
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        SectionHeader("剧情库 · ${stories.size}", Modifier.weight(1f))
+                        TextButton(onClick = { nav.navigate(R.STORIES) }) { Text("全部剧情") }
+                    }
                     if (stories.isEmpty()) {
                         Text("点击上方「新建剧情」开始创作。",
                             style = MaterialTheme.typography.bodyMedium,
@@ -166,10 +153,6 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                             onClick = { nav.navigate(R.storyEdit(s.id)) }
                         )
                     }
-                    OutlinedButton(
-                        onClick = { nav.navigate(R.STORIES) },
-                        modifier = Modifier.fillMaxWidth().padding(top = 4.dp)
-                    ) { Text("查看全部剧情 / 角色 / 设置") }
                 }
             }
         }
@@ -213,7 +196,7 @@ private fun MissingProviderCard(onClick: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("还没有接入 AI 服务", style = MaterialTheme.typography.titleMedium)
-                Text("剧本分支可离线游玩；AI 导演与 AI 场景需要任一家 API（支持 DeepSeek / Kimi / OpenAI / Claude / Gemini / Ollama 本地…）。点此去配置。",
+                Text("点此配置 AI；分支剧本可离线游玩。",
                     style = MaterialTheme.typography.bodySmall)
             }
         }
@@ -240,9 +223,9 @@ private fun ContinueCard(card: HomeCard, onClick: () -> Unit, onDelete: () -> Un
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f).clickable(onClick = onClick)) {
-                Text(card.slot.name, style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                Text(card.slot.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(story?.title ?: "（剧情已删除）", style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(4.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Pill(card.stepText)
@@ -269,11 +252,11 @@ private fun MiniStoryRow(
     ) {
         EmojiBadge(emoji, color.copy(alpha = 0.35f), size = 40.dp, fontSize = 20.sp)
         Spacer(Modifier.width(12.dp))
-        Column {
+        Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
             if (subtitle.isNotBlank())
                 Text(subtitle, style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }

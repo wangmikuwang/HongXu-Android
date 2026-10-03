@@ -26,6 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,10 +57,14 @@ import io.wenyou.textquest.ui.vm.Vms
 @Composable
 fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, charId: String) {
     val vm: CharacterEditorViewModel = viewModel(
-        factory = Vms.factory { CharacterEditorViewModel(if (charId == "new") null else charId, it) }
+        factory = Vms.factory { CharacterEditorViewModel(if (charId == "new") null else charId, container) }
     )
     val ui by vm.ui.collectAsState()
     val char = ui.char
+    var revisionOpen by remember { mutableStateOf(false) }
+    if (revisionOpen && char != null) AiRevisionDialog(container,
+        io.wenyou.textquest.data.model.AppBundle(characters = listOf(vm.revisionDraft()), bottomRules = ui.availableRules),
+        onApply = { vm.applyRevision(it.characters.single()) }, onDismiss = { revisionOpen = false })
 
     Scaffold(
         topBar = {
@@ -79,6 +87,7 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            item { TextButton(onClick = { revisionOpen = true }) { Text("一句话修改") } }
             if (ui.message.isNotBlank()) {
                 item { TonalCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
                     Text(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)

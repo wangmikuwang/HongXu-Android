@@ -35,7 +35,7 @@ enum class LlmRole(val wire: String) { SYSTEM("system"), USER("user"), ASSISTANT
 
 data class LlmMessage(val role: LlmRole, val content: String)
 
-data class ChatOptions(val temperature: Double = 0.85, val maxTokens: Int = 1024)
+data class ChatOptions(val temperature: Double = 0.85, val maxTokens: Int = 1024, val thinking: Boolean? = null)
 
 /** 调用失败（网络 / HTTP / 解析）时向用户展示的可读错误。 */
 class LlmException(message: String, cause: Throwable? = null) : Exception(message, cause)
@@ -234,6 +234,7 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
         val body = buildJsonObject {
             put("model", profile.model)
             put("stream", true)
+            options.thinking?.let { enabled -> putJsonObject("thinking") { put("type", if (enabled) "enabled" else "disabled") } }
             putJsonObject("stream_options") { put("include_usage", true) }
             if (!isReasoner) put("temperature", options.temperature)
             put("max_tokens", if (isReasoner) maxOf(options.maxTokens, 2048) else options.maxTokens)

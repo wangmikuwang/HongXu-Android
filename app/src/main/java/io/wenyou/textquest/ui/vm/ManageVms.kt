@@ -67,6 +67,14 @@ class CharacterEditorViewModel(
     private fun update(t: (CharacterData) -> CharacterData) =
         _ui.update { it.copy(char = t(it.char ?: current())) }
 
+    fun revisionDraft(): CharacterData = current().let { c ->
+        c.copy(initial = c.initial.copy(flags = _ui.value.flagsText.split(Regex("[,\\n，、\\s]+")).filter { it.isNotBlank() }.toSet()))
+    }
+    fun applyRevision(character: CharacterData) {
+        require(character.id == current().id)
+        _ui.update { it.copy(char = character, flagsText = character.initial.flags.joinToString(", ")) }
+    }
+
     fun setName(v: String) = update { it.copy(name = v) }
     fun setEmoji(v: String) = update { it.copy(emoji = v) }
     fun setColor(v: Int) = update { it.copy(colorIndex = v) }

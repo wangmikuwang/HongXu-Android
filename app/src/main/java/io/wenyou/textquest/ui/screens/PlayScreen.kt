@@ -75,6 +75,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -102,15 +103,16 @@ import io.wenyou.textquest.ui.vm.PlayUi
 import io.wenyou.textquest.ui.vm.PlayViewModel
 import io.wenyou.textquest.ui.vm.Vms
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyId: String, saveId: String) {
     val vm: PlayViewModel = viewModel(
-        factory = Vms.factory { PlayViewModel(storyId, saveId, it) }
+        factory = Vms.factory { PlayViewModel(storyId, saveId, container) }
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
+    val capturing by rememberUpdatedState(androidx.compose.ui.platform.LocalScrollCaptureInProgress.current)
 
     LaunchedEffect(ui.lastMessage) {
         if (ui.lastMessage.isNotBlank()) snackbar.showSnackbar(ui.lastMessage)
@@ -133,7 +135,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     BackHandler(enabled = drawerState.isOpen) { scope.launch { drawerState.close() } }
     LaunchedEffect(history.size, live) {
         val last = history.size - 1 + if (live) 1 else 0
-        if (last >= 0) listState.scrollToItem(last)
+        if (!capturing && last >= 0) listState.scrollToItem(last)
     }
 
     ModalNavigationDrawer(drawerState = drawerState, drawerContent = { CharacterStateDrawer(ui) }) {

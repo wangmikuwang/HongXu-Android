@@ -3,6 +3,7 @@ package io.wenyou.textquest.ui.vm
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.wenyou.textquest.WenYouApp
+import io.wenyou.textquest.data.model.AppBundle
 import io.wenyou.textquest.data.model.AiStorySettings
 import io.wenyou.textquest.data.model.CharacterData
 import io.wenyou.textquest.data.model.ChoiceData
@@ -57,6 +58,17 @@ class StoryEditorViewModel(
                 }
             }
         }
+    }
+
+    private var revisedCharacters = emptyList<CharacterData>()
+    fun applyRevision(bundle: AppBundle) {
+        val revised = bundle.stories.single()
+        require(revised.id == story().id)
+        val changed = bundle.characters.filter { c -> _ui.value.characters.firstOrNull { it.id == c.id } != c }
+        revisedCharacters = (revisedCharacters + changed).associateBy { it.id }.values.toList()
+        _ui.update { current -> current.copy(story = revised,
+            characters = current.characters.map { old -> bundle.characters.firstOrNull { it.id == old.id } ?: old },
+            selectedNodeId = if (current.selectedNodeId in revised.nodes) current.selectedNodeId else revised.startNodeId) }
     }
 
     // ---------------- 通用 ----------------
@@ -206,6 +218,7 @@ class StoryEditorViewModel(
         val start = if (s.startNodeId in nodes) s.startNodeId else nodes.keys.first()
         val clean = s.copy(id = s.id.ifBlank { UUID.randomUUID().toString() }, title = title, startNodeId = start)
         launchLibraryWrite {
+            revisedCharacters.forEach { library.upsertCharacter(it) }
             library.upsertStory(clean)
             _ui.update {
                 it.copy(story = clean, isNew = false, message = "已保存「${clean.title}」")

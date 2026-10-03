@@ -193,13 +193,14 @@ data: [DONE]
                 ).build()
         }.build()
         try {
-            val scene = AiDirector(ChatClient(client)).directorTurn(
-                ApiProfile("p", "test", baseUrl = "http://localhost/v1", model = "test"),
-                Story("s", "story"), emptyList(), SessionState("s"), "继续"
-            )
-            val entry = scene.logEntries(emptyList()).single()
-            assertEquals("", entry.text)
-            assertEquals("provider reasoning", entry.reasoning)
+            val failure = runCatching {
+                AiDirector(ChatClient(client)).directorTurn(
+                    ApiProfile("p", "test", baseUrl = "http://localhost/v1", model = "test"),
+                    Story("s", "story"), emptyList(), SessionState("s"), "继续"
+                )
+            }.exceptionOrNull()
+            assertTrue(failure is io.wenyou.textquest.data.llm.LlmException)
+            assertTrue(failure?.message.orEmpty().contains("未返回剧情正文"))
         } finally {
             client.dispatcher.executorService.shutdownNow()
             client.connectionPool.evictAll()

@@ -33,7 +33,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
+import io.wenyou.textquest.ui.common.FilterTag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,7 +76,7 @@ import kotlinx.coroutines.withContext
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
-    val vm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(it) })
+    val vm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(container) })
     val characters by vm.characters.collectAsState()
     val stories by vm.stories.collectAsState()
     val totalCharacters by vm.totalCharacters.collectAsState()
@@ -114,7 +114,7 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
                 title = { Text("角色") },
                 actions = {
                     TextButton(onClick = { creationOpen = true }) { Text("AI 创建") }
-                    TextButton(onClick = { importPicker = true }) { Text("导入码") }
+                    TextButton(onClick = { importPicker = true }) { Text("导入") }
                 }
             )
         },
@@ -238,10 +238,10 @@ private fun OrientationFilterRow(
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
     ) {
         options.forEach { opt ->
-            FilterChip(
+            FilterTag(
                 selected = opt == selected,
                 onClick = { onSelect(opt) },
-                label = { Text(opt?.label ?: "全部") }
+                label = opt?.label ?: "全部"
             )
         }
     }
@@ -262,7 +262,7 @@ private fun CharacterEmptyState(title: String, body: String, showReset: Boolean,
             textAlign = TextAlign.Center)
         Spacer(Modifier.height(6.dp))
         if (showReset) {
-            TextButton(onClick = onReset) { Text("清除筛选 / 查看全部") }
+            TextButton(onClick = onReset) { Text("清除筛选") }
         }
     }
 }
@@ -312,12 +312,12 @@ private fun CharacterCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Pill(c.orientation.label, container = MaterialTheme.colorScheme.secondaryContainer)
+                if (c.orientation != SexualOrientation.UNKNOWN) Pill(c.orientation.label, container = MaterialTheme.colorScheme.secondaryContainer)
                 if (c.lgbt) Pill("LGBT", container = MaterialTheme.colorScheme.tertiaryContainer)
-                if (c.adult) Pill("18+", container = MaterialTheme.colorScheme.tertiaryContainer)
+                if (c.adult) Pill("18+", container = MaterialTheme.colorScheme.primaryContainer)
             }
             Spacer(Modifier.height(10.dp))
-            Text("参演剧情", style = MaterialTheme.typography.labelLarge)
+            Text("参演剧情 · ${stories.size}", style = MaterialTheme.typography.labelLarge)
             if (stories.isEmpty()) {
                 Text("暂无", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -329,7 +329,7 @@ private fun CharacterCard(
                     stories.forEach { story ->
                         AssistChip(
                             onClick = { onPlay(story) },
-                            label = { Text(story.title, maxLines = 1) },
+                            label = { Text(story.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                             leadingIcon = { Icon(Icons.Filled.PlayArrow, "开始剧情") }
                         )
                     }

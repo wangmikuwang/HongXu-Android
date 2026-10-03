@@ -52,7 +52,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
+import io.wenyou.textquest.ui.common.FilterTag
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -108,7 +108,7 @@ import io.wenyou.textquest.ui.vm.Vms
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
-    val vm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(it) })
+    val vm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(container) })
     val stories by vm.stories.collectAsState()
     val totalStories by vm.totalStories.collectAsState()
     val filters by vm.filters.collectAsState()
@@ -149,7 +149,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 title = { Text("剧情库") },
                 actions = {
                     TextButton(onClick = { creationOpen = true }) { Text("AI 创建") }
-                    TextButton(onClick = { importPicker = true }) { Text("导入码") }
+                    TextButton(onClick = { importPicker = true }) { Text("导入") }
                 }
             )
         },
@@ -589,11 +589,11 @@ private fun <T> FilterChipRow(
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
     ) {
         options.forEach { opt ->
-            FilterChip(
+            FilterTag(
                 modifier = if (label(opt) == "LGBT") Modifier.testTag("pride-filter") else Modifier,
                 selected = opt == selected,
                 onClick = { onSelect(opt) },
-                label = { Text(label(opt)) }
+                label = label(opt)
             )
         }
     }
@@ -614,7 +614,7 @@ private fun FilterEmptyState(title: String, body: String, showReset: Boolean, on
             textAlign = TextAlign.Center)
         Spacer(Modifier.height(6.dp))
         if (showReset) {
-            TextButton(onClick = onReset) { Text("清除筛选 / 查看全部") }
+            TextButton(onClick = onReset) { Text("清除筛选") }
         }
     }
 }
@@ -705,21 +705,22 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Pill(modeText)
+                Pill(modeText, container = MaterialTheme.colorScheme.secondaryContainer)
+                if (story.genre.isNotBlank()) Pill(story.genre)
                 // 内容标签：LGBT 与 18+ 可同时存在；都没有则标「全年龄」
                 if (story.lgbt) {
                     Pill(ContentClass.LGBT.label, container = MaterialTheme.colorScheme.tertiaryContainer)
                 }
                 if (story.adult) {
-                    Pill(ContentClass.ADULT.label, container = MaterialTheme.colorScheme.tertiaryContainer)
+                    Pill(ContentClass.ADULT.label, container = MaterialTheme.colorScheme.primaryContainer)
                 }
                 if (!story.lgbt && !story.adult) {
                     Pill(ContentClass.ALL_AGE.label, container = MaterialTheme.colorScheme.secondaryContainer)
                 }
-                Pill("${story.nodes.size} 节点")
-                if (aiNodes > 0) Pill("AI×$aiNodes", container = MaterialTheme.colorScheme.tertiaryContainer)
+                Pill("${story.nodes.size} 场景")
+                if (aiNodes > 0) Pill("$aiNodes AI 场景", container = MaterialTheme.colorScheme.tertiaryContainer)
                 if (story.characterIds.isNotEmpty())
-                    Pill("角色 ${story.characterIds.size}", container = MaterialTheme.colorScheme.secondaryContainer)
+                    Pill("${story.characterIds.size} 位人物")
             }
         }
     }

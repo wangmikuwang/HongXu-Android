@@ -16,8 +16,10 @@ import kotlinx.coroutines.launch
 
 data class CreationUi(
     val idea: String = "",
+    val revision: String = "",
     val kind: CreationKind = CreationKind.STORY,
     val busy: Boolean = false,
+    val saving: Boolean = false,
     val draft: AppBundle? = null,
     val error: String = "",
     val saved: Boolean = false
@@ -34,6 +36,24 @@ class CreationViewModel(private val container: WenYouApp.AppContainer) : ViewMod
     }
     fun setKind(value: CreationKind) {
         if (!ui.value.busy) state.update { it.copy(kind = value, draft = null, error = "", saved = false) }
+    }
+    fun setRevision(value: String) { if (!ui.value.busy) state.update { it.copy(revision = value.take(2000), error = "") } }
+    fun revise() {
+        val current = ui.value
+        val draft = current.draft ?: return
+        if (current.busy || current.revision.isBlank()) return
+        val profiles = container.library.providers.value
+        val profile = profiles.firstOrNull { it.id == container.settings.state.value.defaultProviderId } ?: profiles.firstOrNull()
+        if (profile == null) { state.update { it.copy(error = "请先配置 AI 服务") }; return }
+        state.update { it.copy(busy = true, error = "") }
+        generation = viewModelScope.launch {
+            try {
+                val revised = creator.revise(profile, current.revision, draft, container.settings.state.value.adultContent)
+                state.update { it.copy(draft = revised, revision = "") }
+            } catch (e: CancellationException) { throw e }
+            catch (e: Exception) { state.update { it.copy(error = AiDirector.errorMessage(e)) } }
+            finally { state.update { it.copy(busy = false) } }
+        }
     }
     fun generate() {
         val current = ui.value
@@ -66,7 +86,7 @@ class CreationViewModel(private val container: WenYouApp.AppContainer) : ViewMod
         val current = ui.value
         val draft = current.draft ?: return
         if (current.busy || current.saved) return
-        state.update { it.copy(busy = true, error = "") }
+        state.update { it.copy(busy = true, saving = true, error = "") }
         viewModelScope.launch {
             try {
                 // Reuse IDs on retry so a partial disk failure cannot duplicate generated characters.
@@ -77,7 +97,7 @@ class CreationViewModel(private val container: WenYouApp.AppContainer) : ViewMod
             } catch (e: Exception) {
                 state.update { it.copy(error = "保存失败：${e.message}") }
             } finally {
-                state.update { it.copy(busy = false) }
+                state.update { it.copy(busy = false, saving = false) }
             }
         }
     }

@@ -156,16 +156,16 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
         nav = nav
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.testTag("settings-list").padding(padding),
+            modifier = Modifier.padding(padding).testTag("settings-list"),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
                 Column(Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
                     EasterEggTitle(stringResource(io.wenyou.textquest.R.string.app_name), MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                         tapMessage = "🎬 幕后导演\n导演悄悄递来一张纸条：最精彩的剧情，往往从你不按套路的选择开始。\n今天，主角的名字叫你。",
                         holdMessage = "🪄 第四面墙\n旁白：你长按了标题。\n角色：等等，谁在故事外面戳我们？\n导演：嘘，这是主角的新能力。")
-                    Text("两套外观 · 本地数据优先", style = MaterialTheme.typography.bodySmall,
+                    Text("外观、AI 与本地数据", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
@@ -235,13 +235,9 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 }
             }
 
-            item { io.wenyou.textquest.ui.common.GenerationNotificationSettings(container.settings) }
-
-            item { SectionHeader("AI 默认服务") }
+            item { SectionHeader("AI 与生成") }
             item {
                 TonalCard {
-                    Text("对局默认调用（AI 导演/AI 场景）", style = MaterialTheme.typography.labelLarge)
-                    Spacer(Modifier.height(8.dp))
                     AppDropdown(
                         label = "默认服务",
                         options = listOf("（使用第一个可用）" to "") +
@@ -252,6 +248,8 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 }
             }
 
+            item { io.wenyou.textquest.ui.common.GenerationNotificationSettings(container.settings) }
+
             // 解锁后，LGBT 内容开关仅在旗帜墙显示。
             if (ui.contentUnlocked && !ui.prideUnlocked) {
                 item { SectionHeader("内容偏好") }
@@ -260,7 +258,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text("显示 LGBT（LGBTQ+）内容", style = MaterialTheme.typography.labelLarge)
-                                Text("关闭后，剧情库与角色将隐藏 LGBT 预设，仅显示非 LGBT 内容（校园/家庭/职场/悬疑/古风/科幻等）。",
+                                Text("关闭后隐藏 LGBT 预设剧情与人物。",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -277,7 +275,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text("显示成人（18+）内容", style = MaterialTheme.typography.labelLarge)
-                                Text("开启后显示成人向预设，并允许 AI 描写成年、自愿的亲密/性爱场景；关闭后隐藏并保持非露骨。",
+                                Text("开启后显示成人预设，允许成年、自愿的亲密描写；关闭后保持非露骨。",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -289,11 +287,11 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
             item { SectionHeader("数据备份") }
             item {
                 TonalCard {
-                    Text("所有剧情、角色、AI 服务与存档都以 JSON 保存在本机，可整体导出/导入迁移。",
+                    Text("整体备份剧情、人物、AI 服务与存档，供恢复或迁移。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(onClick = {
                             exportLauncher.launch("${BuildConfig.APP_FILE_PREFIX}-backup-${System.currentTimeMillis()}.json")
                         }) { Text("导出备份") }
@@ -304,31 +302,33 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 }
             }
 
+            item { SectionHeader("角色规则") }
             item {
                 TonalCard {
-                    Text("底层基调（不可动摇规则）", style = MaterialTheme.typography.labelLarge)
+                    Text("底层基调", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(6.dp))
-                    Text("角色扮演时先执行底层基调，再按人物设定扮演；冲突时以此层为准。可新建多条，并在角色编辑里选择要执行的角色。",
+                    Text("角色优先遵守这些规则。在人物编辑中选择要应用的规则。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(onClick = { nav.navigate(R.bottomRuleEdit("new")) }) { Text("新建底层基调") }
                         OutlinedButton(onClick = { nav.navigate(R.BOTTOM_RULES) }) { Text("管理底层基调") }
                     }
                 }
             }
 
+            item { SectionHeader("诊断与关于") }
             item {
                 TonalCard {
                     Text("崩溃日志保存位置", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(6.dp))
                     val dir = vm.crashDir()
-                    Text(if (dir != null) "已设置：$dir" else "默认：应用私有目录（可用“系统文档”按钮选择 Documents 目录，便于在手机“文档”里直接查看 crash.log）",
+                    Text(if (dir != null) "已设置：$dir" else "默认保存在应用内。可选择系统文档目录。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         OutlinedButton(onClick = { crashDirPicker.launch(null) }) { Text("选择系统文档目录") }
                         Button(onClick = {
                             val t = "测试日志 time=${System.currentTimeMillis()}\nversion=${BuildConfig.VERSION_NAME}\n"
@@ -337,7 +337,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                         }) { Text("写入测试日志") }
                     }
                     Spacer(Modifier.height(6.dp))
-                    Text("说明：普通崩溃日志与测试日志都会写入所选目录的 crash.log。",
+                    Text("日志文件：crash.log",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline)
                 }
@@ -347,7 +347,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 TonalCard {
                     Text("版本", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(6.dp))
-                    Text("v${BuildConfig.VERSION_NAME.substringBefore('-')}（build ${BuildConfig.VERSION_CODE}）\n本地优先：API Key 仅保存在本机，不上传任何远端。\n",
+                    Text("v${BuildConfig.VERSION_NAME.substringBefore('-')}（build ${BuildConfig.VERSION_CODE}）\nAI 密钥保存在本机。\n",
                         modifier = Modifier.testTag("pride-version").clickable(onClickLabel = "版本号", onClick = onVersionTap),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)

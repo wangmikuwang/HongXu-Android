@@ -15,6 +15,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
@@ -33,7 +34,7 @@ import io.wenyou.textquest.ui.vm.Vms
 
 @Composable
 fun CreationDialog(container: WenYouApp.AppContainer, nav: NavHostController, onDismiss: () -> Unit, initialKind: CreationKind = CreationKind.STORY) {
-    val vm: CreationViewModel = viewModel(factory = Vms.factory { CreationViewModel(it) })
+    val vm: CreationViewModel = viewModel(factory = Vms.factory { CreationViewModel(container) })
     val ui by vm.ui.collectAsStateWithLifecycle()
     val focus = LocalFocusManager.current
     LaunchedEffect(Unit) { if (ui.idea.isBlank() && ui.draft == null) vm.setKind(initialKind) }
@@ -57,51 +58,36 @@ fun CreationDialog(container: WenYouApp.AppContainer, nav: NavHostController, on
             Column(Modifier.heightIn(max = 480.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 AppDropdown("创建内容", CreationKind.entries.map { it.label to it }, ui.kind, vm::setKind, enabled = !ui.busy)
                 if (!ui.busy) {
-                    AppField(ui.idea, vm::setIdea, "描述你的创意", minLines = 2, maxLines = 4,
+                    AppField(ui.idea, vm::setIdea, "描述你的创意", modifier = Modifier.testTag("creation-idea"), minLines = 2, maxLines = 4,
                         placeholder = "例如：一位失忆侦探与能听见旧物记忆的少女，在雨城寻找失踪的人",
                         supporting = "${ui.idea.length}/2000 字")
                 } else {
                     Text(ui.idea, style = MaterialTheme.typography.bodyMedium)
                     LinearProgressIndicator(Modifier.fillMaxWidth())
-                    Text(if (ui.draft != null) "正在保存…" else if (ui.kind == CreationKind.STORY) "正在创作剧情与人设…" else "正在创作人物设定…")
+                    Text(if (ui.saving) "正在保存…" else if (ui.draft != null) "正在修改草稿…" else if (ui.kind == CreationKind.STORY) "正在创作剧情与人设…" else "正在创作人物设定…")
                 }
                 if (ui.busy || ui.draft != null || ui.error.isNotBlank()) UsagePanel(container.chatClient.usage)
                 Text(if (profile == null) "还没有配置 AI 服务" else "使用 AI 服务：${profile.name}", style = MaterialTheme.typography.bodySmall)
-                if (ui.kind == CreationKind.STORY) Text("生成 AI 导演剧情：世界观、开场和关联人物，保存后即可游玩。", style = MaterialTheme.typography.bodySmall)
+                if (ui.kind == CreationKind.STORY) Text("生成剧情、节点、变量、人物状态与规则，保存前可用一句话继续修改。", style = MaterialTheme.typography.bodySmall)
                 if (profile == null) TextButton(onClick = { close(); nav.navigate(R.PROVIDERS) }) { Text("配置 AI 服务") }
                 if (ui.error.isNotBlank()) Text(ui.error, color = MaterialTheme.colorScheme.error)
                 ui.draft?.let { draft ->
-                    draft.stories.firstOrNull()?.let { story ->
-                        TonalCard {
-                            Text("${story.coverEmoji} ${story.title}", style = MaterialTheme.typography.titleMedium)
-                            Text(story.subtitle)
-                            Text("世界观", style = MaterialTheme.typography.labelLarge)
-                            Text(story.ai.worldSummary)
-                            Text("开场", style = MaterialTheme.typography.labelLarge)
-                            Text(story.nodes.getValue("start").text)
-                        }
+                    CreationPreview(draft)
+                    if (!ui.busy) {
+                        AppField(ui.revision, vm::setRevision, "一句话修改", modifier = Modifier.testTag("creation-revision"), minLines = 2, maxLines = 4, supporting = "修改当前草稿，未提及内容保留")
+                        TextButton(onClick = vm::revise, enabled = ui.revision.isNotBlank() && profile != null) { Text("修改草稿") }
+                        TextButton(onClick = vm::generate) { Text("重新生成") }
                     }
-                    draft.characters.forEach { c ->
-                        TonalCard {
-                            Text("${c.emoji} ${c.name}", style = MaterialTheme.typography.titleMedium)
-                            Text(c.tagline)
-                            Text("性格：${c.personality}")
-                            Text("背景：${c.background}")
-                            if (c.speechStyle.isNotBlank()) Text("说话习惯：${c.speechStyle}")
-                            if (c.exampleDialogue.isNotBlank()) Text("台词：${c.exampleDialogue}")
-                        }
-                    }
-                    if (!ui.busy) TextButton(onClick = vm::generate) { Text("重新生成") }
                 }
             }
         },
         confirmButton = {
-            Button(onClick = { focus.clearFocus(); if (ui.draft == null) vm.generate() else vm.save() }, enabled = !ui.busy && (ui.draft != null || profile != null) && ui.idea.isNotBlank()) {
+            Button(modifier = Modifier.testTag("creation-confirm"), onClick = { focus.clearFocus(); if (ui.draft == null) vm.generate() else vm.save() }, enabled = !ui.busy && (ui.draft != null || profile != null) && ui.idea.isNotBlank()) {
                 Text(if (ui.draft == null) "开始创建" else "保存并编辑")
             }
         },
         dismissButton = {
-            TextButton(onClick = close, enabled = !ui.busy || ui.draft == null) { Text(if (ui.busy) "取消生成" else "关闭") }
+            TextButton(onClick = close, enabled = !ui.saving) { Text(if (ui.busy) "取消生成" else "关闭") }
         }
     )
 }

@@ -23,10 +23,10 @@ import java.io.StringWriter
 class WenYouApp : Application() {
 
     /** 进程级手动依赖注入容器（避免引入 Hilt，保持工程轻量）。 */
-    class AppContainer(context: Context) {
+    class AppContainer(context: Context, suppliedClient: ChatClient? = null) {
         val library = LocalLibrary(context)
         val settings = SettingsStore(context)
-        val chatClient = ChatClient(usage = io.wenyou.textquest.data.llm.UsageTracker(File(context.filesDir, "usage.json")))
+        val chatClient = suppliedClient ?: ChatClient(usage = io.wenyou.textquest.data.llm.UsageTracker(File(context.filesDir, "usage.json")))
         val director = AiDirector(chatClient)
     }
 
