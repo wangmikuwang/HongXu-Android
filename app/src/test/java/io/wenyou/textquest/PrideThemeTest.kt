@@ -15,6 +15,22 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PrideThemeTest {
+    @Test fun componentAccentsGiveEveryFlagColorEqualTurnsAndReadableText() {
+        for (theme in PrideTheme.entries) {
+            val palette = (theme.colors + if (theme == PrideTheme.DEMISEXUAL) listOf(Color.Black) else emptyList()).distinct()
+            val assigned = (0 until palette.size * 5).map {
+                io.wenyou.textquest.ui.theme.paletteAccent(palette, it, Color.Magenta)
+            }
+            assertEquals(palette.toSet(), assigned.toSet())
+            assertTrue(assigned.groupingBy { it }.eachCount().values.all { it == 5 })
+            for (background in palette) {
+                val foreground = io.wenyou.textquest.ui.theme.accentForeground(background)
+                val a = foreground.luminance(); val b = background.luminance()
+                assertTrue("${theme.name}: low contrast", (maxOf(a,b)+0.05f)/(minOf(a,b)+0.05f) >= 4.5f)
+            }
+        }
+        assertEquals(Color.Cyan, io.wenyou.textquest.ui.theme.paletteAccent(emptyList(), 5, Color.Cyan))
+    }
     @Test fun brandPalettesKeepTextReadableAcrossSurfaceLevels() {
         for (c in listOf(LightColors, DarkColors)) {
             val pairs = listOf(c.onPrimary to c.primary, c.onSecondary to c.secondary,

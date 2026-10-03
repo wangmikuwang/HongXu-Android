@@ -1,4 +1,10 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.theme.distributedAccent
+import io.wenyou.textquest.ui.theme.accentForeground
+import io.wenyou.textquest.ui.theme.LocalAccentPalette
+
+import androidx.compose.material3.FilterChipDefaults
+
 
 import io.wenyou.textquest.ui.theme.readableAccent
 
@@ -231,10 +237,13 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
-                            chars.forEach { c ->
+                            chars.forEachIndexed { index, c ->
                                 val checked = c.id in story.characterIds
                                 FilterChip(
                                     selected = checked,
+                                    colors = FilterChipDefaults.filterChipColors(
+                                        selectedContainerColor = distributedAccent(index, MaterialTheme.colorScheme.secondaryContainer),
+                                        selectedLabelColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(distributedAccent(index, MaterialTheme.colorScheme.secondaryContainer)) else MaterialTheme.colorScheme.onSecondaryContainer),
                                     onClick = {
                                         val ids = if (checked) story.characterIds - c.id
                                         else story.characterIds + c.id

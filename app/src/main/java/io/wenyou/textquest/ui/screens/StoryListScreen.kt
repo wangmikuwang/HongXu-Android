@@ -591,8 +591,9 @@ private fun <T> FilterChipRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())
     ) {
-        options.forEach { opt ->
+        options.forEachIndexed { index, opt ->
             FilterTag(
+                accentIndex = index,
                 modifier = if (label(opt) == "LGBT") Modifier.testTag("pride-filter") else Modifier,
                 selected = opt == selected,
                 onClick = { onSelect(opt) },
@@ -687,10 +688,6 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                             overflow = TextOverflow.Ellipsis)
                 }
                 Spacer(Modifier.width(8.dp))
-                FilledIconButton(onClick = onPlay,
-                    modifier = Modifier.align(Alignment.CenterVertically)) {
-                    Icon(Icons.Filled.PlayArrow, "游玩")
-                }
                 Box {
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Filled.MoreVert, "更多", tint = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -704,26 +701,33 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                 }
             }
             Spacer(Modifier.height(10.dp))
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Pill(modeText, container = MaterialTheme.colorScheme.secondaryContainer)
-                if (story.genre.isNotBlank()) Pill(story.genre)
-                // 内容标签：LGBT 与 18+ 可同时存在；都没有则标「全年龄」
-                if (story.lgbt) {
-                    Pill(ContentClass.LGBT.label, container = MaterialTheme.colorScheme.tertiaryContainer)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                FlowRow(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Pill(modeText, container = MaterialTheme.colorScheme.secondaryContainer)
+                    if (story.genre.isNotBlank()) Pill(story.genre)
+                    // 内容标签：LGBT 与 18+ 可同时存在；都没有则标「全年龄」
+                    if (story.lgbt) {
+                        Pill(ContentClass.LGBT.label, container = MaterialTheme.colorScheme.tertiaryContainer, accentIndex = 2)
+                    }
+                    if (story.adult) {
+                        Pill(ContentClass.ADULT.label, container = MaterialTheme.colorScheme.primaryContainer, accentIndex = 1)
+                    }
+                    if (!story.lgbt && !story.adult) {
+                        Pill(ContentClass.ALL_AGE.label, container = MaterialTheme.colorScheme.secondaryContainer)
+                    }
+                    Pill("${story.nodes.size} 场景")
+                    if (aiNodes > 0) Pill("$aiNodes AI 场景", container = MaterialTheme.colorScheme.tertiaryContainer, accentIndex = 3)
+                    if (story.characterIds.isNotEmpty())
+                        Pill("${story.characterIds.size} 位人物")
                 }
-                if (story.adult) {
-                    Pill(ContentClass.ADULT.label, container = MaterialTheme.colorScheme.primaryContainer)
+                Spacer(Modifier.width(8.dp))
+                FilledIconButton(onClick = onPlay) {
+                    Icon(Icons.Filled.PlayArrow, "游玩")
                 }
-                if (!story.lgbt && !story.adult) {
-                    Pill(ContentClass.ALL_AGE.label, container = MaterialTheme.colorScheme.secondaryContainer)
-                }
-                Pill("${story.nodes.size} 场景")
-                if (aiNodes > 0) Pill("$aiNodes AI 场景", container = MaterialTheme.colorScheme.tertiaryContainer)
-                if (story.characterIds.isNotEmpty())
-                    Pill("${story.characterIds.size} 位人物")
             }
         }
     }

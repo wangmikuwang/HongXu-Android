@@ -1,4 +1,10 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.theme.distributedAccent
+import io.wenyou.textquest.ui.theme.accentForeground
+import io.wenyou.textquest.ui.theme.LocalAccentPalette
+
+import androidx.compose.material3.ButtonDefaults
+
 
 import io.wenyou.textquest.ui.common.AppTextButton
 import io.wenyou.textquest.ui.common.AppOutlinedButton
@@ -18,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -123,9 +130,10 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 }
             } else {
                 item { SectionHeader("继续上次的旅程") }
-                items(cards, key = { it.slot.id }) { card ->
+                itemsIndexed(cards, key = { _, card -> card.slot.id }) { index, card ->
                     ContinueCard(
                         card,
+                        accentIndex = index + 3,
                         onClick = { nav.navigate(R.play(card.slot.state.storyId, card.slot.id)) },
                         onDelete = { pendingDelete = card }
                     )
@@ -144,13 +152,13 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 4.dp))
                     }
-                    stories.take(3).forEach { s ->
+                    stories.take(3).forEachIndexed { index, s ->
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         MiniStoryRow(
                             title = s.title,
                             subtitle = s.subtitle,
                             emoji = s.coverEmoji,
-                            color = avatarColor(s.colorIndex),
+                            color = distributedAccent(index + 3, avatarColor(s.colorIndex)),
                             onClick = { nav.navigate(R.storyEdit(s.id)) }
                         )
                     }
@@ -200,14 +208,18 @@ private fun HomeWelcome(
             Text(journeyTitle ?: "开启第一段旅程", style = MaterialTheme.typography.headlineSmall,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(16.dp))
-            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
+            Button(onClick = onContinue, colors = ButtonDefaults.buttonColors(
+                containerColor = distributedAccent(0, MaterialTheme.colorScheme.primary),
+                contentColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(distributedAccent(0, MaterialTheme.colorScheme.primary)) else MaterialTheme.colorScheme.onPrimary), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Icon(Icons.Filled.PlayArrow, null)
                 Spacer(Modifier.width(6.dp))
                 Text(if (hasSave) "继续旅程" else "开始剧情")
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilledTonalButton(onClick = onCreate, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
+            FilledTonalButton(onClick = onCreate, colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = distributedAccent(1, MaterialTheme.colorScheme.secondaryContainer),
+                contentColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(distributedAccent(1, MaterialTheme.colorScheme.secondaryContainer)) else MaterialTheme.colorScheme.onSecondaryContainer), modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
                 Text("AI 创建")
             }
             AppOutlinedButton(onClick = onNewStory, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
@@ -264,9 +276,9 @@ private fun MissingProviderCard(onClick: () -> Unit) {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun ContinueCard(card: HomeCard, onClick: () -> Unit, onDelete: () -> Unit) {
+private fun ContinueCard(card: HomeCard, accentIndex: Int, onClick: () -> Unit, onDelete: () -> Unit) {
     val story = card.story
-    val color = avatarColor(story?.colorIndex ?: 0)
+    val color = distributedAccent(accentIndex, avatarColor(story?.colorIndex ?: 0))
     Card(
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -289,7 +301,7 @@ private fun ContinueCard(card: HomeCard, onClick: () -> Unit, onDelete: () -> Un
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Pill(card.stepText)
                     if (story?.mode != null && story.mode.label.isNotEmpty()) {
-                        Pill(story.mode.label, container = MaterialTheme.colorScheme.tertiaryContainer)
+                        Pill(story.mode.label, container = MaterialTheme.colorScheme.tertiaryContainer, accentIndex = accentIndex)
                     }
                 }
             }
@@ -309,7 +321,7 @@ private fun MiniStoryRow(
         Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(onClick = onClick).padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        EmojiBadge(emoji, color.copy(alpha = 0.35f), size = 40.dp, fontSize = 20.sp)
+        EmojiBadge(emoji, if (LocalAccentPalette.current.isNotEmpty()) color else color.copy(alpha = 0.35f), size = 40.dp, fontSize = 20.sp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)

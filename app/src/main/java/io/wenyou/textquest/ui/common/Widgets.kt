@@ -1,4 +1,9 @@
 package io.wenyou.textquest.ui.common
+import io.wenyou.textquest.ui.theme.distributedAccent
+import io.wenyou.textquest.ui.theme.accentForeground
+import io.wenyou.textquest.ui.theme.LocalAccentPalette
+import androidx.compose.material.icons.filled.Check
+
 
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -90,17 +95,18 @@ fun EmojiBadge(
 
 /** 小圆角标签。 */
 @Composable
-fun Pill(text: String, modifier: Modifier = Modifier, container: Color? = null) {
+fun Pill(text: String, modifier: Modifier = Modifier, container: Color? = null, accentIndex: Int = 0) {
+    val fill = container?.let { distributedAccent(accentIndex, it) }
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(50),
-        color = container ?: MaterialTheme.colorScheme.surfaceContainerHigh
+        color = fill ?: MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
         Text(
             text,
-            maxLines = 1, overflow = TextOverflow.Ellipsis,
+            maxLines = 2, overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.labelMedium,
-            color = if (container == null) MaterialTheme.colorScheme.onSurfaceVariant else contentColorFor(container),
+            color = if (container == null) MaterialTheme.colorScheme.onSurfaceVariant else if (LocalAccentPalette.current.isNotEmpty()) accentForeground(fill!!) else contentColorFor(container),
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
         )
     }
@@ -108,14 +114,23 @@ fun Pill(text: String, modifier: Modifier = Modifier, container: Color? = null) 
 
 /** Shared, theme-aware selection tags for library filters. */
 @Composable
-fun FilterTag(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun FilterTag(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, accentIndex: Int = 0) {
+    val accent = distributedAccent(accentIndex, MaterialTheme.colorScheme.primary)
+    val custom = LocalAccentPalette.current.isNotEmpty()
     FilterChip(selected = selected, onClick = onClick, modifier = modifier,
-        shape = RoundedCornerShape(50), label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+        leadingIcon = if (custom) {{
+            if (selected) androidx.compose.material3.Icon(
+                androidx.compose.material.icons.Icons.Default.Check, contentDescription = null,
+                modifier = Modifier.size(18.dp), tint = accentForeground(accent))
+            else Surface(modifier = Modifier.size(10.dp), shape = CircleShape, color = accent,
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {}
+        }} else null,
+        shape = RoundedCornerShape(50), label = { Text(label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         colors = FilterChipDefaults.filterChipColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-            selectedContainerColor = MaterialTheme.colorScheme.primary,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimary))
+            selectedContainerColor = accent,
+            selectedLabelColor = if (custom) accentForeground(accent) else MaterialTheme.colorScheme.onPrimary))
 }
 
 /** 分组卡片标题。 */

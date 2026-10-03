@@ -146,7 +146,10 @@ fun WenYouTheme(
         else -> LightColors
     }
     val colorScheme = prideTheme?.let { prideColors(baseColors, it) } ?: baseColors
-    CompositionLocalProvider(LocalThemeStyle provides style) {
+    CompositionLocalProvider(LocalThemeStyle provides style,
+        LocalAccentPalette provides (prideTheme?.let { theme ->
+            (theme.colors + if (theme == PrideTheme.DEMISEXUAL) listOf(Color.Black) else emptyList()).distinct()
+        } ?: emptyList())) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = if (style == ThemeStyle.APPLE) AppleTypography else AppTypography,

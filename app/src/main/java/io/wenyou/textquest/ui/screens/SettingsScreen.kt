@@ -213,12 +213,15 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                     AppDropdown(label = "旗帜配色",
                         options = listOf("默认配色" to null) + PrideTheme.entries.map { it.label to it },
                         selected = ui.prideTheme, onSelect = vm::setPrideTheme)
-                    ui.prideTheme?.let { Text(it.description, style = MaterialTheme.typography.bodySmall) }
+                    ui.prideTheme?.let {
+                        Spacer(Modifier.height(12.dp))
+                        Text(it.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
             }
             if (ui.style == ThemeStyle.MATERIAL && ui.prideTheme == null) item {
                 TonalCard {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                         Column(Modifier.weight(1f)) {
                             Text("动态取色（壁纸配色）", style = MaterialTheme.typography.labelLarge)
                             Text(
@@ -256,7 +259,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 item { SectionHeader("内容偏好") }
                 item {
                     TonalCard {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Column(Modifier.weight(1f)) {
                                 Text("显示 LGBT（LGBTQ+）内容", style = MaterialTheme.typography.labelLarge)
                                 Text("关闭后隐藏 LGBT 预设剧情与人物。",
@@ -273,7 +276,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 item { SectionHeader("成人内容") }
                 item {
                     TonalCard {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Column(Modifier.weight(1f)) {
                                 Text("显示成人（18+）内容", style = MaterialTheme.typography.labelLarge)
                                 Text("开启后显示成人预设，允许成年、自愿的亲密描写；关闭后保持非露骨。",

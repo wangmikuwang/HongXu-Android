@@ -1,4 +1,8 @@
 package io.wenyou.textquest.ui
+import io.wenyou.textquest.ui.theme.distributedAccent
+import io.wenyou.textquest.ui.theme.accentForeground
+import io.wenyou.textquest.ui.theme.LocalAccentPalette
+
 
 import io.wenyou.textquest.ui.common.AppTextButton
 
@@ -184,16 +188,17 @@ fun HubBottomBar(nav: NavHostController) {
     NavigationBar(modifier = if (apple) Modifier.padding(horizontal = 12.dp) else Modifier,
         containerColor = if (apple) Color.Transparent else MaterialTheme.colorScheme.surfaceContainer,
         windowInsets = if (apple) WindowInsets(0, 0, 0, 0) else androidx.compose.material3.NavigationBarDefaults.windowInsets) {
-        items.forEach { item ->
+        items.forEachIndexed { index, item ->
+            val indicator = distributedAccent(index + 2, MaterialTheme.colorScheme.primaryContainer)
             NavigationBarItem(
                 colors = if (apple) NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedIconColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(indicator) else MaterialTheme.colorScheme.onPrimaryContainer,
                     selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    indicatorColor = indicator
                 ) else NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedIconColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(indicator) else MaterialTheme.colorScheme.onPrimaryContainer,
                     selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    indicatorColor = indicator,
                     unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),

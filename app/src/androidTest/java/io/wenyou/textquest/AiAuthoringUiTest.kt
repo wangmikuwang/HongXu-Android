@@ -102,6 +102,39 @@ class AiAuthoringUiTest {
         } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
     }
 
+
+    @Test fun longCardTitlesKeepSpaceAndActionsAtLargeFont() {
+        val ok = client()
+        try {
+            val container = container(ok)
+            val title = "雨城之中尚未说出口的漫长故事"
+            val name = "有一个很长很长名字的登场人物"
+            runBlocking {
+                container.library.upsertCharacter(CharacterData("layout-c", name, tagline = "即使放大字体也应清晰展示人物信息", personality = "温柔而坚定"))
+                container.library.upsertStory(Story("layout-s", title, subtitle = "为长标题保留足够空间", mode = StoryMode.AI_DIRECTOR, characterIds = listOf("layout-c")))
+            }
+            compose.runOnIdle { compose.activity.setContent {
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                androidx.compose.runtime.CompositionLocalProvider(
+                    androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(density.density, 1.5f)
+                ) { WenYouAppRoot(container) }
+            } }
+            compose.onNodeWithContentDescription("剧情", useUnmergedTree = true).performClick()
+            compose.onNodeWithText(title).assertIsDisplayed()
+            val pixels = compose.onNodeWithText(title).fetchSemanticsNode().boundsInRoot.width
+            val density = compose.activity.resources.displayMetrics.density
+            assertTrue("The play action must not squeeze the title", pixels / density >= 160f)
+            compose.onNodeWithContentDescription("游玩").assertIsDisplayed()
+            screenshot("large-font-story-card.png")
+            compose.onNodeWithContentDescription("角色", useUnmergedTree = true).performClick()
+            compose.onNodeWithText(name).assertIsDisplayed()
+            compose.onNodeWithContentDescription("分享").assertIsDisplayed()
+            compose.onNodeWithContentDescription("编辑").assertIsDisplayed()
+            compose.onNodeWithContentDescription("删除").assertIsDisplayed()
+            screenshot("large-font-character-card.png")
+        } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+    }
+
     @Test fun homeSettingsAndLibraryTagsKeepTheirActionsInBothAppearances() {
         val ok = client()
         try {
