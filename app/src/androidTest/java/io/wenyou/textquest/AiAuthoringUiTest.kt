@@ -67,6 +67,55 @@ class AiAuthoringUiTest {
         Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK").body(response.toString().toResponseBody()).build()
     }.build()
 
+
+    @Test fun recommendationClickKeepsDialogueAndNextSuggestionsInBothStyles() {
+        val calls = java.util.concurrent.atomic.AtomicInteger()
+        val ok = OkHttpClient.Builder().addInterceptor { chain ->
+            val n = calls.incrementAndGet()
+            val buffer = okio.Buffer(); chain.request().body!!.writeTo(buffer)
+            val request = buffer.readUtf8()
+            assertTrue(request.contains(if (n == 1) "在窗边坐下" else "我先询问来意"))
+            val content = if (n == 1)
+                """{"entries":[{"text":"灯亮了。"},{"speakerId":"rain","text":"请坐。"}],"choices":["我先询问来意",{"text":"看向窗外"}],"state":[{"delta":"bad"}],"memory":null}"""
+            else """{"entries":[{"text":"雨停了。"},{"speakerId":"rain","text":"让我来告诉你，我在等你。"}],"choices":[{"text":"问问等了多久"},{"text":"坐近一点"}]}"""
+            val response = buildJsonObject { putJsonArray("choices") { addJsonObject { putJsonObject("message") {
+                put("content", content); put("reasoning_content", "独立思考，不属于剧情正文")
+            } } } }
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK").body(response.toString().toResponseBody()).build()
+        }.build()
+        try {
+            val container = container(ok)
+            runBlocking {
+                container.library.upsertCharacter(CharacterData("rain", "阿雨"))
+                container.library.upsertStory(Story("recommend", "雨城", mode = StoryMode.AI_DIRECTOR, characterIds = listOf("rain")))
+                container.library.upsertSave(SaveSlot("recommend-save", "测试对话", 1, 1, SessionState("recommend",
+                    history = listOf(LogEntry(text = "雨还在下。")), pendingAiChoices = listOf(ChoiceData("在窗边坐下")), aiAwaitingChoice = true)))
+            }
+            for (style in listOf(ThemeStyle.APPLE, ThemeStyle.MATERIAL)) {
+                calls.set(0)
+                compose.runOnIdle { compose.activity.viewModelStore.clear(); compose.activity.setContent {
+                    // A different owner key creates a separate synthetic session for each appearance.
+                    androidx.compose.runtime.key(style) {
+                        WenYouTheme(style = style, dynamicColor = false) {
+                            io.wenyou.textquest.ui.screens.PlayScreen(container, rememberNavController(), "recommend", "recommend-save")
+                        }
+                    }
+                } }
+                compose.onNodeWithText("在窗边坐下").performClick()
+                compose.waitUntil(10_000) { compose.onAllNodesWithText("我先询问来意").fetchSemanticsNodes().isNotEmpty() }
+                compose.onNodeWithText("请坐。").assertIsDisplayed()
+                compose.onNodeWithText("看向窗外").assertExists()
+                compose.onNodeWithText("独立思考，不属于剧情正文").assertDoesNotExist()
+                compose.onNodeWithText("我先询问来意").performClick()
+                compose.waitUntil(10_000) { compose.onAllNodesWithText("问问等了多久").fetchSemanticsNodes().isNotEmpty() }
+                compose.onNodeWithText("让我来告诉你，我在等你。").assertIsDisplayed()
+                compose.onNodeWithText("坐近一点").assertExists()
+                assertEquals(2, calls.get())
+                screenshot("recommendation-${style.name.lowercase()}.png")
+            }
+        } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+    }
+
     @Test fun createRevisePreviewSaveAndReviseStoryForm() {
         val ok = client()
         try {

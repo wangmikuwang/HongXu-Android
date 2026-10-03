@@ -96,7 +96,7 @@ data: [DONE]
         val client = OkHttpClient.Builder().addInterceptor { chain ->
             val buffer = okio.Buffer(); chain.request().body!!.writeTo(buffer); requests.add(buffer.readUtf8())
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
-                .body("""{"choices":[{"message":{"content":"{\"text\":\"继续\"}"}}]}""".toResponseBody()).build()
+                .body("""{"choices":[{"message":{"content":"{\"text\":\"继续\",\"choices\":[{\"text\":\"调查\"}]}"}}]}""".toResponseBody()).build()
         }.build()
         try {
             val ai = AiDirector(ChatClient(client))

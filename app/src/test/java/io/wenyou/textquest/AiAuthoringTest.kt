@@ -174,7 +174,7 @@ class AiAuthoringTest {
             val message = if (requests == 1) buildJsonObject { put("reasoning_content", "构思雨声与人物回应") } else {
                 assertEquals("disabled", body.getValue("thinking").jsonObject.getValue("type").jsonPrimitive.content)
                 assertTrue(body.getValue("max_tokens").jsonPrimitive.int >= 2048)
-                buildJsonObject { put("content", """{"entries":[{"text":"窗外下雨"},{"speakerId":"c","text":"请进"}]}""") }
+                buildJsonObject { put("content", """{"entries":[{"text":"窗外下雨"},{"speakerId":"c","text":"请进"}],"choices":[{"text":"走进去"}]}""") }
             }
             val response = buildJsonObject { putJsonArray("choices") { addJsonObject { put("message", message) } } }
             Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK").body(response.toString().toResponseBody()).build()

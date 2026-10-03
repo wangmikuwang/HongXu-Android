@@ -459,7 +459,7 @@ class PlayViewModel internal constructor(
                 text = "AI 导演模式需要先配置并选择一家 AI 服务（「AI 服务」页）。")))
             return
         }
-        if (_ui.value.stage == PlayStage.AI_WORKING) return
+        if (ui.stage != PlayStage.DM_INPUT || aiJob?.isActive == true) return
         appendEntries(listOf(playerEntry(trimmed)))
         session = session?.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
         _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiDelta = "", aiReasoningDelta = "", pendingAiChoices = emptyList()) }
@@ -482,8 +482,10 @@ class PlayViewModel internal constructor(
                 throw e
             } catch (t: Throwable) {
                 if (job.isActive) {
+                    // Restore the unconsumed turn so retrying a suggestion never duplicates player input.
+                    session = s
                     appendEntries(listOf(LogEntry(EntryKind.ERROR, speaker = "系统", text = "AI 导演出错：${AiDirector.errorMessage(t)}")))
-                    _ui.update { it.copy(aiDelta = "", aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = emptyList()) }
+                    _ui.update { it.copy(aiDelta = "", aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = ui.pendingAiChoices) }
                 }
             }
         }

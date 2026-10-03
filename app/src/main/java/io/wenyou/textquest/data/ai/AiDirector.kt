@@ -16,15 +16,16 @@ import io.wenyou.textquest.data.model.StoryNode
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.int
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
 /** 场景 JSON 解码器：容忍新增/未知字段（跨版本与模型差异更稳）。 */
 private val sceneJson = Json { ignoreUnknownKeys = true }
-
-/** 匹配 JSON 里的 text 字段值（含反转义，用于兜底抽取）。 */
-private val TEXT_FIELD = Regex("\"text\"\\s*:\\s*\"((?:\\\\.|[^\"\\\\])*)\"")
 
 /** 判断一段文本是否像“JSON 信封”（含顶层 text/choices 键）。 */
 private val JSON_ENVELOPE = Regex("\"\\s*(text|choices)\\s*\"\\s*:")
@@ -103,7 +104,8 @@ data class AiScene(
     val stateEffects: List<StateChange> = emptyList(),
     val entries: List<AiEntry> = emptyList(),
     val memory: String = "",
-    val relationships: List<RelationshipChange> = emptyList()
+    val relationships: List<RelationshipChange> = emptyList(),
+    val ended: Boolean = false
 ) {
     fun logEntries(characters: List<CharacterData>, defaultSpeakerId: String = ""): List<LogEntry> {
         val lines = entries.ifEmpty { listOf(AiEntry(defaultSpeakerId, text)) }
@@ -323,23 +325,36 @@ class AiDirector(private val client: ChatClient) {
             append("JSON 必须补充 memory 字段：用 600 字以内更新累计剧情记忆，保留旧记忆中关键事件、承诺、线索及玩家选择，仅记已发生事实，不记推测与思考。可补充 relationships:[{from:角色id,to:另一个角色id,description:当前关系,reason:本轮变化原因}]，仅列发生变化的有方向关系，不虚构变化；state 每项可附 reason 解释原因。上述字段使用标准 JSON 双引号。\n")
             append("若有可选的构思/计划，把它放进思考过程（reasoning_content），不要出现在正文。\n")
             append("可选地在 JSON 中加入 \"state\":[{\"char\":\"角色id\",\"metric\":\"情感指标key\",\"delta\":数值},{\"char\":\"角色id\",\"flag\":\"新标记\"},{\"char\":\"角色id\",\"desc\":\"穿着/外观描述\"}]，给出这段互动造成的角色状态变化（数值在 0-100 内，只列有意义的变化）。指标 key：affection/trust/mood/energy/health/fatigue/arousal。\n")
-            append("若玩家表达了收尾意愿，请自然地给出结局感并让 choices 为空数组。\n")
+            append("choices 必须提供 2-4 个玩家下一步可以采取的行动或台词，不能替玩家实施。只有玩家明确表达收尾意愿且剧情已经结束时，才能设置 ended:true 并让 choices 为空数组；其他情况 ended:false。\n")
         }
         val user = contextTail(story, state, playerText) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult)
-        return requestScene(profile, system, user, ChatOptions(story.ai.temperature, story.ai.maxTokens), onDelta, onReasoning)
+        return requestScene(profile, system, user, ChatOptions(story.ai.temperature, story.ai.maxTokens), onDelta, onReasoning, requireChoices = true)
     }
 
     private suspend fun requestScene(profile: ApiProfile, system: String, user: String, options: ChatOptions,
-        onDelta: (String) -> Unit, onReasoning: (String) -> Unit): AiScene {
+        onDelta: (String) -> Unit, onReasoning: (String) -> Unit, requireChoices: Boolean = false): AiScene {
         val result = client.streamText(profile, system, user, options, onDelta, onReasoning)
-        val deepseek = runCatching { java.net.URI(profile.baseUrl).host?.lowercase() == "api.deepseek.com" }.getOrDefault(false)
-        if (result.content.isBlank() && result.reasoning.isNotBlank() && deepseek &&
-            profile.model in setOf("deepseek-flash", "deepseek-v4-pro")) {
-            // These official models default to thinking; one bounded non-thinking retry reserves output for the scene.
-            val answer = client.streamText(profile, system, user, options.copy(maxTokens = maxOf(options.maxTokens, 2048), thinking = false), onDelta, onReasoning)
-            return resolveScene(answer.copy(reasoning = result.reasoning + answer.reasoning))
+        fun decode(answer: ChatResult): AiScene {
+            // Live scenes must be complete envelopes; partial JSON is never committed as story history.
+            if (answer.content.isNotBlank() && extractJsonObject(answer.content) == null)
+                throw LlmException("AI 返回的剧情格式不完整，请重试。")
+            val scene = resolveScene(answer)
+            if (requireChoices && scene.choices.isEmpty() && !scene.ended)
+                throw LlmException("AI 未返回可用的推荐回复，请重试。")
+            return scene
         }
-        return resolveScene(result)
+        return try {
+            decode(result)
+        } catch (_: LlmException) {
+            // One bounded retry with the original context, never feed model planning back as plot.
+            val correction = "\n本轮输出必须为完整 JSON，entries 保留按顺序排列的旁白和其他角色台词；choices 使用对象数组。" +
+                if (requireChoices) "非结局必须包含 2-4 个推荐回复，仅明确收尾时允许 ended:true 和空 choices。" else ""
+            val canDisableThinking = runCatching { java.net.URI(profile.baseUrl).host?.lowercase() == "api.deepseek.com" }.getOrDefault(false) &&
+                profile.model in setOf("deepseek-flash", "deepseek-v4-pro")
+            val answer = client.streamText(profile, system + correction, user,
+                options.copy(maxTokens = maxOf(options.maxTokens, 4096), thinking = if (canDisableThinking) false else options.thinking), onDelta, onReasoning)
+            decode(answer.copy(reasoning = listOf(result.reasoning, answer.reasoning).filter { it.isNotBlank() }.joinToString("\n")))
+        }
     }
 
     /** 测试一条服务是否可用。 */
@@ -357,9 +372,9 @@ class AiDirector(private val client: ChatClient) {
     /** 对解析出的 [AiScene] 做最终清理：剥 markdown、剔思考泄漏、清洗选项文案。 */
     private fun sanitizeScene(scene: AiScene): AiScene {
         val newText = sanitizeProse(scene.text)
-        val newChoices = scene.choices.map { c -> c.copy(text = sanitizeProse(c.text).take(120)) }
+        val newChoices = scene.choices.map { c -> c.copy(text = cleanMarkdown(c.text).take(120)) }.filter { it.text.isNotBlank() }.distinctBy { it.text }
         return scene.copy(text = newText, choices = newChoices, memory = scene.memory.trim().take(2000),
-            entries = scene.entries.map { it.copy(text = sanitizeProse(it.text)) }.filter { it.text.isNotBlank() })
+            entries = scene.entries.map { it.copy(text = if (it.speakerId.isNotBlank() || it.speaker.isNotBlank()) cleanMarkdown(it.text) else sanitizeProse(it.text)) }.filter { it.text.isNotBlank() })
     }
 
     /** 正文与服务返回的思考字段分开处理，纯思考不能作为旁白或角色台词。 */
@@ -375,7 +390,26 @@ class AiDirector(private val client: ChatClient) {
         val json = extractJsonObject(cleaned)
         if (json != null) {
             try {
-                val decoded = sceneJson.decodeFromString(AiScene.serializer(), json)
+                val obj = sceneJson.parseToJsonElement(json) as? JsonObject ?: return AiScene()
+                fun string(o: JsonObject, key: String): String = (o[key] as? JsonPrimitive)
+                    ?.takeIf { it.isString }?.contentOrNull.orEmpty()
+                fun <T> items(key: String, decode: (kotlinx.serialization.json.JsonElement) -> T): List<T> =
+                    (obj[key] as? JsonArray).orEmpty().mapNotNull { runCatching { decode(it) }.getOrNull() }
+                val decoded = AiScene(
+                    text = string(obj, "text"),
+                    entries = items("entries") { sceneJson.decodeFromJsonElement(AiEntry.serializer(), it) },
+                    choices = items("choices") { item ->
+                        when (item) {
+                            is JsonPrimitive -> AiChoice(item.takeIf { it.isString }?.contentOrNull.orEmpty())
+                            is JsonObject -> AiChoice(string(item, "text"), string(item, "next"))
+                            else -> AiChoice()
+                        }
+                    },
+                    stateEffects = items("state") { sceneJson.decodeFromJsonElement(StateChange.serializer(), it) },
+                    memory = string(obj, "memory"),
+                    relationships = items("relationships") { sceneJson.decodeFromJsonElement(RelationshipChange.serializer(), it) },
+                    ended = (obj["ended"] as? JsonPrimitive)?.content == "true"
+                )
                 val text = decoded.text.trim()
                 val choices = decoded.choices.mapNotNull { c ->
                     val t = c.text.trim()
@@ -390,52 +424,14 @@ class AiDirector(private val client: ChatClient) {
                 }.take(6)
                 if (text.isNotEmpty() || decoded.entries.isNotEmpty()) return sanitizeScene(decoded.copy(text = text, choices = choices))
             } catch (_: Throwable) {
-                // 容错：落到下方按字段抽取
+                // Invalid envelopes stay empty and trigger the bounded request retry.
             }
         }
-        // 模型偶尔给出畸形 / 带代码围栏的 JSON：直接从文本里抠出 text 字段
-        val fallback = extractTextField(json ?: cleaned)
-        if (fallback.isNotBlank()) return sanitizeScene(AiScene(text = fallback))
+        if (cleaned.contains('{') || JSON_ENVELOPE.containsMatchIn(cleaned)) return AiScene()
         // 纯文本（无 JSON 结构）：去掉围栏后作为正文；仅当真的像 JSON 信封（含 text/choices 键）才视为泄漏丢弃
         val prose = stripJsonFence(cleaned)
         if (JSON_ENVELOPE.containsMatchIn(prose)) return AiScene()
         return sanitizeScene(AiScene(text = prose.take(2000)))
-    }
-
-    /** 从任意文本（可能是漏解析的 JSON 原文）里抽取顶层 "text" 字段值并反转义；优先取 choices 之前的正文。 */
-    private fun extractTextField(text: String): String {
-        val choicesIdx = text.indexOf("\"choices\"")
-        val window = if (choicesIdx > 0) text.substring(0, choicesIdx) else text
-        val m = TEXT_FIELD.find(window) ?: TEXT_FIELD.find(text) ?: return ""
-        return unescapeJson(m.groupValues[1])
-    }
-
-    private fun unescapeJson(s: String): String = buildString {
-        var i = 0
-        while (i < s.length) {
-            val c = s[i]
-            if (c == '\\' && i + 1 < s.length) {
-                when (val n = s[i + 1]) {
-                    'n' -> { append('\n'); i += 2 }
-                    'r' -> { append('\r'); i += 2 }
-                    't' -> { append('\t'); i += 2 }
-                    '"' -> { append('"'); i += 2 }
-                    '\\' -> { append('\\'); i += 2 }
-                    'b' -> { append('\b'); i += 2 }
-                    'f' -> { append('\u000C'); i += 2 }
-                    'u' -> {
-                        if (i + 5 < s.length) {
-                            val ch = runCatching { s.substring(i + 2, i + 6).toInt(16).toChar() }
-                                .getOrDefault('?')
-                            append(ch); i += 6
-                        } else { append(c); i++ }
-                    }
-                    else -> { append(c); i++ }
-                }
-            } else {
-                append(c); i++
-            }
-        }
     }
 
     private fun stripJsonFence(text: String): String {
