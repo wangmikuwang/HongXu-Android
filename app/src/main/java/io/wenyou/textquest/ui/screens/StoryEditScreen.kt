@@ -4,6 +4,9 @@ import io.wenyou.textquest.ui.theme.readableAccent
 
 import io.wenyou.textquest.ui.common.AppTextButton
 
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -81,7 +84,7 @@ private val KIND_META = mapOf(
     NodeKind.ENDING to "🏁"
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyId: String) {
     val vm: StoryEditorViewModel = viewModel(
@@ -223,18 +226,24 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
-                        chars.forEach { c ->
-                            val checked = c.id in story.characterIds
-                            FilterChip(
-                                selected = checked,
-                                onClick = {
-                                    val ids = if (checked) story.characterIds - c.id
-                                    else story.characterIds + c.id
-                                    vm.setCharacterIds(ids)
-                                },
-                                label = { Text("${c.emoji} ${c.name}") },
-                                modifier = Modifier.padding(vertical = 2.dp)
-                            )
+                        FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            chars.forEach { c ->
+                                val checked = c.id in story.characterIds
+                                FilterChip(
+                                    selected = checked,
+                                    onClick = {
+                                        val ids = if (checked) story.characterIds - c.id
+                                        else story.characterIds + c.id
+                                        vm.setCharacterIds(ids)
+                                    },
+                                    label = { Text("${c.emoji} ${c.name}", maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                                    modifier = Modifier.widthIn(max = 220.dp)
+                                )
+                            }
                         }
                     }
                 }
