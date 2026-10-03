@@ -1,5 +1,8 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppTextButton
+import io.wenyou.textquest.ui.common.AppOutlinedButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,9 +30,7 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -80,7 +81,7 @@ fun ProvidersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         Column(Modifier.fillMaxWidth().padding(vertical = 40.dp),
                             horizontalAlignment = Alignment.CenterHorizontally) {
                             Text("还没有接入任何服务", style = MaterialTheme.typography.titleMedium)
-                            OutlinedButton(
+                            AppOutlinedButton(
                                 onClick = { nav.navigate(R.providerEdit("new")) },
                                 modifier = Modifier.padding(top = 12.dp)
                             ) { Text("添加第一家（支持 DeepSeek / Kimi / GLM / Qwen / OpenAI / Claude / Gemini / 本地 Ollama）") }
@@ -113,14 +114,14 @@ fun ProvidersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             title = { Text("删除服务？") },
             text = { Text("「${p.name}」将从本机移除。") },
             confirmButton = {
-                TextButton(onClick = {
+                AppTextButton(onClick = {
                     libraryVm.deleteProvider(p.id)
                     if (prefs.defaultProviderId == p.id) settingsVm.setDefaultProvider(null)
                     pendingDelete = null
                 }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("取消") }
+                AppTextButton(onClick = { pendingDelete = null }) { Text("取消") }
             }
         )
     }
@@ -157,7 +158,7 @@ private fun ProviderCard(
                 Text("地址：${profile.baseUrl}", style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 if (!isDefault) {
-                    TextButton(onClick = onSetDefault) { Text("设为默认") }
+                    AppTextButton(onClick = onSetDefault) { Text("设为默认") }
                 }
             }
             IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, "编辑") }

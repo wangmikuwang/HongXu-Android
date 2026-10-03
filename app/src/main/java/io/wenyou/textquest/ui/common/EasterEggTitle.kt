@@ -6,7 +6,6 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -37,6 +36,6 @@ internal fun EasterEggTitle(text: String, style: TextStyle, tapMessage: String, 
         AlertDialog(onDismissRequest = { surprise = null },
             title = { Text("你发现了彩蛋！") },
             text = { Text(message) },
-            confirmButton = { TextButton(onClick = { surprise = null }) { Text("收下惊喜") } })
+            confirmButton = { AppTextButton(onClick = { surprise = null }) { Text("收下惊喜") } })
     }
 }

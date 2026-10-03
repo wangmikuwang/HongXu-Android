@@ -1,5 +1,7 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppOutlinedButton
+
 import android.app.DownloadManager
 import android.content.Intent
 import android.net.Uri
@@ -25,7 +27,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -295,7 +296,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                         Button(onClick = {
                             exportLauncher.launch("${BuildConfig.APP_FILE_PREFIX}-backup-${System.currentTimeMillis()}.json")
                         }) { Text("导出备份") }
-                        OutlinedButton(onClick = {
+                        AppOutlinedButton(onClick = {
                             importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
                         }) { Text("导入备份") }
                     }
@@ -313,7 +314,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                     Spacer(Modifier.height(10.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Button(onClick = { nav.navigate(R.bottomRuleEdit("new")) }) { Text("新建底层基调") }
-                        OutlinedButton(onClick = { nav.navigate(R.BOTTOM_RULES) }) { Text("管理底层基调") }
+                        AppOutlinedButton(onClick = { nav.navigate(R.BOTTOM_RULES) }) { Text("管理底层基调") }
                     }
                 }
             }
@@ -329,7 +330,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        OutlinedButton(onClick = { crashDirPicker.launch(null) }) { Text("选择系统文档目录") }
+                        AppOutlinedButton(onClick = { crashDirPicker.launch(null) }) { Text("选择系统文档目录") }
                         Button(onClick = {
                             val t = "测试日志 time=${System.currentTimeMillis()}\nversion=${BuildConfig.VERSION_NAME}\n"
                             CrashLog.write(context, t, vm.crashDir())

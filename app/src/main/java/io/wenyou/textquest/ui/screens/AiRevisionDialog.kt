@@ -1,5 +1,7 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppTextButton
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -55,7 +57,7 @@ internal fun AiRevisionDialog(container: WenYouApp.AppContainer, original: AppBu
                 finally { busy = false }
             }
         }) { Text(if (preview == null) "生成修改预览" else "应用到表单") }
-    }, dismissButton = { TextButton(onClick = close) { Text(if (busy) "取消生成" else "关闭") } })
+    }, dismissButton = { AppTextButton(onClick = close) { Text(if (busy) "取消生成" else "关闭") } })
 }
 
 @Composable

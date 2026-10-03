@@ -1,5 +1,10 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.theme.readableAccent
+
+import io.wenyou.textquest.ui.common.AppTextButton
+import io.wenyou.textquest.ui.common.AppOutlinedButton
+
 import io.wenyou.textquest.ui.common.UsagePanel
 import androidx.activity.compose.BackHandler
 
@@ -60,14 +65,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -110,6 +113,8 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
         factory = Vms.factory { PlayViewModel(storyId, saveId, container) }
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
+    if (ui.stage == PlayStage.ROLE_SELECT) RoleSelectionDialog(ui.characters,
+        onStart = vm::selectPlayerCharacter, onCancel = { nav.navigateUp() })
     val snackbar = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
     val capturing by rememberUpdatedState(androidx.compose.ui.platform.LocalScrollCaptureInProgress.current)
@@ -163,7 +168,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                         enabled = ui.providers.isNotEmpty()) {
                         Icon(Icons.Filled.Build, "切换 AI 服务")
                     }
-                    IconButton(onClick = { vm.saveNow() }) { Icon(Icons.Filled.Check, "存档") }
+                    IconButton(onClick = { vm.saveNow() }, enabled = ui.stage != PlayStage.INIT && ui.stage != PlayStage.ROLE_SELECT) { Icon(Icons.Filled.Check, "存档") }
                 }
             )
         },
@@ -266,7 +271,7 @@ private fun ProviderDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("取消") } }
+        confirmButton = { AppTextButton(onClick = onDismiss) { Text("取消") } }
     )
 }
 
@@ -292,7 +297,7 @@ private fun ProviderOption(
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (selected) {
-                Icon(Icons.Filled.Check, "当前", tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Filled.Check, "当前", tint = MaterialTheme.colorScheme.readableAccent())
             }
         }
     }
@@ -326,7 +331,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                                 fontSize = 13.sp)
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text("角色内对话 · $name", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
+                        Text("角色内对话 · $name", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.readableAccent(),
                             fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(Modifier.height(8.dp))
@@ -342,10 +347,10 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                     shape = RoundedCornerShape(18.dp),
                     color = MaterialTheme.colorScheme.secondaryContainer
                 ) {
-                    Text(text,
-                        Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+                        if (entry.speakerId.isNotBlank()) Text("${entry.speaker} · 你", style = MaterialTheme.typography.labelSmall)
+                        Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                    }
                 }
             }
         }
@@ -372,7 +377,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
         EntryKind.SYSTEM -> {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Text(text, style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.readableAccent(),
                     fontStyle = FontStyle.Italic)
             }
         }
@@ -402,7 +407,7 @@ private fun StreamingCard() {
             Text("AI 正在构思…", style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text("▍", style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.primary)
+                color = MaterialTheme.colorScheme.readableAccent())
         }
     }
 }
@@ -414,7 +419,7 @@ private fun StreamingCard() {
 @Composable
 private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
     when (ui.stage) {
-        PlayStage.INIT -> Unit
+        PlayStage.INIT, PlayStage.ROLE_SELECT -> Unit
         PlayStage.AI_WORKING -> {
             Column(Modifier.fillMaxWidth().padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -433,7 +438,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
             ) {
                 if (ui.visibleChoices.isNotEmpty()) {
                     Text("接下来……", style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.readableAccent(),
                         modifier = Modifier.padding(horizontal = 16.dp))
                     ui.visibleChoices.forEachIndexed { i, choice ->
                         Button(
@@ -444,7 +449,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
                     }
                 } else if (ui.pendingAiChoices.isNotEmpty()) {
                     Text("你的选择：", style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.readableAccent(),
                         modifier = Modifier.padding(horizontal = 16.dp))
                     ui.pendingAiChoices.forEachIndexed { i, choice ->
                         FilledTonalButton(
@@ -454,7 +459,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
                         ) { Text(choice.text) }
                     }
                     if (ui.aiTargetExit) {
-                        OutlinedButton(
+                        AppOutlinedButton(
                             onClick = { vm.aiExitToMainline() },
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp)
                         ) { Text("（结束这段，回到主线）") }
@@ -472,7 +477,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
                                     Icon(Icons.Filled.Refresh, null); Spacer(Modifier.width(6.dp)); Text("继续生成")
                                 }
                                 if (ui.aiTargetExit) {
-                                    OutlinedButton(onClick = { vm.aiExitToMainline() }, modifier = Modifier.weight(1f)) {
+                                    AppOutlinedButton(onClick = { vm.aiExitToMainline() }, modifier = Modifier.weight(1f)) {
                                         Text("回到主线")
                                     }
                                 }
@@ -486,7 +491,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
                         Text("存档后随时可在主页继续", style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.outline)
                         Spacer(Modifier.weight(1f))
-                        TextButton(onClick = { vm.restart() }) { Text("重开本局") }
+                        AppTextButton(onClick = { vm.restart() }) { Text("重开本局") }
                     }
                 }
             }
@@ -537,10 +542,10 @@ private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
                     },
                     enabled = text.isNotBlank()
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = MaterialTheme.colorScheme.primary)
+                    Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = MaterialTheme.colorScheme.readableAccent())
                 }
             }
-            TextButton(onClick = { vm.dmSend("继续") }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            AppTextButton(onClick = { vm.dmSend("继续") }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                 Text("让导演继续（不输入直接推进）")
             }
         }
@@ -572,12 +577,12 @@ private fun StoppedPanel(ui: PlayUi, vm: PlayViewModel, nav: NavHostController) 
                     modifier = Modifier.fillMaxWidth()) {
                     Text("重试")
                 }
-                OutlinedButton(onClick = { nav.popBackStack() }, modifier = Modifier.fillMaxWidth()) {
+                AppOutlinedButton(onClick = { nav.popBackStack() }, modifier = Modifier.fillMaxWidth()) {
                     Text("返回")
                 }
             }
             Spacer(Modifier.height(4.dp))
-            TextButton(onClick = { vm.saveNow() }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            AppTextButton(onClick = { vm.saveNow() }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                 Text("保留这份存档")
             }
         }
@@ -674,7 +679,7 @@ private fun ThinkingBlock(reasoning: String) {
                 Text("🧠 AI 思考过程", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
                 Text(if (expanded) "收起" else "展开",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary)
+                    color = MaterialTheme.colorScheme.readableAccent())
             }
             if (expanded && reasoning.isNotBlank()) {
                 Spacer(Modifier.height(6.dp))

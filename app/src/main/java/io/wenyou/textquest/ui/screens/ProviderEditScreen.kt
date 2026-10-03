@@ -1,5 +1,10 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.theme.readableAccent
+
+import io.wenyou.textquest.ui.common.AppTextButton
+import io.wenyou.textquest.ui.common.AppOutlinedButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -28,12 +33,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -175,7 +178,7 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
             item { Spacer(Modifier.height(4.dp)) }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    OutlinedButton(
+                    AppOutlinedButton(
                         onClick = { vm.test() },
                         enabled = !ui.testing,
                         modifier = Modifier.weight(1f)
@@ -200,13 +203,13 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
             title = { Text("删除服务？") },
             text = { Text("「${profile?.name ?: ""}」将被移除。") },
             confirmButton = {
-                TextButton(onClick = {
+                AppTextButton(onClick = {
                     vm.delete()
                     nav.navigateUp()
                 }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showDelete = false }) { Text("取消") }
+                AppTextButton(onClick = { showDelete = false }) { Text("取消") }
             }
         )
     }
@@ -222,7 +225,7 @@ private fun ModelPickerCard(ui: ProviderEditorState, vm: ProviderEditorViewModel
             color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            OutlinedButton(onClick = { vm.refreshModels() }, enabled = !ui.listingModels) {
+            AppOutlinedButton(onClick = { vm.refreshModels() }, enabled = !ui.listingModels) {
                 if (ui.listingModels) {
                     CircularProgressIndicator(Modifier.width(18.dp).height(18.dp), strokeWidth = 2.dp)
                 } else {
@@ -232,7 +235,7 @@ private fun ModelPickerCard(ui: ProviderEditorState, vm: ProviderEditorViewModel
             if (ui.listMessage.isNotBlank()) {
                 Spacer(Modifier.width(10.dp))
                 Text(ui.listMessage, style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.tertiary,
+                    color = MaterialTheme.colorScheme.readableAccent(MaterialTheme.colorScheme.tertiary),
                     modifier = Modifier.weight(1f))
             }
         }

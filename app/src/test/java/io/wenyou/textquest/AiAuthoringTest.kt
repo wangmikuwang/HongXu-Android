@@ -55,6 +55,81 @@ class AiAuthoringTest {
         }
     }
 
+    @Test fun authoringRecoversReasoningOnlyAndTruncatedDeepseekJson() = runBlocking {
+        val original = creator.parse(full, CreationKind.STORY)
+        for (streaming in listOf(false, true)) for (revision in listOf(false, true)) {
+            var requests = 0
+            val ok = OkHttpClient.Builder().addInterceptor { chain ->
+                val buffer = okio.Buffer(); chain.request().body!!.writeTo(buffer)
+                val body = AppJson.parseToJsonElement(buffer.readUtf8()).jsonObject
+                requests++
+                assertEquals(8192, body.getValue("max_tokens").jsonPrimitive.int)
+                if (requests == 2) assertEquals("disabled", body.getValue("thinking").jsonObject.getValue("type").jsonPrimitive.content)
+                else assertNull(body["thinking"])
+                val message = buildJsonObject {
+                    if (requests == 1) {
+                        put("reasoning_content", "构思耗尽输出额度")
+                        put("content", if (revision) "{\"story\":{\"title\":\"晴" else "")
+                    } else put("content", if (revision) """{"story":{"title":"晴城"}}""" else full)
+                }
+                val response = buildJsonObject { putJsonArray("choices") { addJsonObject {
+                    put(if (streaming) "delta" else "message", message)
+                    put("finish_reason", if (requests == 1) "length" else "stop")
+                } } }.toString()
+                Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                    .body((if (streaming) "data: $response\n\ndata: [DONE]\n\n" else response).toResponseBody()).build()
+            }.build()
+            try {
+                val author = AiCreator(ChatClient(ok))
+                val profile = ApiProfile("p", "test", baseUrl = "https://api.deepseek.com", model = "deepseek-flash")
+                val result = if (revision) author.revise(profile, "修改标题", original, false)
+                    else author.generate(profile, "雨城侦探", CreationKind.STORY, false)
+                assertEquals(2, requests)
+                if (revision) assertEquals(original.copy(stories = original.stories.map { it.copy(title = "晴城") }), result)
+                else assertEquals("雨城", result.stories.single().title)
+                assertEquals("雨城", original.stories.single().title)
+            } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+        }
+    }
+
+    @Test fun authoringRetryIsBoundedAndDoesNotApplyThinkingOrPartialJson() = runBlocking {
+        val original = creator.parse(full, CreationKind.STORY)
+        for (base in listOf("https://api.deepseek.com", "https://example.com")) {
+            var requests = 0
+            val ok = OkHttpClient.Builder().addInterceptor { chain ->
+                requests++
+                Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                    .body("""{"choices":[{"message":{"reasoning_content":"只有构思","content":""}}]}""".toResponseBody()).build()
+            }.build()
+            try {
+                try {
+                    AiCreator(ChatClient(ok)).revise(ApiProfile("p", "test", baseUrl = base, model = "deepseek-flash"), "修改标题", original, false)
+                    fail("Thinking must not become a revision")
+                } catch (e: LlmException) { assertTrue(e.message!!.contains("只返回了思考")) }
+                assertEquals(if (base == "https://api.deepseek.com") 2 else 1, requests)
+                assertEquals("雨城", original.stories.single().title)
+                assertThrows(IllegalArgumentException::class.java) {
+                    creator.applyRevision("{\"story\":{\"title\":\"晴城\"}", original)
+                }
+            } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+        }
+    }
+
+    @Test fun completeAuthoringJsonNeedsNoRetry() = runBlocking {
+        val original = creator.parse(full, CreationKind.STORY)
+        var requests = 0
+        val ok = OkHttpClient.Builder().addInterceptor { chain ->
+            requests++
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(200).message("OK")
+                .body("""{"choices":[{"message":{"reasoning_content":"构思","content":"{\"story\":{\"title\":\"晴城\"}}"}}]}""".toResponseBody()).build()
+        }.build()
+        try {
+            val result = AiCreator(ChatClient(ok)).revise(ApiProfile("p", "test", baseUrl = "https://api.deepseek.com", model = "deepseek-flash"), "修改标题", original, false)
+            assertEquals(1, requests)
+            assertEquals("晴城", result.stories.single().title)
+        } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+    }
+
     @Test fun reasoningOnlyDeepseekGetsOneNonThinkingRetryAndSeparateDialogue() = runBlocking {
         var requests = 0
         val ok = OkHttpClient.Builder().addInterceptor { chain ->

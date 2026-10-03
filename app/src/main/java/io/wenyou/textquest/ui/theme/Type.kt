@@ -7,10 +7,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * 排版：基于 M3 默认字阶，为「阅读为主的文字游戏」微调：
- * 正文加大行距、标题更舒展，长文使用圆润易读的默认无衬线。
+ * 纸页式标题搭配系统正文；长文保留舒展行距，不依赖在线字体。
  */
 val AppTypography = Typography(
+    headlineLarge = TextStyle(
+        fontFamily = FontFamily.Serif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 34.sp,
+        lineHeight = 44.sp,
+        letterSpacing = 0.sp
+    ),
     displaySmall = TextStyle(
         fontFamily = FontFamily.Default,
         fontWeight = FontWeight.SemiBold,
@@ -67,6 +73,7 @@ val AppTypography = Typography(
 )
 
 val AppleTypography = AppTypography.copy(
+    headlineLarge = AppTypography.headlineLarge.copy(fontFamily = FontFamily.Default),
     displaySmall = AppTypography.displaySmall.copy(fontSize = 34.sp, lineHeight = 41.sp),
     titleLarge = AppTypography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
     bodyLarge = AppTypography.bodyLarge.copy(fontSize = 17.sp, lineHeight = 27.sp, letterSpacing = 0.sp),

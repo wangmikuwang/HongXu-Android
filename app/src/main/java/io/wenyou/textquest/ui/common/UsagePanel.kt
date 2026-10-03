@@ -32,7 +32,7 @@ fun UsagePanel(tracker: UsageTracker, showLast: Boolean = true) {
         if (active.isEmpty() && showLast) records.lastOrNull()?.let {
             Text("最近一次请求\n${it.label()}", style = MaterialTheme.typography.bodySmall)
         }
-        TextButton(onClick = { open = true }) { Text("生成用量与费用统计") }
+        AppTextButton(onClick = { open = true }) { Text("生成用量与费用统计") }
     }
     if (open) {
         val error by tracker.persistenceError.collectAsStateWithLifecycle()
@@ -51,6 +51,6 @@ fun UsagePanel(tracker: UsageTracker, showLast: Boolean = true) {
                         HorizontalDivider()
                     }
                 }
-            }, confirmButton = { TextButton(onClick = { open = false }) { Text("关闭") } })
+            }, confirmButton = { AppTextButton(onClick = { open = false }) { Text("关闭") } })
     }
 }

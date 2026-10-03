@@ -1,6 +1,7 @@
 package io.wenyou.textquest.ui.common
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -18,9 +19,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -57,7 +61,7 @@ internal fun PrideFlag(theme: PrideTheme, modifier: Modifier = Modifier) {
 @Composable
 internal fun PrideGallery(unlocked: Boolean, enabled: Boolean, showLgbt: Boolean,
     onUnlock: () -> Unit, onEnabledChange: (Boolean) -> Unit, onShowLgbtChange: (Boolean) -> Unit,
-    onSelect: (PrideTheme) -> Unit, onDismiss: () -> Unit) {
+    onSelect: (PrideTheme) -> Unit, onDismiss: () -> Unit, selectedTheme: PrideTheme? = null) {
     var nextIndex by rememberSaveable { mutableIntStateOf(0) }
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = { Text("旗帜墙") }, navigationIcon = {
@@ -76,9 +80,9 @@ internal fun PrideGallery(unlocked: Boolean, enabled: Boolean, showLgbt: Boolean
                 }
             }
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-                LazyVerticalGrid(columns = GridCells.Fixed(2), modifier = Modifier.weight(1f).testTag("pride-flags"),
+                LazyVerticalGrid(columns = GridCells.Adaptive(152.dp * LocalDensity.current.fontScale), modifier = Modifier.weight(1f).testTag("pride-flags"),
                     contentPadding = PaddingValues(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     itemsIndexed(PrideTheme.entries, key = { _, theme -> theme.name }) { index, theme ->
                         Surface(onClick = {
                             if (unlocked) onSelect(theme)
@@ -86,11 +90,16 @@ internal fun PrideGallery(unlocked: Boolean, enabled: Boolean, showLgbt: Boolean
                                 nextIndex = if (index == nextIndex) nextIndex + 1 else if (index == 0) 1 else 0
                                 if (nextIndex == PrideTheme.entries.size) onUnlock()
                             }
-                        }, enabled = !unlocked || enabled, modifier = Modifier.testTag("pride-flag-${theme.name}"),
-                            shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.surfaceContainerLow) {
-                            Column(Modifier.padding(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        }, enabled = !unlocked || enabled, modifier = Modifier.testTag("pride-flag-${theme.name}")
+                            .semantics { selected = enabled && selectedTheme == theme },
+                            border = if (enabled && selectedTheme == theme) BorderStroke(2.dp, MaterialTheme.colorScheme.onSurface) else null,
+                            shape = MaterialTheme.shapes.medium, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                            Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 PrideFlag(theme, Modifier.fillMaxWidth())
-                                Text(theme.label, style = MaterialTheme.typography.labelMedium)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(theme.label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                                    if (enabled && selectedTheme == theme) Icon(Icons.Filled.Check, "已选中", Modifier.size(20.dp))
+                                }
                                 Text(theme.description, style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }

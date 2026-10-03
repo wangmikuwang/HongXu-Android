@@ -78,3 +78,14 @@ internal fun prideColors(base: ColorScheme, theme: PrideTheme): ColorScheme {
         surfaceTint = Color.Transparent
     )
 }
+
+/** Keep raw flag fills; text-only accents need contrast against neutral surfaces too. */
+internal fun ColorScheme.readableAccent(accent: Color = primary): Color {
+    val foreground = accent.luminance()
+    val surfaces = listOf(background, surface, surfaceContainerLowest, surfaceContainerLow,
+        surfaceContainer, surfaceContainerHigh, surfaceContainerHighest)
+    return if (surfaces.all {
+        val background = it.luminance()
+        (maxOf(foreground, background) + 0.05f) / (minOf(foreground, background) + 0.05f) >= 4.5f
+    }) accent else onSurface
+}

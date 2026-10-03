@@ -32,12 +32,12 @@ internal fun AppUpdateCard(state: AppUpdateState, onCheck: () -> Unit, onDownloa
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Button(onClick = onCheck, enabled = !state.busy && !state.downloading) { Text("检查更新") }
-            if (state.release != null) OutlinedButton(onClick = onDownload, enabled = !state.busy && !state.downloading) {
+            if (state.release != null) AppOutlinedButton(onClick = onDownload, enabled = !state.busy && !state.downloading) {
                 Text(if (state.downloaded) "重新下载" else "下载并升级")
             }
             if (state.downloaded) Button(onClick = onInstall, enabled = !state.busy) { Text("安装升级") }
-            OutlinedButton(onClick = onOpenDownloads) { Text("查看下载") }
-            TextButton(onClick = onOpenRelease) { Text("打开发布页面") }
+            AppOutlinedButton(onClick = onOpenDownloads) { Text("查看下载") }
+            AppTextButton(onClick = onOpenRelease) { Text("打开发布页面") }
         }
     }
 }

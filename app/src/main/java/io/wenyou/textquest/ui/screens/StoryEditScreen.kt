@@ -1,5 +1,9 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.theme.readableAccent
+
+import io.wenyou.textquest.ui.common.AppTextButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -33,7 +37,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -113,7 +116,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                     }
                 },
                 actions = {
-                    TextButton(onClick = { treeOpen = true }, enabled = story != null) { Text("分支图") }
+                    AppTextButton(onClick = { treeOpen = true }, enabled = story != null) { Text("分支图") }
                     IconButton(onClick = { vm.save() }) {
                         Icon(Icons.Filled.Check, "保存剧情")
                     }
@@ -140,7 +143,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                 }
             }
 
-            item { TextButton(onClick = { revisionOpen = true }) { Text("一句话修改") } }
+            item { AppTextButton(onClick = { revisionOpen = true }) { Text("一句话修改") } }
             item { SectionHeader("基本信息") }
             item {
                 TonalCard {
@@ -169,7 +172,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                     if (story.mode == StoryMode.AI_DIRECTOR) {
                         Spacer(Modifier.height(6.dp))
                         Text("AI 导演模式：开场后由 AI 自由接续玩家输入；下面的「世界观/导演要求」尤其重要。",
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.readableAccent(MaterialTheme.colorScheme.tertiary))
                     }
                     Spacer(Modifier.height(10.dp))
                     AppDropdown(
@@ -286,7 +289,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                                             color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                 }
                                 if (!selected) {
-                                    TextButton(onClick = { vm.select(id) }) { Text("编辑") }
+                                    AppTextButton(onClick = { vm.select(id) }) { Text("编辑") }
                                 }
                             }
                         }
@@ -372,7 +375,7 @@ private fun NodeEditor(vm: StoryEditorViewModel, node: StoryNode, allNodeIds: Li
             if (node.kind == NodeKind.ENDING) {
                 Spacer(Modifier.height(6.dp))
                 Text("结局节点：显示后本局结束，可被多个选项指向。",
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.tertiary)
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.readableAccent(MaterialTheme.colorScheme.tertiary))
             }
         }
 
@@ -395,7 +398,7 @@ private fun NodeEditor(vm: StoryEditorViewModel, node: StoryNode, allNodeIds: Li
                     vm = vm
                 )
             }
-            TextButton(onClick = { vm.addChoice() }) {
+            AppTextButton(onClick = { vm.addChoice() }) {
                 Icon(Icons.Filled.Add, null)
                 Spacer(Modifier.width(6.dp))
                 Text("添加选项")
@@ -403,7 +406,7 @@ private fun NodeEditor(vm: StoryEditorViewModel, node: StoryNode, allNodeIds: Li
         }
 
         Spacer(Modifier.height(10.dp))
-        TextButton(onClick = { vm.removeNode(node.id) },
+        AppTextButton(onClick = { vm.removeNode(node.id) },
             enabled = vm.ui.value.story?.nodes?.size ?: 0 > 1) {
             Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error)
             Spacer(Modifier.width(6.dp))
@@ -513,7 +516,7 @@ private fun CondRows(title: String, conds: List<Cond>, onChange: (List<Cond>) ->
             }
         }
     }
-    TextButton(onClick = { onChange(conds + Cond(type = CondType.VAR, name = "intimacy", op = CompareOp.GTE, value = 1.0)) }) {
+    AppTextButton(onClick = { onChange(conds + Cond(type = CondType.VAR, name = "intimacy", op = CompareOp.GTE, value = 1.0)) }) {
         Icon(Icons.Filled.Add, null); Spacer(Modifier.width(4.dp)); Text("添加条件")
     }
 }
@@ -567,7 +570,7 @@ private fun EffectRows(title: String, effects: List<Effect>, onChange: (List<Eff
             }
         }
     }
-    TextButton(onClick = { onChange(effects + Effect(type = EffectType.SET_FLAG, name = "")) }) {
+    AppTextButton(onClick = { onChange(effects + Effect(type = EffectType.SET_FLAG, name = "")) }) {
         Icon(Icons.Filled.Add, null); Spacer(Modifier.width(4.dp)); Text("添加效果")
     }
 }

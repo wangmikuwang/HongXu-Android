@@ -14,6 +14,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.material3.ButtonDefaults
+import io.wenyou.textquest.ui.theme.readableAccent
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -29,6 +32,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -47,6 +51,22 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+
+@Composable
+fun AppTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit) {
+    androidx.compose.material3.TextButton(onClick = onClick, modifier = modifier, enabled = enabled,
+        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.readableAccent()),
+        content = content)
+}
+
+@Composable
+fun AppOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
+    content: @Composable RowScope.() -> Unit) {
+    androidx.compose.material3.OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled,
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.readableAccent()),
+        content = content)
+}
 
 /** 圆形 emoji 封面/头像（Material 圆角形态）。 */
 @Composable
@@ -105,7 +125,7 @@ fun SectionHeader(title: String, modifier: Modifier = Modifier) {
         title,
         style = MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
+        color = MaterialTheme.colorScheme.onSurface,
         modifier = modifier.padding(start = 4.dp, top = 12.dp, bottom = 6.dp)
     )
 }
@@ -177,6 +197,11 @@ fun AppField(
         modifier = modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.medium,
         label = { Text(label) },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+            focusedLabelColor = MaterialTheme.colorScheme.readableAccent(),
+            focusedBorderColor = MaterialTheme.colorScheme.readableAccent(),
+            cursorColor = MaterialTheme.colorScheme.readableAccent()),
         singleLine = singleLine,
         minLines = effMin,
         maxLines = effMax,
@@ -213,6 +238,9 @@ fun <T> AppDropdown(
             singleLine = true,
             shape = MaterialTheme.shapes.medium,
         label = { Text(label) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedLabelColor = MaterialTheme.colorScheme.readableAccent(),
+                focusedBorderColor = MaterialTheme.colorScheme.readableAccent()),
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable, enabled).fillMaxWidth(),
             isError = error != null,

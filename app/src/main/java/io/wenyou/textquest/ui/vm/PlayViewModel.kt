@@ -33,7 +33,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.UUID
 
-enum class PlayStage { INIT, AUTHORED, DM_INPUT, AI_WORKING, STOPPED }
+enum class PlayStage { INIT, ROLE_SELECT, AUTHORED, DM_INPUT, AI_WORKING, STOPPED }
 
 data class PlayUi(
     val story: Story? = null,
@@ -109,14 +109,36 @@ class PlayViewModel internal constructor(
             val base: SessionState = loadedSlot?.state ?: GameEngine.newSession(story, chars)
             _ui.update {
                 it.copy(story = story, characters = chars, aiMode = story.mode == StoryMode.AI_DIRECTOR,
-                    activeSaveId = loadId, saveName = saveName,
+                    activeSaveId = loadedSlot?.id, saveName = saveName,
                     providers = library.providers.value, selectedProviderId = null)
             }
-            beginPlay(story, base, isFresh = loadedSlot == null)
+            if (loadedSlot == null) prepareRoleSelection(base)
+            else beginPlay(story, base, isFresh = false)
         }
     }
 
     // ---------------- 开局 / 读档 ----------------
+
+    private fun prepareRoleSelection(base: SessionState) {
+        session = null
+        _ui.update { it.copy(stage = PlayStage.ROLE_SELECT, session = base, nodeId = "", nodeTitle = "") }
+    }
+
+    fun selectPlayerCharacter(characterId: String) {
+        val ui = _ui.value
+        if (ui.stage != PlayStage.ROLE_SELECT) return
+        val story = ui.story ?: return
+        val base = ui.session ?: return
+        val character = ui.characters.firstOrNull { it.id == characterId }
+        if (characterId.isNotBlank() && character == null) return
+        beginPlay(story, base.copy(playerCharacterId = characterId, playerCharacterName = character?.name.orEmpty()), isFresh = true)
+    }
+
+    private fun playerEntry(text: String): LogEntry {
+        val state = session
+        return LogEntry(EntryKind.CHOICE, speaker = state?.playerCharacterName?.ifBlank { "你" } ?: "你",
+            speakerId = state?.playerCharacterId.orEmpty(), text = text)
+    }
 
     private fun beginPlay(story: Story, base: SessionState, isFresh: Boolean) {
         var s = base
@@ -244,7 +266,7 @@ class PlayViewModel internal constructor(
 
     private fun chooseBy(story: Story, choice: ChoiceData, fromNodeId: String) {
         if (session == null) return
-        appendEntries(listOf(LogEntry(EntryKind.CHOICE, speaker = "你", text = choice.text)))
+        appendEntries(listOf(playerEntry(choice.text)))
         val s = session ?: return
         val outcome = GameEngine.applyEffects(s, choice.effects)
         session = outcome.state
@@ -273,7 +295,7 @@ class PlayViewModel internal constructor(
         val ui = _ui.value
         val story = ui.story ?: return
         val choice = ui.pendingAiChoices.getOrNull(index) ?: return
-        appendEntries(listOf(LogEntry(EntryKind.CHOICE, speaker = "你", text = choice.text)))
+        appendEntries(listOf(playerEntry(choice.text)))
         session = session?.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
         val next = choice.next.ifBlank { "@self" }
         if (next != "@self" && story.nodes.containsKey(next)) {
@@ -438,7 +460,7 @@ class PlayViewModel internal constructor(
             return
         }
         if (_ui.value.stage == PlayStage.AI_WORKING) return
-        appendEntries(listOf(LogEntry(EntryKind.CHOICE, speaker = "你", text = trimmed)))
+        appendEntries(listOf(playerEntry(trimmed)))
         session = session?.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
         _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiDelta = "", aiReasoningDelta = "", pendingAiChoices = emptyList()) }
         launchAiJob { job ->
@@ -470,10 +492,10 @@ class PlayViewModel internal constructor(
     // ---------------- 存档 / 重开 ----------------
 
     fun saveNow() {
+        val s = session ?: return
+        val ui = _ui.value
+        val story = ui.story ?: return
         launchLibraryWrite {
-            val s = session ?: return@launchLibraryWrite
-            val ui = _ui.value
-            val story = ui.story ?: return@launchLibraryWrite
             val now = System.currentTimeMillis()
             val name = ui.saveName.ifBlank { "${story.title} · ${s.history.size} 步" }
             val existing = ui.activeSaveId
@@ -494,7 +516,7 @@ class PlayViewModel internal constructor(
             it.copy(activeSaveId = null, saveName = "", lastMessage = "",
                 pendingAiChoices = emptyList(), aiDelta = "", aiReasoningDelta = "", stoppedTitle = "", stoppedMessage = "")
         }
-        beginPlay(story, fresh, isFresh = true)
+        prepareRoleSelection(fresh)
     }
 
     // ---------------- 内部 ----------------

@@ -1,5 +1,7 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppTextButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,7 +30,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -134,12 +135,12 @@ fun BottomRulesScreen(container: WenYouApp.AppContainer, nav: NavHostController)
             title = { Text("删除底层基调？") },
             text = { Text("「$name」将被删除，并自动从所有引用它的角色上移除。") },
             confirmButton = {
-                TextButton(onClick = {
+                AppTextButton(onClick = {
                     vm.delete(id)
                     pendingDelete = null
                 }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
-            dismissButton = { TextButton(onClick = { pendingDelete = null }) { Text("取消") } }
+            dismissButton = { AppTextButton(onClick = { pendingDelete = null }) { Text("取消") } }
         )
     }
 }

@@ -89,8 +89,8 @@ fun StoryBranchTreeDialog(story: Story, onEdit: (String) -> Unit, onDismiss: () 
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Scaffold(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), topBar = {
             CenterAlignedTopAppBar(title = { Text("剧情分支图") }, navigationIcon = {
-                TextButton(onClick = onDismiss) { Text("返回") }
-            }, actions = { TextButton(onClick = { collapsed = emptySet() }) { Text("全部展开") } })
+                AppTextButton(onClick = onDismiss) { Text("返回") }
+            }, actions = { AppTextButton(onClick = { collapsed = emptySet() }) { Text("全部展开") } })
         }) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
                 Text(story.title, Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.titleMedium)
@@ -143,7 +143,7 @@ private fun BranchNode(story: Story, row: BranchRow, collapsed: Boolean, onToggl
                     style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text("$marker${if (row.depth > 12) " · 第${row.depth}层" else ""}", style = MaterialTheme.typography.bodySmall,
                     color = if (row.kind == BranchKind.MISSING) colors.error else colors.onSurfaceVariant)
-                if (row.expandable) TextButton(onClick = onToggle) { Text(if (collapsed) "展开分支" else "折叠分支") }
+                if (row.expandable) AppTextButton(onClick = onToggle) { Text(if (collapsed) "展开分支" else "折叠分支") }
             }
         }
     }

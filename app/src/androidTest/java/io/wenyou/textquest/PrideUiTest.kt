@@ -7,6 +7,10 @@ import androidx.compose.material3.Text
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.graphics.Color
@@ -19,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import io.wenyou.textquest.data.repo.SettingsStore
 import io.wenyou.textquest.ui.WenYouAppRoot
 import io.wenyou.textquest.ui.common.PrideFlag
+import io.wenyou.textquest.ui.common.PrideGallery
 import io.wenyou.textquest.ui.theme.*
 import org.junit.Assert.*
 import org.junit.Rule
@@ -28,6 +33,41 @@ import java.util.UUID
 
 class PrideUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+
+    @Test fun galleryShowsSelectionAndAdaptsToLargeText() {
+        val mode = mutableStateOf(ThemeMode.LIGHT)
+        val scale = mutableStateOf(1f)
+        val selected = mutableStateOf(PrideTheme.TRANS)
+        compose.runOnIdle { compose.activity.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, scale.value)) {
+                WenYouTheme(mode = mode.value, dynamicColor = false, prideTheme = selected.value) {
+                    PrideGallery(true, true, true, {}, {}, {}, { selected.value = it }, {}, selected.value)
+                }
+            }
+        } }
+        compose.onNodeWithTag("pride-flag-TRANS").assertIsSelected()
+        compose.onNodeWithTag("pride-flag-GAY").performClick().assertIsSelected()
+        compose.onNodeWithTag("pride-flag-TRANS").assertIsNotSelected()
+        for (appearance in listOf(ThemeMode.LIGHT, ThemeMode.DARK)) {
+            compose.runOnIdle { mode.value = appearance }
+            val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+            File(compose.activity.cacheDir, "pride-gallery-${appearance.name.lowercase()}.png").outputStream().use {
+                bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+        }
+        compose.runOnIdle { scale.value = 1.5f }
+        val first = compose.onNodeWithTag("pride-flag-GAY").fetchSemanticsNode().boundsInRoot
+        val second = compose.onNodeWithTag("pride-flag-LESBIAN").fetchSemanticsNode().boundsInRoot
+        assertEquals(first.left, second.left)
+        assertTrue(second.top > first.top)
+        compose.onNodeWithTag("pride-flags").performScrollToIndex(2)
+        compose.onNodeWithTag("pride-flag-TRANS").performClick().assertIsSelected()
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        File(compose.activity.cacheDir, "pride-gallery-large-text.png").outputStream().use {
+            bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+        }
+    }
 
     @Test fun silentOrderedUnlockAndPermanentSecondarySettings() {
         val prefix = "pride-test-${UUID.randomUUID()}"
@@ -56,6 +96,7 @@ class PrideUiTest {
         repeat(9) { version.performClick() }
         compose.onNodeWithText("旗帜墙").assertDoesNotExist()
         version.performClick()
+        compose.waitUntil(5_000) { compose.onNodeWithText("旗帜墙").isDisplayed() }
         compose.onNodeWithText("旗帜墙").assertIsDisplayed()
         compose.onNodeWithText(PrideTheme.GAY.description).assertExists()
         compose.onNodeWithText(PrideTheme.LESBIAN.description).assertExists()
@@ -84,6 +125,7 @@ class PrideUiTest {
         compose.onNodeWithTag("pride-content").assertIsOn()
         compose.onNodeWithTag("pride-flags").performScrollToIndex(2)
         compose.onNodeWithTag("pride-flag-TRANS").performClick()
+        compose.onNodeWithTag("pride-flag-TRANS").assertIsSelected()
         compose.onNodeWithContentDescription("返回").performClick()
         compose.onNodeWithTag("settings-list").performScrollToNode(hasText("旗帜配色"))
         compose.onNodeWithText("旗帜配色").assertIsDisplayed()
@@ -102,6 +144,7 @@ class PrideUiTest {
         container.settings.setPrideTheme(PrideTheme.TRANS)
         compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("pride-version"))
         version.performClick()
+        compose.waitUntil(5_000) { compose.onNodeWithText("旗帜墙").isDisplayed() }
         compose.onNodeWithText("旗帜墙").assertIsDisplayed()
         compose.onNodeWithTag("pride-enabled").performClick().assertIsOff()
         assertNull(container.settings.state.value.prideTheme)

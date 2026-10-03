@@ -75,6 +75,7 @@ class AchievementsTest {
             val library = LocalLibrary(temp.newFolder())
             library.upsertStory(story())
             val vm = PlayViewModel("s", "new", library, AiDirector(ChatClient())) { null }
+            vm.selectPlayerCharacter("")
             repeat(10) { vm.chooseAuthored(0) }
             assertEquals(10, vm.ui.value.session!!.choicesTaken)
             library.upsertSave(SaveSlot("save", "存档", 1, 1, vm.ui.value.session!!))
@@ -85,6 +86,7 @@ class AchievementsTest {
             assertEquals(11, loaded.ui.value.session!!.choicesTaken)
             assertEquals(emptyList<String>(), library.recordAchievements(story(), loaded.ui.value.session!!))
             loaded.restart()
+            loaded.selectPlayerCharacter("")
             assertEquals(0, loaded.ui.value.session!!.choicesTaken)
             library.recordAchievements(story(), loaded.ui.value.session!!)
             assertEquals(before, library.achievements.value)
@@ -103,6 +105,7 @@ class AchievementsTest {
             library.upsertStory(story)
             library.upsertProvider(ApiProfile("p", "test", baseUrl = "http://localhost/v1", model = "test"))
             val vm = PlayViewModel("ai", "new", library, AiDirector(ChatClient(client))) { "p" }
+            vm.selectPlayerCharacter("")
             val failed = withTimeout(10_000) { vm.ui.first { it.stoppedTitle == "AI 生成失败" } }
             assertEquals(0, failed.session!!.aiTurns)
             library.recordAchievements(story, failed.session!!)

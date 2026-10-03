@@ -36,7 +36,7 @@ fun GenerationNotificationSettings(store: SettingsStore) {
             })
         }
         Text("超级岛需小米平台授权，展示由系统决定。通知不包含剧情或思考内容。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        OutlinedButton(onClick = {
+        AppOutlinedButton(onClick = {
             context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
         }) { Text("系统通知设置") }
     }

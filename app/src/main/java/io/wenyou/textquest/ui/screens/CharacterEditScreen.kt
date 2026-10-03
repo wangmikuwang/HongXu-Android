@@ -1,5 +1,7 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppTextButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -29,7 +31,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -87,7 +88,7 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            item { TextButton(onClick = { revisionOpen = true }) { Text("一句话修改") } }
+            item { AppTextButton(onClick = { revisionOpen = true }) { Text("一句话修改") } }
             if (ui.message.isNotBlank()) {
                 item { TonalCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
                     Text(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)

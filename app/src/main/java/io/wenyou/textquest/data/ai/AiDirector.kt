@@ -187,6 +187,13 @@ class AiDirector(private val client: ChatClient) {
         return "登场角色（请严格贴合下列人设，包括说话习惯、用词、情感）：\n$joined"
     }
 
+    internal fun playerIdentity(state: SessionState, characters: List<CharacterData>): String {
+        if (state.playerCharacterId.isBlank()) return "玩家使用自由身份，由玩家自行决定行动与台词。\n"
+        val name = characters.firstOrNull { it.id == state.playerCharacterId }?.name ?: state.playerCharacterName.ifBlank { "所选角色" }
+        return "玩家扮演：$name（角色 id：${state.playerCharacterId}）。玩家输入代表该角色的行动或台词。" +
+            "该角色由玩家控制，你只演绎其他人物与旁白，不替玩家决定、说话或生成该角色的新台词。\n"
+    }
+
     private fun stateSnapshot(state: SessionState): String = buildString {
         if (state.variables.isNotEmpty()) {
             append("变量快照：")
@@ -264,6 +271,7 @@ class AiDirector(private val client: ChatClient) {
             append("你是一名中文文字冒险游戏的「场景生成器」，只负责根据给定素材续写当前场景。\n")
             append("叙事基调：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观/大纲：").append(story.ai.worldSummary).append("\n")
+            append(playerIdentity(state, characters))
             val r = roster(story, characters, bottomRules)
             if (r.isNotBlank()) append(r).append("\n")
             append("本次场景指令：").append(node.prompt.ifBlank { "承接最近剧情，自然推进当前一幕，并留出 2-4 个有张力的选项。" }).append("\n")
@@ -304,6 +312,7 @@ class AiDirector(private val client: ChatClient) {
             append("3) 尊重玩家自由输入，任何走向都可以发展（包括危险、温情、悬疑、搞笑）。\n")
             append("叙事基调：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观与初始局面：").append(story.ai.worldSummary).append("\n")
+            append(playerIdentity(state, characters))
             val r = roster(story, characters, bottomRules)
             if (r.isNotBlank()) append(r).append("\n")
             if (story.ai.directorExtra.isNotBlank()) append("额外导演要求：").append(story.ai.directorExtra).append("\n")

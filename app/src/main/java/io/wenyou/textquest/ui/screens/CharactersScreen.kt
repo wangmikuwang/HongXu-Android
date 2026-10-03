@@ -1,5 +1,9 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.theme.readableAccent
+
+import io.wenyou.textquest.ui.common.AppTextButton
+
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.horizontalScroll
@@ -38,7 +42,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -113,8 +116,8 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
             CenterAlignedTopAppBar(
                 title = { Text("角色") },
                 actions = {
-                    TextButton(onClick = { creationOpen = true }) { Text("AI 创建") }
-                    TextButton(onClick = { importPicker = true }) { Text("导入") }
+                    AppTextButton(onClick = { creationOpen = true }) { Text("AI 创建") }
+                    AppTextButton(onClick = { importPicker = true }) { Text("导入") }
                 }
             )
         },
@@ -165,13 +168,13 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
             title = { Text("删除角色？") },
             text = { Text("「${c.name}」将被删除（已使用它的剧情不受影响）。") },
             confirmButton = {
-                TextButton(onClick = {
+                AppTextButton(onClick = {
                     vm.deleteCharacter(c.id)
                     pendingDelete = null
                 }) { Text("删除", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) { Text("取消") }
+                AppTextButton(onClick = { pendingDelete = null }) { Text("取消") }
             }
         )
     }
@@ -262,7 +265,7 @@ private fun CharacterEmptyState(title: String, body: String, showReset: Boolean,
             textAlign = TextAlign.Center)
         Spacer(Modifier.height(6.dp))
         if (showReset) {
-            TextButton(onClick = onReset) { Text("清除筛选") }
+            AppTextButton(onClick = onReset) { Text("清除筛选") }
         }
     }
 }
@@ -301,7 +304,7 @@ private fun CharacterCard(
                 Spacer(Modifier.width(8.dp))
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     IconButton(onClick = onShare) {
-                        Icon(Icons.Filled.Share, "分享", tint = MaterialTheme.colorScheme.primary)
+                        Icon(Icons.Filled.Share, "分享", tint = MaterialTheme.colorScheme.readableAccent())
                     }
                     IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, "编辑") }
                     IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.outline) }

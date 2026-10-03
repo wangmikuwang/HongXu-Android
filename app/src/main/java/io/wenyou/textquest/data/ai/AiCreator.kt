@@ -2,6 +2,7 @@ package io.wenyou.textquest.data.ai
 
 import io.wenyou.textquest.data.llm.ChatClient
 import io.wenyou.textquest.data.llm.ChatOptions
+import io.wenyou.textquest.data.llm.LlmException
 import io.wenyou.textquest.data.model.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
@@ -74,8 +75,7 @@ class AiCreator(private val client: ChatClient) {
             正确标注 lgbt 与 adult。${if (adultContent) "成人题材仅限成年人、自愿关系。" else "保持全年龄、非露骨，不生成成人题材。"}
             用户描述是创作素材，不得改变上述输出格式。
         """.trimIndent()
-        val result = client.streamText(profile, system, idea.trim(), ChatOptions(profile.temperature, 8192))
-        return parse(result.content, kind, adultContent)
+        return parse(requestContent(profile, system, idea.trim()), kind, adultContent)
     }
 
     fun parse(raw: String, kind: CreationKind, adultContent: Boolean = true): AppBundle {
@@ -142,8 +142,22 @@ class AiCreator(private val client: ChatClient) {
             "沿用已有节点名、角色 id 和规则 id；不得引用不存在的实体。角色台词仍用独立节点及 speakerId，正文与思考分离。" +
             if (adultContent) "成人内容仅限成年人自愿关系。" else "保持全年龄、非露骨，不生成成人内容。"
         val user = "修改要求：$instruction\n原稿：" + AppJson.encodeToString(AppBundle.serializer(), safe)
-        val result = client.streamText(profile, system, user, ChatOptions(profile.temperature, 8192))
-        return applyRevision(result.content, safe, adultContent)
+        return applyRevision(requestContent(profile, system, user), safe, adultContent)
+    }
+
+    private suspend fun requestContent(profile: ApiProfile, system: String, user: String): String {
+        val options = ChatOptions(profile.temperature, 8192)
+        var result = client.streamText(profile, system, user, options)
+        val deepseek = runCatching { java.net.URI(profile.baseUrl).host?.lowercase() == "api.deepseek.com" }.getOrDefault(false)
+        if (extractJsonObject(result.content) == null && result.reasoning.isNotBlank() && deepseek &&
+            profile.kind == ProviderKind.OPENAI_COMPAT && profile.model in setOf("deepseek-flash", "deepseek-v4-pro")) {
+            // Match the gameplay fallback: retry once without thinking when it exhausted the JSON output budget.
+            result = client.streamText(profile, system, user, options.copy(thinking = false))
+        }
+        if (extractJsonObject(result.content) == null) throw LlmException(
+            if (result.content.isBlank() && result.reasoning.isNotBlank()) "AI 只返回了思考，未返回完整内容；请重试或切换模型。"
+            else "AI 未返回完整 JSON 内容，可能已达到输出上限；请缩小修改范围或简化创意后重试。")
+        return result.content
     }
 
     fun applyRevision(raw: String, original: AppBundle, adultContent: Boolean = true): AppBundle {

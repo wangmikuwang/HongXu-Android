@@ -102,12 +102,14 @@ data: [DONE]
             val ai = AiDirector(ChatClient(client))
             val story = Story("s", "test", characterIds = listOf("a", "b"))
             val characters = listOf(CharacterData("a", "甲"), CharacterData("b", "乙"))
-            val old = state.copy(history = List(150) { LogEntry(text = "新回合$it") })
+            val old = state.copy(playerCharacterId = "a", playerCharacterName = "甲", history = List(150) { LogEntry(text = "新回合$it") })
             val profile = ApiProfile("p", "test", baseUrl = "http://localhost/v1", model = "test")
             ai.generateScene(profile, story, StoryNode("start"), characters, old)
             ai.directorTurn(profile, story, characters, old, "继续")
             assertEquals(2, requests.size)
-            requests.forEach { assertTrue(it.contains(state.memory)); assertTrue(it.contains("盟友")) }
+            requests.forEach { assertTrue(it.contains(state.memory)); assertTrue(it.contains("盟友")); assertTrue(it.contains("玩家扮演：甲")); assertTrue(it.contains("不替玩家决定")) }
+            assertTrue(ai.playerIdentity(old, emptyList()).contains("玩家扮演：甲"))
+            assertTrue(ai.playerIdentity(SessionState("s"), characters).contains("自由身份"))
         } finally { client.dispatcher.executorService.shutdownNow(); client.connectionPool.evictAll() }
     }
 
@@ -370,6 +372,7 @@ data: [DONE]
             val director = AiDirector(ChatClient())
             val vm = PlayViewModel("s", "new", library, director) { null }
             runCurrent()
+            vm.selectPlayerCharacter("")
             vm.chooseAuthored(0)
             assertEquals(listOf("开场", "留下"), vm.ui.value.session!!.history.map { it.text })
             assertEquals(1.0, vm.ui.value.session!!.variables["count"]!!, 0.0)
@@ -446,6 +449,7 @@ data: [DONE]
                 "next" to StoryNode("next", NodeKind.AI)
             )))
             val vm = PlayViewModel("chain", "new", library, AiDirector(ChatClient(client))) { "p" }
+            vm.selectPlayerCharacter("")
             val ready = withTimeout(10_000) {
                 vm.ui.first { it.stage == PlayStage.AUTHORED && it.nodeId == "next" }
             }
@@ -502,6 +506,7 @@ data: [DONE]
             )))
             val vm = PlayViewModel("cycle", "new", library, AiDirector(ChatClient())) { null }
             runCurrent()
+            vm.selectPlayerCharacter("")
             assertEquals(PlayStage.STOPPED, vm.ui.value.stage)
             assertEquals("剧情循环", vm.ui.value.stoppedTitle)
             assertEquals(2, vm.ui.value.session!!.history.size)

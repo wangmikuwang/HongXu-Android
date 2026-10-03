@@ -73,7 +73,7 @@ internal fun AppUpdateHost(vm: AppUpdateViewModel, content: @Composable () -> Un
             text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                 AppUpdateCard(state, { vm.check() }, vm::download, openDownloads, openRelease, vm::install)
             } },
-            confirmButton = { TextButton(onClick = vm::dismissPrompt) { Text(if (state.downloading) "后台下载" else "稍后再说") } })
+            confirmButton = { AppTextButton(onClick = vm::dismissPrompt) { Text(if (state.downloading) "后台下载" else "稍后再说") } })
     }
 }
 
@@ -86,7 +86,7 @@ internal fun AppUpdateGate(state: AppUpdateState, onCheck: () -> Unit, onDownloa
             Text("需要升级后才能使用", style = MaterialTheme.typography.headlineSmall)
             Text("当前版本 ${BuildConfig.VERSION_NAME.substringBefore('-')}，最低支持版本 ${state.policy.minimumVersion}。升级将保留本地资料。")
             AppUpdateCard(state, onCheck, onDownload, onOpenDownloads, onOpenRelease, onInstall)
-            TextButton(onClick = onExit) { Text("退出应用") }
+            AppTextButton(onClick = onExit) { Text("退出应用") }
         }
     }
 }

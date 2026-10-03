@@ -1,11 +1,15 @@
 package io.wenyou.textquest.ui
 
+import io.wenyou.textquest.ui.common.AppTextButton
+
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.wenyou.textquest.ui.vm.AppUpdateViewModel
 import io.wenyou.textquest.ui.common.AppUpdateHost
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.WindowInsets
@@ -22,7 +26,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -103,7 +106,7 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                     onDismissRequest = container.library::clearWriteError,
                     title = { Text("保存失败") },
                     text = { Text(writeError.orEmpty()) },
-                    confirmButton = { TextButton(onClick = container.library::clearWriteError) { Text("知道了") } }
+                    confirmButton = { AppTextButton(onClick = container.library::clearWriteError) { Text("知道了") } }
                 )
             }
             val nav = rememberNavController()
@@ -138,7 +141,7 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                     composable(R.PRIDE) {
                         PrideGallery(prefs.prideThemesUnlocked, prefs.prideThemesEnabled, prefs.showLgbt,
                             container.settings::unlockPrideThemes, container.settings::setPrideThemesEnabled,
-                            container.settings::setShowLgbt, container.settings::setPrideTheme, { nav.popBackStack() })
+                            container.settings::setShowLgbt, container.settings::setPrideTheme, { nav.popBackStack() }, prefs.prideTheme)
                     }
                     composable(R.BOTTOM_RULES) { BottomRulesScreen(container, nav) }
                     composable(
@@ -186,7 +189,13 @@ fun HubBottomBar(nav: NavHostController) {
                     selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     selectedTextColor = MaterialTheme.colorScheme.onSurface,
                     indicatorColor = MaterialTheme.colorScheme.primaryContainer
-                ) else NavigationBarItemDefaults.colors(),
+                ) else NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
                 selected = current == item.route,
                 onClick = {
                     if (current != item.route) {
@@ -213,7 +222,11 @@ fun HubScaffold(
 ) {
     if (LocalThemeStyle.current == ThemeStyle.APPLE) {
         GlassBackdrop(
-            content = { Scaffold(topBar = topBar) { padding -> content(padding) } },
+            content = {
+                Scaffold(topBar = topBar, bottomBar = {
+                    Spacer(Modifier.fillMaxWidth().navigationBarsPadding().height(96.dp))
+                }) { padding -> content(padding) }
+            },
             controls = {
                 Box(Modifier.align(Alignment.BottomCenter).navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)
                     .fillMaxWidth().liquidGlass()) { HubBottomBar(nav) }

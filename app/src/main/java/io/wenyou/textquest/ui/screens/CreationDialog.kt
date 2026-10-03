@@ -1,5 +1,7 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppTextButton
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,7 +13,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -69,14 +70,14 @@ fun CreationDialog(container: WenYouApp.AppContainer, nav: NavHostController, on
                 if (ui.busy || ui.draft != null || ui.error.isNotBlank()) UsagePanel(container.chatClient.usage)
                 Text(if (profile == null) "还没有配置 AI 服务" else "使用 AI 服务：${profile.name}", style = MaterialTheme.typography.bodySmall)
                 if (ui.kind == CreationKind.STORY) Text("生成剧情、节点、变量、人物状态与规则，保存前可用一句话继续修改。", style = MaterialTheme.typography.bodySmall)
-                if (profile == null) TextButton(onClick = { close(); nav.navigate(R.PROVIDERS) }) { Text("配置 AI 服务") }
+                if (profile == null) AppTextButton(onClick = { close(); nav.navigate(R.PROVIDERS) }) { Text("配置 AI 服务") }
                 if (ui.error.isNotBlank()) Text(ui.error, color = MaterialTheme.colorScheme.error)
                 ui.draft?.let { draft ->
                     CreationPreview(draft)
                     if (!ui.busy) {
                         AppField(ui.revision, vm::setRevision, "一句话修改", modifier = Modifier.testTag("creation-revision"), minLines = 2, maxLines = 4, supporting = "修改当前草稿，未提及内容保留")
-                        TextButton(onClick = vm::revise, enabled = ui.revision.isNotBlank() && profile != null) { Text("修改草稿") }
-                        TextButton(onClick = vm::generate) { Text("重新生成") }
+                        AppTextButton(onClick = vm::revise, enabled = ui.revision.isNotBlank() && profile != null) { Text("修改草稿") }
+                        AppTextButton(onClick = vm::generate) { Text("重新生成") }
                     }
                 }
             }
@@ -87,7 +88,7 @@ fun CreationDialog(container: WenYouApp.AppContainer, nav: NavHostController, on
             }
         },
         dismissButton = {
-            TextButton(onClick = close, enabled = !ui.saving) { Text(if (ui.busy) "取消生成" else "关闭") }
+            AppTextButton(onClick = close, enabled = !ui.saving) { Text(if (ui.busy) "取消生成" else "关闭") }
         }
     )
 }

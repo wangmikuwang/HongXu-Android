@@ -2,6 +2,7 @@ package io.wenyou.textquest
 
 import androidx.test.platform.app.InstrumentationRegistry
 import android.graphics.Bitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.activity.compose.setContent
@@ -9,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.test.*
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import io.wenyou.textquest.ui.theme.ThemeMode
+import io.wenyou.textquest.ui.theme.PrideTheme
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import io.wenyou.textquest.data.llm.ChatClient
 import io.wenyou.textquest.data.model.*
@@ -32,10 +34,8 @@ class AiAuthoringUiTest {
     private val generated = """{"story":{"title":"雨城","worldSummary":"旧物留有记忆","opening":"门响了","directorExtra":"尊重选择","initialVariables":{"clues":0}},"characters":[{"name":"阿雨","personality":"守约","background":"旧城居民","extraPrompt":"遵循身份","bottomPrompt":"不伤害无辜","initial":{"metrics":{"trust":30},"description":"灰色风衣"},"bottomRules":[{"name":"守约","content":"信守承诺"}]}]}"""
 
     private fun screenshot(name: String) {
-        InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { bitmap ->
-            File(compose.activity.cacheDir, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            bitmap.recycle()
-        }
+        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        File(compose.activity.cacheDir, name).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
     private fun container(ok: OkHttpClient): WenYouApp.AppContainer {
         val prefix = "authoring-test-${UUID.randomUUID()}"
@@ -108,6 +108,38 @@ class AiAuthoringUiTest {
             }
             compose.runOnIdle { compose.activity.setContent { WenYouAppRoot(container) } }
             compose.onNodeWithText("开始剧情").assertIsDisplayed()
+            for (style in listOf(ThemeStyle.MATERIAL, ThemeStyle.APPLE)) {
+                for (mode in listOf(ThemeMode.LIGHT, ThemeMode.DARK)) {
+                    compose.runOnIdle {
+                        container.settings.setDynamicColor(false)
+                        container.settings.setThemeStyle(style)
+                        container.settings.setThemeMode(mode)
+                    }
+                    compose.onNodeWithText("开始剧情").assertIsDisplayed()
+                    compose.onNodeWithText("新建剧情").assertIsDisplayed()
+                    screenshot("home-${style.name.lowercase()}-${mode.name.lowercase()}.png")
+                }
+            }
+            compose.runOnIdle {
+                container.settings.setThemeStyle(ThemeStyle.MATERIAL)
+                container.settings.setThemeMode(ThemeMode.LIGHT)
+            }
+            compose.runOnIdle { container.settings.unlockPrideThemes() }
+            for (theme in listOf(PrideTheme.TRANS, PrideTheme.PAN, PrideTheme.STRAIGHT)) {
+                for (mode in listOf(ThemeMode.LIGHT, ThemeMode.DARK)) {
+                    compose.runOnIdle {
+                        container.settings.setThemeMode(mode)
+                        container.settings.setPrideTheme(theme)
+                    }
+                    compose.onNodeWithText("开始剧情").assertIsDisplayed()
+                    compose.onNodeWithText("全部剧情").assertIsDisplayed()
+                    screenshot("home-pride-${theme.name.lowercase()}-${mode.name.lowercase()}.png")
+                }
+            }
+            compose.runOnIdle {
+                container.settings.setPrideTheme(null)
+                container.settings.setThemeMode(ThemeMode.LIGHT)
+            }
             screenshot("home-unified-preview.png")
             compose.onNodeWithText("AI 创建").performClick()
             compose.onNodeWithText("AI 一句话创建").assertIsDisplayed()

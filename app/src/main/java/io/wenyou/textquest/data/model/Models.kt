@@ -319,7 +319,10 @@ data class SessionState(
     val memory: String = "",
     /** Lifetime counts within this journey, independent of the bounded history window. */
     val choicesTaken: Int = 0,
-    val aiTurns: Int = 0
+    val aiTurns: Int = 0,
+    /** Player identity snapshot, retained by saves even if the character is later removed. */
+    val playerCharacterId: String = "",
+    val playerCharacterName: String = ""
 )
 
 @Serializable
