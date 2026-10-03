@@ -23,7 +23,7 @@ object ProviderCatalog {
         ProviderPreset("openai", "OpenAI", ProviderKind.OPENAI_COMPAT, "https://api.openai.com/v1",
             listOf("gpt-4o", "gpt-4o-mini", "gpt-4.1"), note = "官方 OpenAI，需海外网络"),
         ProviderPreset("deepseek", "DeepSeek 深度求索", ProviderKind.OPENAI_COMPAT, "https://api.deepseek.com/v1",
-            listOf("deepseek-chat", "deepseek-reasoner"), note = "国产高性价比，base 已含 /v1"),
+            listOf("deepseek-flash", "deepseek-v4-pro"), note = "官方现行模型；留空单价可估算峰谷费用，base 已含 /v1"),
         ProviderPreset("moonshot", "Moonshot Kimi", ProviderKind.OPENAI_COMPAT, "https://api.moonshot.cn/v1",
             listOf("moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k"), note = "长上下文友好"),
         ProviderPreset("zhipu", "智谱 GLM", ProviderKind.OPENAI_COMPAT, "https://open.bigmodel.cn/api/paas/v4",

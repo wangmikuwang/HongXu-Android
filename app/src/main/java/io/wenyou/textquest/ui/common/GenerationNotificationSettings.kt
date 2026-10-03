@@ -2,6 +2,8 @@ package io.wenyou.textquest.ui.common
 
 import android.Manifest
 import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import android.content.pm.PackageManager
 import android.os.Build
 import android.provider.Settings
@@ -37,7 +39,16 @@ fun GenerationNotificationSettings(store: SettingsStore) {
         }
         Text("超级岛需小米平台授权，展示由系统决定。通知不包含剧情或思考内容。", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         AppOutlinedButton(onClick = {
-            context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
+            runCatching { context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)) }
+                .onFailure { Toast.makeText(context, "请在系统设置中打开本应用的通知设置", Toast.LENGTH_SHORT).show() }
         }) { Text("系统通知设置") }
+        if (Build.MANUFACTURER.equals("Xiaomi", true) || Build.MANUFACTURER.equals("Redmi", true)) {
+            Text("切到后台后，澎湃 OS 可能暂停网络请求。若生成中断，可在应用信息中检查电池和后台设置；仅在需要持续生成时调整。", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            AppOutlinedButton(onClick = {
+                runCatching { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }
+                    .onFailure { Toast.makeText(context, "请在系统设置中打开本应用的信息", Toast.LENGTH_SHORT).show() }
+            }) { Text("电池与后台设置") }
+        }
     }
 }

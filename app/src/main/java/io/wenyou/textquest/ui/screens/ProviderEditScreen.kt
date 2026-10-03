@@ -164,7 +164,7 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
             item { SectionHeader("3 · 费用估算（可选）") }
             item {
                 TonalCard {
-                    Text("填写当前模型每百万 tokens 的单价。留空显示费用未知；0 表示免费。输入价不含缓存，缓存读写分开填写。换模型后请核对单价。", style = MaterialTheme.typography.bodySmall)
+                    Text("DeepSeek 官方接口的已收录模型，全部留空时采用官方价格快照（2026-10-03，含峰谷时段）。填写任一价格将优先使用手动单价，单位为每百万 tokens；0 表示免费。其他服务请填写单价。换模型后请核对。", style = MaterialTheme.typography.bodySmall)
                     AppField(profile.priceCurrency, vm::setCurrency, "币种（CNY / USD）", singleLine = true)
                     listOf(Triple("input", "普通输入单价", profile.inputPrice), Triple("output", "输出单价", profile.outputPrice),
                         Triple("cached", "缓存读取单价", profile.cachedPrice), Triple("write", "缓存写入单价", profile.cacheWritePrice)).forEach { (key, label, value) ->

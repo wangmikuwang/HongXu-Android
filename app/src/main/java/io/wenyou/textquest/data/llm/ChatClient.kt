@@ -58,6 +58,7 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
         onDelta: (String) -> Unit = {},
         onReasoning: (String) -> Unit = {}
     ): ChatResult = withContext(Dispatchers.IO) {
+        val startedAt = System.currentTimeMillis()
         val started = System.nanoTime()
         val id = java.util.UUID.randomUUID().toString()
         usage.start(GenerationProgress(id, profile.name, profile.model, started))
@@ -142,8 +143,10 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
             throw e
         } finally {
             call?.cancel()
-            usage.finish(id, UsageRecord(profile.name, profile.model, System.currentTimeMillis(),
-                (System.nanoTime() - started) / 1_000_000, status, tokens, if (status == "完成") tokens.cost(profile) else null, profile.priceCurrency))
+            val finishedAt = System.currentTimeMillis()
+            val estimate = tokens.estimate(profile, startedAt, finishedAt)
+            usage.finish(id, UsageRecord(profile.name, profile.model, finishedAt,
+                (System.nanoTime() - started) / 1_000_000, status, tokens, estimate.lower, profile.priceCurrency, estimatedCostUpper = estimate.upper, pricingNote = estimate.note))
         }
     }
     // ---------------- 读取可用模型列表 ----------------

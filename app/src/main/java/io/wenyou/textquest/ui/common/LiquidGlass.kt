@@ -137,8 +137,8 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
     val shape = if (pill) RoundedCornerShape(50) else RoundedCornerShape(30.dp)
     return this.shadow(12.dp, shape, clip = false).clip(shape).onSizeChanged { bounds = it }.onGloballyPositioned { origin = it.positionInRoot() }
         .drawWithCache {
-            // Blur/lens only the half-resolution background; text and controls stay full resolution.
-            val sampleScale = 0.5f
+            // Cap background samples on high-resolution displays; text and controls stay full resolution.
+            val sampleScale = minOf(0.5f, 540f / size.width.coerceAtLeast(1f))
             val sampleSize = IntSize(ceil(size.width * sampleScale).toInt().coerceAtLeast(1), ceil(size.height * sampleScale).toInt().coerceAtLeast(1))
             val corner = if (pill) minOf(size.width, size.height) / 2f else minOf(30.dp.toPx(), size.height / 2f)
             sample.clip = true
