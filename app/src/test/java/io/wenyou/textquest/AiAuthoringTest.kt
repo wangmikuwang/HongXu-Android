@@ -16,6 +16,42 @@ class AiAuthoringTest {
     private val creator = AiCreator(ChatClient())
     private val full = """{"story":{"title":"雨城","subtitle":"失物调查","coverEmoji":"🌧️","genre":"悬疑","worldSummary":"雨城的旧物保留记忆","opening":"雨落窗边","tone":"简洁","directorExtra":"尊重玩家选择","colorIndex":11,"mode":"script","initialVariables":{"clues":0},"initialFlags":["rain"],"startNodeId":"start","nodes":{"start":{"title":"初遇","speakerId":"阿雨","text":"你来找谁？","choices":[{"text":"进门","next":"end","effects":[{"charId":"阿雨","type":"add_var","name":"trust","value":1}]}]},"end":{"kind":"ending","title":"告别","text":"天晴了"}}},"characters":[{"name":"阿雨","emoji":"☂️","colorIndex":10,"tagline":"记忆侦探","personality":"守约","speechStyle":"话少","background":"旧城居民","exampleDialogue":"雨会记得","greeting":"请进","extraPrompt":"坚持既有身份","bottomPrompt":"不伤害无辜","bottomRules":[{"name":"守约","content":"信守承诺"}],"initial":{"metrics":{"affection":20,"trust":30,"mood":50,"energy":80,"health":90,"fatigue":10,"arousal":0},"flags":["umbrella"],"description":"灰色风衣"}}]}"""
 
+
+    @Test fun booleanFlagMapsAndLegacyVariableEffectsKeepTheirMeaning() {
+        val raw = full.replace("\"initialFlags\":[\"rain\"]", "\"initialFlags\":{\"rain\":true,\"hidden\":false}")
+            .replace("\"flags\":[\"umbrella\"]", "\"flags\":{\"umbrella\":true,\"revealed\":false}")
+            .replace("\"type\":\"add_var\",\"name\":\"trust\"", "\"type\":\"variable\",\"target\":\"trust\"")
+        val bundle = creator.parse(raw, CreationKind.STORY)
+        assertEquals(setOf("rain"), bundle.stories.single().initialFlags)
+        assertEquals(setOf("umbrella"), bundle.characters.single().initial.flags)
+        val effect = bundle.stories.single().nodes.getValue("start").choices.single().effects.single()
+        assertEquals(EffectType.ADD_VAR, effect.type)
+        assertEquals("trust", effect.name)
+        assertEquals(1.0, effect.value, 0.0)
+        assertEquals(bundle.characters.single().id, effect.charId)
+    }
+
+    @Test fun initialVariableListsPreserveGlobalAndCharacterScope() {
+        val raw = full.replace("\"initialVariables\":{\"clues\":0}",
+            "\"initialVariables\":[{\"name\":\"clues\",\"value\":2},{\"name\":\"trust\",\"value\":45,\"charId\":\"阿雨\"}]")
+        val bundle = creator.parse(raw, CreationKind.STORY)
+        assertEquals(mapOf("clues" to 2.0), bundle.stories.single().initialVariables)
+        assertEquals(45.0, bundle.characters.single().initial.metrics.getValue("trust"), 0.0)
+        assertEquals(90.0, bundle.characters.single().initial.metrics.getValue("health"), 0.0)
+        try { creator.parse(raw.replace("\"charId\":\"阿雨\"", "\"charId\":\"不存在\""), CreationKind.STORY); fail("Unknown initial actor must fail") }
+        catch (e: IllegalStateException) { assertTrue(e.message!!.contains("创作格式")) }
+    }
+
+    @Test fun malformedFlagsAndUnknownActionTypesCannotSilentlyChangeTheStory() {
+        for (raw in listOf(
+            full.replace("\"initialFlags\":[\"rain\"]", "\"initialFlags\":{\"rain\":\"maybe\"}"),
+            full.replace("\"type\":\"add_var\"", "\"type\":\"invented_action\"")
+        )) {
+            try { creator.parse(raw, CreationKind.STORY); fail("Invalid authoring format must fail") }
+            catch (e: IllegalStateException) { assertTrue(e.message!!.contains("创作格式")) }
+        }
+    }
+
     @Test fun allEditorFieldsAndPlayableReferencesAreGenerated() {
         val draft = creator.parse(full, CreationKind.STORY)
         val s = draft.stories.single(); val c = draft.characters.single()
@@ -64,8 +100,7 @@ class AiAuthoringTest {
                 val body = AppJson.parseToJsonElement(buffer.readUtf8()).jsonObject
                 requests++
                 assertEquals(8192, body.getValue("max_tokens").jsonPrimitive.int)
-                if (requests == 2) assertEquals("disabled", body.getValue("thinking").jsonObject.getValue("type").jsonPrimitive.content)
-                else assertNull(body["thinking"])
+                assertEquals("disabled", body.getValue("thinking").jsonObject.getValue("type").jsonPrimitive.content)
                 val message = buildJsonObject {
                     if (requests == 1) {
                         put("reasoning_content", "构思耗尽输出额度")

@@ -56,6 +56,78 @@ private data class GeneratedStory(
 @Serializable
 private data class GeneratedCreation(val story: GeneratedStory? = null, val characters: List<GeneratedCharacter>)
 
+// Reject unknown enum values instead of silently turning an action into its default type.
+private val CreationJson = Json(AppJson) { coerceInputValues = false }
+
+/** Only adapt known authoring wire variants; never manufacture missing content or references. */
+private fun creationWire(root: JsonObject): JsonObject {
+    fun flags(value: JsonElement): JsonElement {
+        if (value !is JsonObject) return value
+        require(value.values.all { it is JsonPrimitive && it.booleanOrNull != null }) { "标记格式无效" }
+        return JsonArray(value.filterValues { it.jsonPrimitive.boolean }.keys.map(::JsonPrimitive))
+    }
+    val scopedVariables = mutableMapOf<String, MutableMap<String, JsonElement>>()
+    fun variables(value: JsonElement): JsonElement {
+        if (value !is JsonArray) return value
+        val global = mutableMapOf<String, JsonElement>()
+        value.forEach { entry ->
+            val obj = entry.jsonObject
+            val name = obj.getValue("name").jsonPrimitive.content
+            val number = obj.getValue("value")
+            require(name.isNotBlank() && number.jsonPrimitive.doubleOrNull?.isFinite() == true) { "初始变量格式无效" }
+            val actor = obj["charId"]?.jsonPrimitive?.content.orEmpty()
+            val target = if (actor.isBlank()) global else scopedVariables.getOrPut(actor) { mutableMapOf() }
+            require(name !in target) { "初始变量重复" }
+            target[name] = number
+        }
+        return JsonObject(global)
+    }
+    fun action(value: JsonElement): JsonElement {
+        val obj = value.jsonObject
+        return JsonObject(obj.toMutableMap().apply {
+            if (obj["type"]?.jsonPrimitive?.content == "variable") put("type", JsonPrimitive("add_var"))
+            if ("name" !in obj && obj["target"] is JsonPrimitive) put("name", obj.getValue("target"))
+        })
+    }
+    fun actions(value: JsonElement) = JsonArray(value.jsonArray.map(::action))
+    fun node(value: JsonElement): JsonElement = JsonObject(value.jsonObject.toMutableMap().apply {
+        get("onEnter")?.takeUnless { it is JsonNull }?.let { put("onEnter", actions(it)) }
+        get("choices")?.takeUnless { it is JsonNull }?.let { choices ->
+            put("choices", JsonArray(choices.jsonArray.map { choice ->
+                JsonObject(choice.jsonObject.toMutableMap().apply {
+                    get("effects")?.takeUnless { it is JsonNull }?.let { put("effects", actions(it)) }
+                })
+            }))
+        }
+    })
+    return JsonObject(root.toMutableMap().apply {
+        root["story"]?.takeUnless { it is JsonNull }?.jsonObject?.let { story ->
+            put("story", JsonObject(story.toMutableMap().apply {
+                get("initialVariables")?.let { put("initialVariables", variables(it)) }
+                get("initialFlags")?.let { put("initialFlags", flags(it)) }
+                get("nodes")?.takeUnless { it is JsonNull }?.jsonObject?.let { nodes ->
+                    put("nodes", JsonObject(nodes.mapValues { node(it.value) }))
+                }
+            }))
+        }
+        root["characters"]?.jsonArray?.let { characters ->
+            put("characters", JsonArray(characters.map { character ->
+                JsonObject(character.jsonObject.toMutableMap().apply {
+                    val actor = get("name")?.jsonPrimitive?.content.orEmpty()
+                    val initial = get("initial")?.takeUnless { it is JsonNull }?.jsonObject ?: JsonObject(emptyMap())
+                    put("initial", JsonObject(initial.toMutableMap().apply {
+                        get("flags")?.let { put("flags", flags(it)) }
+                        scopedVariables.remove(actor)?.let { metrics ->
+                            put("metrics", JsonObject(get("metrics")?.jsonObject.orEmpty() + metrics))
+                        }
+                    }))
+                })
+            }))
+        }
+        require(scopedVariables.isEmpty()) { "初始变量人物引用不存在" }
+    })
+}
+
 /** AI only authors content; IDs and playable structure are owned by the app. */
 class AiCreator(private val client: ChatClient) {
     suspend fun generate(profile: ApiProfile, idea: String, kind: CreationKind, adultContent: Boolean): AppBundle {
@@ -67,9 +139,11 @@ class AiCreator(private val client: ChatClient) {
             "tone":"叙事风格","lgbt":false,"adult":false},"characters":[{"name":"人物名","emoji":"🎭","tagline":"一句话印象",
             "personality":"具体性格与动机","speechStyle":"说话习惯","background":"身份经历与关系",
             "exampleDialogue":"台词示例","greeting":"初见招呼","lgbt":false,"adult":false}]}
-            必须补齐正常编辑表单的所有内容：story 还包括 colorIndex(0-11)、mode(ai_dm 或 script)、directorExtra(导演要求)、initialVariables(数值变量)、initialFlags(标记)、startNodeId、nodes。
-            nodes 用节点名作键，每个节点包括 kind(narration/ai/ending)、title、speakerId(人物名字或空旁白)、text、prompt、choices([{text,next,conditions,effects,hint}])、onEnter、endTarget。节点跳转使用真实节点名或 @self；条件/效果中的 charId 使用人物名字或空全局。AI 导演模式至少有开场节点；用户要求分支剧本时生成连贯分支和结局。
-            每个人物还必须补齐 colorIndex(0-11)、orientation(straight/gay/lesbian/bi/pan/asexual/unknown)、extraPrompt、bottomPrompt、bottomRules([{name,content}])、initial:{metrics:{affection,trust,mood,energy,health,fatigue,arousal},flags:[],description:"初始穿着与外观"}。状态数值 0-100。填充符合人设的内容，无适用条件或效果时用空列表。规则应具体贴合人物而非无关指令。
+            必须补齐正常编辑表单的所有内容：story 还包括 colorIndex(0-11)、mode(ai_dm 或 script)、directorExtra(导演要求)、initialVariables(全局数值对象，例如 {"clues":0}，不要使用列表；人物数值只写入对应人物的 initial.metrics)、initialFlags(标记)、startNodeId、nodes。
+            nodes 用节点名作键，每个节点包括 kind(narration/ai/ending)、title、speakerId(人物名字或空旁白)、text、prompt、choices([{text,next,conditions,effects,hint}])、onEnter、endTarget。节点跳转使用真实节点名或 @self；条件/效果中的 charId 使用人物名字或空全局。默认 mode=ai_dm，nodes 只生成 1 个完整开场节点，后续由导演在游玩时续写；仅用户明确要求分支剧本时用 script，最多生成 8 个连贯节点含结局。保持每个节点简短，不展开多章或穷举所有分支。
+            每个人物还必须补齐 colorIndex(0-11)、orientation(straight/gay/lesbian/bi/pan/asexual/unknown)、extraPrompt、bottomPrompt、bottomRules([{name,content}])、initial:{metrics:{affection,trust,mood,energy,health,fatigue,arousal},flags:[],description:"初始穿着与外观"}。状态数值 0-100。填充符合人设的内容，无适用条件或效果时用空列表。initialFlags 和 initial.flags 必须用字符串数组，例如 ["metInCafe"]，不要写 {"metInCafe":true}；false 标记不要放入数组。规则应具体贴合人物而非无关指令。
+            条件格式必须为 {"type":"var","name":"trust","op":"gte","value":30,"charId":"人物名"}；type 只能是 flag_true/flag_false/var，op 只能是 eq/ne/gt/gte/lt/lte。
+            效果格式必须为 {"type":"add_var","name":"affection","value":5,"charId":"人物名"}；type 只能是 set_flag/clear_flag/set_var/add_var/random_var/roll，随机效果还包括 from/to。变量增减用 add_var、变量赋值用 set_var；禁止 type:"variable" 或 target 字段。旁白 speakerId 用空字符串。
             人物名必须互不相同，创建 1–4 位重要人物，设定彼此一致。不要输出实体 UUID、服务配置或 API Key；节点名允许用于故事内部跳转。
             ${if (kind == CreationKind.STORY) "必须生成 story 与关联人物；worldSummary 300 字以内，opening 200 字以内，每个人设简明完整。" else "只创建用户描述的人物；story 必须为 null，人设包括性格、背景、说话习惯及示例台词。"}
             正确标注 lgbt 与 adult。${if (adultContent) "成人题材仅限成年人、自愿关系。" else "保持全年龄、非露骨，不生成成人题材。"}
@@ -82,9 +156,9 @@ class AiCreator(private val client: ChatClient) {
         require(raw.length <= 100_000) { "生成内容过长，请缩短描述后重试" }
         val json = extractJsonObject(raw) ?: error("AI 没有返回完整创作内容，请重试")
         val generated = try {
-            AppJson.decodeFromString(GeneratedCreation.serializer(), json)
+            CreationJson.decodeFromJsonElement(GeneratedCreation.serializer(), creationWire(AppJson.parseToJsonElement(json).jsonObject))
         } catch (_: IllegalArgumentException) {
-            error("AI 返回的内容不完整，请重新生成")
+            error("AI 返回的创作格式不符合要求，请重新生成")
         }
         require(generated.characters.size in 1..6) { "需要 1–6 位人物，请重新生成" }
         fun field(value: String, label: String, max: Int, required: Boolean = false): String {
@@ -146,9 +220,11 @@ class AiCreator(private val client: ChatClient) {
     }
 
     private suspend fun requestContent(profile: ApiProfile, system: String, user: String): String {
-        val options = ChatOptions(profile.temperature, 8192)
-        var result = client.streamText(profile, system, user, options)
         val deepseek = runCatching { java.net.URI(profile.baseUrl).host?.lowercase() == "api.deepseek.com" }.getOrDefault(false)
+        val nonThinking = deepseek && profile.kind == ProviderKind.OPENAI_COMPAT && profile.model in setOf("deepseek-flash", "deepseek-v4-pro")
+        // Authoring needs a complete structured result rather than a separate thinking transcript.
+        val options = ChatOptions(profile.temperature, 8192, thinking = if (nonThinking) false else null)
+        var result = client.streamText(profile, system, user, options)
         if (extractJsonObject(result.content) == null && result.reasoning.isNotBlank() && deepseek &&
             profile.kind == ProviderKind.OPENAI_COMPAT && profile.model in setOf("deepseek-flash", "deepseek-v4-pro")) {
             // Match the gameplay fallback: retry once without thinking when it exhausted the JSON output budget.

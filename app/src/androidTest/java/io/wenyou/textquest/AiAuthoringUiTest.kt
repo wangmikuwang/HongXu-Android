@@ -31,7 +31,7 @@ import java.util.UUID
 
 class AiAuthoringUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
-    private val generated = """{"story":{"title":"雨城","worldSummary":"旧物留有记忆","opening":"门响了","directorExtra":"尊重选择","initialVariables":{"clues":0}},"characters":[{"name":"阿雨","personality":"守约","background":"旧城居民","extraPrompt":"遵循身份","bottomPrompt":"不伤害无辜","initial":{"metrics":{"trust":30},"description":"灰色风衣"},"bottomRules":[{"name":"守约","content":"信守承诺"}]}]}"""
+    private val generated = """{"story":{"title":"雨城","worldSummary":"旧物留有记忆","opening":"门响了","directorExtra":"尊重选择","initialVariables":{"clues":0},"initialFlags":{"rain":true,"revealed":false},"nodes":{"start":{"text":"门响了","choices":[{"text":"敲门","next":"@self","effects":[{"type":"variable","target":"clues","value":1}]}]}}},"characters":[{"name":"阿雨","personality":"守约","background":"旧城居民","extraPrompt":"遵循身份","bottomPrompt":"不伤害无辜","initial":{"metrics":{"trust":30},"description":"灰色风衣"},"bottomRules":[{"name":"守约","content":"信守承诺"}]}]}"""
 
     private fun screenshot(name: String) {
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
@@ -91,6 +91,11 @@ class AiAuthoringUiTest {
             compose.waitUntil(10_000) { container.library.stories.value.single().genre == "奇幻" }
             val story = container.library.stories.value.single()
             assertEquals("晴城", story.title)
+            assertEquals(setOf("rain"), story.initialFlags)
+            val effect = story.nodes.getValue("start").choices.single().effects.single()
+            assertEquals(EffectType.ADD_VAR, effect.type)
+            assertEquals("clues", effect.name)
+            assertEquals(1.0, effect.value, 0.0)
             assertEquals("尊重选择", story.ai.directorExtra)
             assertEquals(container.library.characters.value.single().id, story.characterIds.single())
             assertEquals(container.library.bottomRules.value.single().id, container.library.characters.value.single().bottomRuleIds.single())
