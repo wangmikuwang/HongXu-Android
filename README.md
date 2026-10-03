@@ -310,7 +310,7 @@ sequenceDiagram
 命令行构建示例：
 
 ```bash
-./gradlew :app:assembleAlphaDebug
+./gradlew :app:assembleDebug
 ```
 
 构建输出默认位于 Gradle 用户目录的 `caches/wnq-build/HongXu`，以避开 OneDrive 文件锁；可用环境变量 `WENYOU_BUILD_DIR` 指定其它位置。
@@ -318,7 +318,7 @@ sequenceDiagram
 回归与静态检查（18 项 JVM 回归测试）：
 
 ```bash
-./gradlew :app:testAlphaDebugUnitTest :app:lintAlphaDebug
+./gradlew :app:test :app:lint
 ```
 
 测试覆盖资料库并发写入与失败保护、分支存读档、节点循环、角色条件、掷骰边界、AI 正文/思考与状态解析、分享码完整性和解压大小限制，以及内置预设包的完整性与自洽。网络测试使用本地拦截响应，不需要 API Key。接管审核记录见 [AUDIT.md](AUDIT.md)。

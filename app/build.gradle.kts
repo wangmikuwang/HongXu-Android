@@ -12,6 +12,16 @@ plugins {
 val versionProps = Properties().apply {
     rootProject.file("version.properties").inputStream().use { load(it) }
 }
+// A local workspace version authority prevents building an unsynchronised version.
+val workspaceVersionFile = rootProject.file("../PROJECT_VERSION.properties")
+if (workspaceVersionFile.isFile) {
+    val workspaceVersion = Properties().apply { workspaceVersionFile.inputStream().use { load(it) } }
+    for (key in listOf("versionMajor", "versionMinor", "versionPatch", "versionCode")) {
+        check(versionProps.getProperty(key) == workspaceVersion.getProperty(key)) {
+            "版本未同步，请先运行本地版本同步工具。"
+        }
+    }
+}
 val appVersionMajor: String = versionProps.getProperty("versionMajor", "1")
 val appVersionMinor: String = versionProps.getProperty("versionMinor", "1")
 val appVersionPatch: String = versionProps.getProperty("versionPatch", "0")
@@ -42,7 +52,7 @@ android {
             buildConfigField("String", "UPDATE_REPOSITORY", "\"wangmikuwang/WenYou-TextQuest\"")
             dimension = "content"
             applicationIdSuffix = ".alpha"
-            versionNameSuffix = "-α"
+
         }
     }
 
@@ -91,6 +101,7 @@ android {
 //       gradlew bumpVersion -Pbump=major （重大变化）
 tasks.register("bumpVersion") {
     doLast {
+        check(!workspaceVersionFile.isFile) { "此工作区使用统一版本管理，请运行 tools/sync_app_versions.py。" }
         val f = rootProject.file("version.properties")
         val p = Properties().apply { f.inputStream().use { load(it) } }
         var major = p.getProperty("versionMajor", "1").toIntOrNull() ?: 1
