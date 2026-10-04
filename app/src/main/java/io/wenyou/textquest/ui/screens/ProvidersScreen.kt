@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wenyou.textquest.ui.common.AppTextButton
 import io.wenyou.textquest.ui.common.AppOutlinedButton
@@ -17,13 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Scaffold
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -67,12 +62,12 @@ fun ProvidersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("AI 服务") }, navigationIcon = {
-            IconButton(onClick = { nav.navigateUp() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
+            IconButton(onClick = { nav.navigateUp() }) { Icon(AppIcons.ArrowBack, "返回") }
         }) },
         floatingActionButton = {
             ExtendedFloatingActionButton(onClick = { nav.navigate(R.providerEdit("new")) },
                 modifier = Modifier.semantics { contentDescription = "添加服务" },
-                icon = { Icon(Icons.Filled.Add, null) }, text = { Text("添加服务") })
+                icon = { Icon(AppIcons.Add, null) }, text = { Text("添加服务") })
         }
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
@@ -166,8 +161,8 @@ private fun ProviderCard(
                     AppTextButton(onClick = onSetDefault) { Text("设为默认") }
                 }
             }
-            IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, "编辑") }
-            IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.outline) }
+            IconButton(onClick = onEdit) { Icon(AppIcons.Edit, "编辑") }
+            IconButton(onClick = onDelete) { Icon(AppIcons.Delete, "删除", tint = MaterialTheme.colorScheme.outline) }
         }
     }
 }

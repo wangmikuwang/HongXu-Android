@@ -1,13 +1,11 @@
 package io.wenyou.textquest
 
+import io.wenyou.textquest.ui.common.AppIcons
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.background
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Home
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -32,6 +30,23 @@ class AppearanceUiTest {
         File(compose.activity.cacheDir, "ui-${BuildConfig.VERSION_CODE}-$name").outputStream().use {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
         }
+    }
+    @Test fun bundledWenKaiIsDefaultAndImportedFontStillOverridesIt() {
+        val context = compose.activity
+        val asset = androidx.core.content.res.ResourcesCompat.getFont(context, R.font.lxgw_wenkai_regular)!!
+        assertTrue("Bundled font must contain Chinese glyphs", android.graphics.Paint().apply { typeface = asset }.hasGlyph("叙"))
+        val base = androidx.compose.material3.Typography()
+        val defaults = appearanceTypography(base, AppearancePrefs(), context)
+        assertEquals(DefaultAppFont, defaults.bodyLarge.fontFamily)
+        assertEquals(DefaultAppFont, defaults.headlineLarge.fontFamily)
+        val font = io.wenyou.textquest.data.AppearanceFiles.importFont(context,
+            android.net.Uri.fromFile(File("/system/fonts/Roboto-Regular.ttf")))
+        try {
+            val imported = appearanceTypography(base, AppearancePrefs(fontFile = font.first), context)
+            assertNotEquals(DefaultAppFont, imported.bodyLarge.fontFamily)
+            assertEquals(DefaultAppFont, appearanceTypography(base, AppearancePrefs(fontFile = "font-missing.ttf"), context).bodyLarge.fontFamily)
+            assertEquals(DefaultAppFont, appearanceTypography(base, AppearancePrefs(), context).bodyLarge.fontFamily)
+        } finally { io.wenyou.textquest.data.AppearanceFiles.removeFont(context, font.first) }
     }
     @Test fun importedFontsAndWallpapersAreValidatedAndRemainLocal() {
         val context = compose.activity
@@ -66,7 +81,7 @@ class AppearanceUiTest {
     @Test fun theLargestFontAndScaledInterfaceKeepTheDockUsable() {
         val prefs = AppearancePrefs(glassEnabled = true, fontScale = 1.3f, uiScale = 1.1f, displayScale = 110)
         compose.setContent { WenYouTheme(style = ThemeStyle.APPLE, appearance = prefs) {
-            Box(Modifier.fillMaxWidth()) { GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, Icons.Outlined.Home) }, 0, {}, Modifier.testTag("large-dock")) }
+            Box(Modifier.fillMaxWidth()) { GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, AppIcons.Home) }, 0, {}, Modifier.testTag("large-dock")) }
         } }
         compose.onNode(hasText("角色") and hasClickAction()).assertIsDisplayed()
         compose.onNode(hasText("设置") and hasClickAction()).assertIsDisplayed()
@@ -100,18 +115,18 @@ class AppearanceUiTest {
         compose.setContent { WenYouTheme(style = ThemeStyle.APPLE, appearance = prefs) {
             Column(Modifier.width(360.dp).background(androidx.compose.ui.graphics.Color.White)) {
                 Row {
-                    io.wenyou.textquest.ui.common.AppIcon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, "返回",
+                    io.wenyou.textquest.ui.common.AppIcon(AppIcons.ArrowBack, "返回",
                         Modifier.size(24.dp).testTag("styled-back"), tint = androidx.compose.ui.graphics.Color.Black)
-                    androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, null,
+                    androidx.compose.material3.Icon(AppIcons.ArrowBack, null,
                         Modifier.size(24.dp).testTag("native-back"), tint = androidx.compose.ui.graphics.Color.Black)
                 }
                 CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides androidx.compose.ui.graphics.Color.White) {
                     Row(Modifier.background(androidx.compose.ui.graphics.Color.Blue)) {
-                        io.wenyou.textquest.ui.common.AppIcon(Icons.Outlined.Home, null, Modifier.size(24.dp).testTag("button-glyph"))
-                        androidx.compose.material3.Icon(Icons.Outlined.Home, null, Modifier.size(24.dp).testTag("button-native"))
+                        io.wenyou.textquest.ui.common.AppIcon(AppIcons.Home, null, Modifier.size(24.dp).testTag("button-glyph"))
+                        androidx.compose.material3.Icon(AppIcons.Home, null, Modifier.size(24.dp).testTag("button-native"))
                     }
                 }
-                GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, Icons.Outlined.Home) }, 0, {}, Modifier.testTag("plain-dock"))
+                GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, AppIcons.Home) }, 0, {}, Modifier.testTag("plain-dock"))
             }
         } }
         val back = compose.onNodeWithTag("styled-back").captureToImage().asAndroidBitmap()
@@ -130,7 +145,7 @@ class AppearanceUiTest {
     @Test fun dockClickAndDragSelectWholeItemsWithoutClipping() {
         var selected by mutableIntStateOf(0)
         compose.setContent { WenYouTheme(style = ThemeStyle.APPLE) {
-            Box(Modifier.width(360.dp)) { GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, Icons.Outlined.Home) }, selected, { selected = it }, Modifier.testTag("dock")) }
+            Box(Modifier.width(360.dp)) { GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, AppIcons.Home) }, selected, { selected = it }, Modifier.testTag("dock")) }
         } }
         compose.onNode(hasText("角色") and hasClickAction()).performClick().assertIsSelected()
         assertEquals(2, selected)

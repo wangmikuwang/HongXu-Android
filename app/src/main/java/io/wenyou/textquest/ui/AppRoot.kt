@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -37,21 +38,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import io.wenyou.textquest.ui.common.GlassBackdrop
 import io.wenyou.textquest.ui.common.liquidGlass
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.Build
-import androidx.compose.material.icons.automirrored.outlined.List
 import io.wenyou.textquest.ui.theme.LocalAppearance
 import io.wenyou.textquest.ui.theme.LocalGlassEnabled
 import io.wenyou.textquest.ui.common.DockItem
 import io.wenyou.textquest.ui.common.GlassDock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.NavigationBar
@@ -239,10 +229,10 @@ fun HubBottomBar(nav: NavHostController) {
     val backStack by nav.currentBackStackEntryAsState()
     val current = backStack?.destination?.route
     val items = listOf(
-        HubItem(R.HOME, "主页", Icons.Filled.Home),
-        HubItem(R.STORIES, "剧情", Icons.AutoMirrored.Filled.List),
-        HubItem(R.CHARACTERS, "角色", Icons.Filled.Person),
-        HubItem(R.SETTINGS, "设置", Icons.Filled.Settings)
+        HubItem(R.HOME, "主页", AppIcons.Home),
+        HubItem(R.STORIES, "剧情", AppIcons.List),
+        HubItem(R.CHARACTERS, "角色", AppIcons.Person),
+        HubItem(R.SETTINGS, "设置", AppIcons.Settings)
     )
     fun selectRoute(index: Int) {
         val route = items[index].route
@@ -254,8 +244,7 @@ fun HubBottomBar(nav: NavHostController) {
         }
     }
     if (LocalGlassEnabled.current) {
-        val outlined = listOf(Icons.Outlined.Home, Icons.AutoMirrored.Outlined.List, Icons.Outlined.Person, Icons.Outlined.Settings)
-        GlassDock(items.mapIndexed { index, item -> DockItem(item.label, outlined[index]) },
+        GlassDock(items.map { DockItem(it.label, it.icon) },
             items.indexOfFirst { it.route == current }.coerceAtLeast(0), ::selectRoute)
     } else {
         NavigationBar {

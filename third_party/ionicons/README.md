@@ -1,0 +1,1 @@
+Bundled outline subset from https://github.com/ionic-team/ionicons at d1e2c48641fd5f4910ee42a144dc1c84b1a9a4ee. MIT license in LICENSE. Original SVGs retained; AppIcons.kt translates paths, circles and polylines to native Compose vectors without changing their geometry. Arrow and send symbols mirror in RTL. No runtime network or font dependency.

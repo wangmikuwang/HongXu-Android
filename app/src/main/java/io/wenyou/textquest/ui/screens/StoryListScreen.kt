@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
@@ -41,15 +42,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -210,7 +202,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 onClick = { nav.navigate(R.storyEdit("new")) },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
                     .onSizeChanged { createHeight = with(density) { it.height.toDp() } },
-                icon = { Icon(Icons.Filled.Add, null) },
+                icon = { Icon(AppIcons.Add, null) },
                 text = { Text("新建剧情") }
             )
         }
@@ -455,7 +447,7 @@ fun ShareQrDialog(title: String, code: String, onDismiss: () -> Unit) {
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         IconButton(onClick = { idx = (idx - 1 + chunks.size) % chunks.size }) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "上一张", tint = MaterialTheme.colorScheme.readableAccent())
+                            Icon(AppIcons.KeyboardArrowLeft, "上一张", tint = MaterialTheme.colorScheme.readableAccent())
                         }
                         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                             val qr = remember(chunks[idx]) { QrCode.encode(chunks[idx], 620) }
@@ -467,7 +459,7 @@ fun ShareQrDialog(title: String, code: String, onDismiss: () -> Unit) {
                             if (qr != null) QrCard(qr, 260, Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp))
                         }
                         IconButton(onClick = { idx = (idx + 1) % chunks.size }) {
-                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, "下一张", tint = MaterialTheme.colorScheme.readableAccent())
+                            Icon(AppIcons.KeyboardArrowRight, "下一张", tint = MaterialTheme.colorScheme.readableAccent())
                         }
                     }
                 } else {
@@ -656,7 +648,7 @@ private fun SavesDialog(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             IconButton(onClick = { onDelete(slot) }) {
-                                Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.error)
+                                Icon(AppIcons.Delete, "删除", tint = MaterialTheme.colorScheme.error)
                             }
                         }
                     }
@@ -695,7 +687,7 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                 Spacer(Modifier.width(8.dp))
                 Box {
                     IconButton(onClick = { menuOpen = true }) {
-                        Icon(Icons.Filled.MoreVert, "更多", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(AppIcons.MoreVert, "更多", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(text = { Text("读取存档") }, onClick = { menuOpen = false; onSaves() })
@@ -731,7 +723,7 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                 }
                 Spacer(Modifier.width(8.dp))
                 FilledIconButton(onClick = onPlay) {
-                    Icon(Icons.Filled.PlayArrow, "游玩")
+                    Icon(AppIcons.PlayArrow, "游玩")
                 }
             }
         }

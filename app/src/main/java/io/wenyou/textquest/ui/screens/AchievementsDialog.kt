@@ -1,10 +1,9 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import io.wenyou.textquest.ui.common.AppIcon as Icon
 import io.wenyou.textquest.ui.common.AppText as Text
@@ -39,7 +38,7 @@ internal fun AchievementsContent(records: List<AchievementRecord>, onDismiss: ()
             val secret = "🏅 隐藏奖杯：好奇心万岁\n你找到了奖杯柜后的秘密隔间。里面没有积分，只有一句话：愿你永远对下一个故事保持好奇。"
             EasterEggTitle("成就馆", MaterialTheme.typography.titleLarge, secret, secret)
         },
-            navigationIcon = { IconButton(onClick = onDismiss) { Icon(Icons.Filled.Close, "关闭成就馆") } }) }
+            navigationIcon = { IconButton(onClick = onDismiss) { Icon(AppIcons.Close, "关闭成就馆") } }) }
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding).testTag("achievements-list"), contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)) {

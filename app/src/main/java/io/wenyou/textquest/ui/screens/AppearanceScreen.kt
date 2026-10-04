@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppIcons
 import android.content.Context
 import android.graphics.Color as AndroidColor
 import androidx.activity.compose.BackHandler
@@ -11,9 +12,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material3.*
 import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.runtime.*
@@ -72,7 +70,7 @@ fun AppearanceScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
     }
     Scaffold(topBar = {
         TopAppBar(title = { Text(if (iconsPage) "应用图标" else "外观与主题") }, navigationIcon = {
-            IconButton(onClick = { if (iconsPage) iconsPage = false else nav.popBackStack() }) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "返回") }
+            IconButton(onClick = { if (iconsPage) iconsPage = false else nav.popBackStack() }) { Icon(AppIcons.ArrowBack, "返回") }
         })
     }) { padding ->
         if (iconsPage) IconAppearanceContent(prefs.appearance, container.settings::updateAppearance, Modifier.padding(padding))
@@ -157,8 +155,8 @@ fun AppearanceContent(prefs: AppearancePrefs, style: ThemeStyle, mode: ThemeMode
         item { TonalCard {
             Choice("字体大小", listOf("小" to .9f, "标准" to 1f, "大" to 1.15f, "更大" to 1.3f), prefs.fontScale, { value -> update { it.copy(fontScale = value) } })
             Choice("全局字重", listOf("默认" to 0, "轻" to 300, "常规" to 400, "中等" to 500, "粗" to 700), prefs.fontWeight, { value -> update { it.copy(fontWeight = value) } })
-            Preference("应用字体", prefs.fontName.ifBlank { "系统默认字体" }, importFont)
-            if (prefs.fontFile.isNotEmpty()) Preference("恢复默认字体", ".ttf / .otf / .ttc", resetFont)
+            Preference("应用字体", prefs.fontName.ifBlank { "霞鹜文楷" }, importFont)
+            if (prefs.fontFile.isNotEmpty()) Preference("恢复默认字体", "霞鹜文楷", resetFont)
             Choice("界面缩放", listOf("紧凑" to .9f, "标准" to 1f, "宽松" to 1.1f), prefs.uiScale, { value -> update { it.copy(uiScale = value) } })
             Toggle("显示大小微调", prefs.displayScale > 0, { value -> update { it.copy(displayScale = if (value) 100 else 0) } })
             if (prefs.displayScale > 0) Choice("显示缩放", (80..120 step 5).map { "$it%" to it }, prefs.displayScale, { value -> update { it.copy(displayScale = value) } })
@@ -228,7 +226,7 @@ private fun Toggle(title: String, checked: Boolean, onChange: (Boolean) -> Unit)
 private fun Preference(title: String, value: String, onClick: () -> Unit) {
     Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp).heightIn(min = 40.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) { Text(title); Text(value, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-        Icon(Icons.AutoMirrored.Outlined.ArrowForward, null)
+        Icon(AppIcons.ArrowForward, null)
     }
 }
 

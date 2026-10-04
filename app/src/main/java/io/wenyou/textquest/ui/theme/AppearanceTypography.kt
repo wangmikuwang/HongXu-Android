@@ -4,16 +4,20 @@ import android.content.Context
 import android.graphics.Typeface
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import io.wenyou.textquest.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import io.wenyou.textquest.data.AppearanceFiles
 import java.io.File
 
+internal val DefaultAppFont = FontFamily(Font(R.font.lxgw_wenkai_regular))
+
 internal fun appearanceTypography(base: Typography, prefs: AppearancePrefs, context: Context): Typography {
     val family = if (prefs.fontFile.isEmpty()) null else runCatching {
         FontFamily(Typeface.createFromFile(File(AppearanceFiles.fontDirectory(context), prefs.fontFile)))
     }.getOrNull()
-    fun TextStyle.applyPrefs() = copy(fontFamily = family ?: fontFamily,
+    fun TextStyle.applyPrefs() = copy(fontFamily = family ?: DefaultAppFont,
         fontWeight = if (prefs.fontWeight == 0) fontWeight else FontWeight(prefs.fontWeight))
     return base.copy(displayLarge = base.displayLarge.applyPrefs(), displayMedium = base.displayMedium.applyPrefs(),
         displaySmall = base.displaySmall.applyPrefs(), headlineLarge = base.headlineLarge.applyPrefs(),

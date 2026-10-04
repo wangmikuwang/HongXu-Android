@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -10,9 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,7 +47,7 @@ fun BottomRuleEditScreen(container: WenYouApp.AppContainer, nav: NavHostControll
                 title = { io.wenyou.textquest.ui.common.RawText(if (ui.isNew) "新建底层基调" else "编辑底层基调") },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        Icon(AppIcons.ArrowBack, "返回")
                     }
                 }
             )
@@ -99,7 +97,7 @@ fun BottomRuleEditScreen(container: WenYouApp.AppContainer, nav: NavHostControll
             item { Spacer(Modifier.padding(top = 4.dp)) }
             item {
                 Button(onClick = { vm.save() }, modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)) {
-                    Icon(Icons.Filled.Check, null)
+                    Icon(AppIcons.Check, null)
                     Spacer(Modifier.padding(start = 8.dp))
                     Text("保存底层基调")
                 }

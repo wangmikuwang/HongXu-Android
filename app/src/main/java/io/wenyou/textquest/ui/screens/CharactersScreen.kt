@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
@@ -27,12 +28,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
@@ -161,7 +156,7 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
                 onClick = { nav.navigate(R.charEdit("new")) },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
                     .onSizeChanged { createHeight = with(density) { it.height.toDp() } },
-                icon = { Icon(Icons.Filled.Add, null) },
+                icon = { Icon(AppIcons.Add, null) },
                 text = { Text("新建角色") }
             )
         }
@@ -321,10 +316,10 @@ private fun CharacterCard(
             Spacer(Modifier.height(10.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                 IconButton(onClick = onShare) {
-                    Icon(Icons.Filled.Share, "分享", tint = MaterialTheme.colorScheme.readableAccent())
+                    Icon(AppIcons.Share, "分享", tint = MaterialTheme.colorScheme.readableAccent())
                 }
-                IconButton(onClick = onEdit) { Icon(Icons.Filled.Edit, "编辑") }
-                IconButton(onClick = onDelete) { Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.outline) }
+                IconButton(onClick = onEdit) { Icon(AppIcons.Edit, "编辑") }
+                IconButton(onClick = onDelete) { Icon(AppIcons.Delete, "删除", tint = MaterialTheme.colorScheme.outline) }
             }
             Text("参演剧情 · ${stories.size}", style = MaterialTheme.typography.labelLarge)
             if (stories.isEmpty()) {
@@ -339,7 +334,7 @@ private fun CharacterCard(
                         AssistChip(
                             onClick = { onPlay(story) },
                             label = { io.wenyou.textquest.ui.common.RawText(story.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            leadingIcon = { Icon(Icons.Filled.PlayArrow, "开始剧情") }
+                            leadingIcon = { Icon(AppIcons.PlayArrow, "开始剧情") }
                         )
                     }
                 }

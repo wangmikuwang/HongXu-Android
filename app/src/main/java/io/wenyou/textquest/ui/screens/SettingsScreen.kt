@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppIcons
 import io.wenyou.textquest.ui.common.AppOutlinedButton
 
 import android.app.DownloadManager
@@ -19,8 +20,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -151,7 +150,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 title = { Text(settingsSections.firstOrNull { it.id == category }?.title ?: "设置") },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        Icon(AppIcons.ArrowBack, "返回")
                     }
                 }
             )

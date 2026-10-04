@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wenyou.textquest.ui.common.AppTextButton
 
@@ -15,11 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Card
@@ -62,7 +58,7 @@ fun BottomRulesScreen(container: WenYouApp.AppContainer, nav: NavHostController)
                 title = { Text("底层基调") },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        Icon(AppIcons.ArrowBack, "返回")
                     }
                 }
             )
@@ -109,10 +105,10 @@ fun BottomRulesScreen(container: WenYouApp.AppContainer, nav: NavHostController)
                                         maxLines = 2, overflow = TextOverflow.Ellipsis)
                                 }
                                 IconButton(onClick = { nav.navigate(R.bottomRuleEdit(r.id)) }) {
-                                    Icon(Icons.Filled.Edit, "编辑")
+                                    Icon(AppIcons.Edit, "编辑")
                                 }
                                 IconButton(onClick = { pendingDelete = r.id }) {
-                                    Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.outline)
+                                    Icon(AppIcons.Delete, "删除", tint = MaterialTheme.colorScheme.outline)
                                 }
                             }
                         }
@@ -122,7 +118,7 @@ fun BottomRulesScreen(container: WenYouApp.AppContainer, nav: NavHostController)
             ExtendedFloatingActionButton(
                 onClick = { nav.navigate(R.bottomRuleEdit("new")) },
                 modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
-                icon = { Icon(Icons.Filled.Add, null) },
+                icon = { Icon(AppIcons.Add, null) },
                 text = { Text("新建底层基调") }
             )
         }

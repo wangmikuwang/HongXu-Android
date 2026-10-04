@@ -5,7 +5,6 @@ import io.wenyou.textquest.ui.theme.ThemeStyle
 import io.wenyou.textquest.ui.theme.distributedAccent
 import io.wenyou.textquest.ui.theme.accentForeground
 import io.wenyou.textquest.ui.theme.LocalAccentPalette
-import androidx.compose.material.icons.filled.Check
 
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -133,7 +132,7 @@ fun FilterTag(label: String, selected: Boolean, onClick: () -> Unit, modifier: M
     FilterChip(selected = selected, onClick = onClick, modifier = modifier,
         leadingIcon = if (custom) {{
             if (selected) androidx.compose.material3.Icon(
-                androidx.compose.material.icons.Icons.Default.Check, contentDescription = null,
+                AppIcons.Check, contentDescription = null,
                 modifier = Modifier.size(18.dp), tint = accentForeground(accent))
             else Surface(modifier = Modifier.size(10.dp), shape = CircleShape, color = accent,
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {}

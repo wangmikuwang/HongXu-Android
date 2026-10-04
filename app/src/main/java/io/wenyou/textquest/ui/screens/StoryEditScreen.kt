@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.AppIcons
 import io.wenyou.textquest.ui.theme.distributedAccent
 import io.wenyou.textquest.ui.theme.accentForeground
 import io.wenyou.textquest.ui.theme.LocalAccentPalette
@@ -27,12 +28,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -120,13 +115,13 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                 title = { io.wenyou.textquest.ui.common.RawText(story?.title?.ifBlank { "未命名剧情" } ?: "剧情编辑器", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        Icon(AppIcons.ArrowBack, "返回")
                     }
                 },
                 actions = {
                     AppTextButton(onClick = { treeOpen = true }, enabled = story != null) { Text("分支图") }
                     IconButton(onClick = { vm.save() }) {
-                        Icon(Icons.Filled.Check, "保存剧情")
+                        Icon(AppIcons.Check, "保存剧情")
                     }
                 }
             )
@@ -313,7 +308,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 8.dp)) {
                         Button(onClick = { vm.addNode() }, modifier = Modifier.weight(1f)) {
-                            Icon(Icons.Filled.Add, null); Spacer(Modifier.width(6.dp)); Text("新增节点")
+                            Icon(AppIcons.Add, null); Spacer(Modifier.width(6.dp)); Text("新增节点")
                         }
                     }
                 }
@@ -416,7 +411,7 @@ private fun NodeEditor(vm: StoryEditorViewModel, node: StoryNode, allNodeIds: Li
                 )
             }
             AppTextButton(onClick = { vm.addChoice() }) {
-                Icon(Icons.Filled.Add, null)
+                Icon(AppIcons.Add, null)
                 Spacer(Modifier.width(6.dp))
                 Text("添加选项")
             }
@@ -425,7 +420,7 @@ private fun NodeEditor(vm: StoryEditorViewModel, node: StoryNode, allNodeIds: Li
         Spacer(Modifier.height(10.dp))
         AppTextButton(onClick = { vm.removeNode(node.id) },
             enabled = vm.ui.value.story?.nodes?.size ?: 0 > 1) {
-            Icon(Icons.Filled.Delete, null, tint = MaterialTheme.colorScheme.error)
+            Icon(AppIcons.Delete, null, tint = MaterialTheme.colorScheme.error)
             Spacer(Modifier.width(6.dp))
             Text("删除该节点", color = MaterialTheme.colorScheme.error)
         }
@@ -456,7 +451,7 @@ private fun ChoiceEditor(
                 Pill("选项 ${index + 1}")
                 Spacer(Modifier.weight(1f))
                 IconButton(onClick = { vm.removeChoice(index) }) {
-                    Icon(Icons.Filled.Close, "删除选项", tint = MaterialTheme.colorScheme.outline)
+                    Icon(AppIcons.Close, "删除选项", tint = MaterialTheme.colorScheme.outline)
                 }
             }
             AppField(
@@ -510,7 +505,7 @@ private fun CondRows(title: String, conds: List<Cond>, onChange: (List<Cond>) ->
                 modifier = Modifier.weight(1.5f)
             )
             IconButton(onClick = { onChange(conds.minusIndex(i)) }) {
-                Icon(Icons.Filled.Close, "删除条件", tint = MaterialTheme.colorScheme.outline)
+                Icon(AppIcons.Close, "删除条件", tint = MaterialTheme.colorScheme.outline)
             }
         }
         if (cond.type == CondType.VAR) {
@@ -534,7 +529,7 @@ private fun CondRows(title: String, conds: List<Cond>, onChange: (List<Cond>) ->
         }
     }
     AppTextButton(onClick = { onChange(conds + Cond(type = CondType.VAR, name = "intimacy", op = CompareOp.GTE, value = 1.0)) }) {
-        Icon(Icons.Filled.Add, null); Spacer(Modifier.width(4.dp)); Text("添加条件")
+        Icon(AppIcons.Add, null); Spacer(Modifier.width(4.dp)); Text("添加条件")
     }
 }
 
@@ -561,7 +556,7 @@ private fun EffectRows(title: String, effects: List<Effect>, onChange: (List<Eff
                     modifier = Modifier.weight(1.4f)
                 )
                 IconButton(onClick = { onChange(effects.minusIndex(i)) }) {
-                    Icon(Icons.Filled.Close, "删除效果", tint = MaterialTheme.colorScheme.outline)
+                    Icon(AppIcons.Close, "删除效果", tint = MaterialTheme.colorScheme.outline)
                 }
             }
             when (effect.type) {
@@ -588,7 +583,7 @@ private fun EffectRows(title: String, effects: List<Effect>, onChange: (List<Eff
         }
     }
     AppTextButton(onClick = { onChange(effects + Effect(type = EffectType.SET_FLAG, name = "")) }) {
-        Icon(Icons.Filled.Add, null); Spacer(Modifier.width(4.dp)); Text("添加效果")
+        Icon(AppIcons.Add, null); Spacer(Modifier.width(4.dp)); Text("添加效果")
     }
 }
 
@@ -619,7 +614,7 @@ private fun VariableRows(
             NumField(value = v, onChange = { onChangeValue(name, it) },
                 label = "初始值", modifier = Modifier.weight(1f))
             IconButton(onClick = { onDelete(name) }) {
-                Icon(Icons.Filled.Close, "删除", tint = MaterialTheme.colorScheme.outline)
+                Icon(AppIcons.Close, "删除", tint = MaterialTheme.colorScheme.outline)
             }
         }
     }
@@ -637,7 +632,7 @@ private fun VariableRows(
                 onChangeAdd(n)
                 newName = ""
             }
-        }) { Icon(Icons.Filled.Add, "添加变量") }
+        }) { Icon(AppIcons.Add, "添加变量") }
     }
 }
 
@@ -649,7 +644,7 @@ private fun FlagRows(flags: Set<String>, onAdd: (String) -> Unit, onRemove: (Str
             AssistChip(
                 onClick = { onRemove(f) },
                 label = { io.wenyou.textquest.ui.common.RawText(f) },
-                trailingIcon = { Icon(Icons.Filled.Close, null, Modifier.width(16.dp).height(16.dp)) }
+                trailingIcon = { Icon(AppIcons.Close, null, Modifier.width(16.dp).height(16.dp)) }
             )
         }
     }
@@ -667,7 +662,7 @@ private fun FlagRows(flags: Set<String>, onAdd: (String) -> Unit, onRemove: (Str
                 onAdd(n)
                 newFlag = ""
             }
-        }) { Icon(Icons.Filled.Add, "添加标记") }
+        }) { Icon(AppIcons.Add, "添加标记") }
     }
 }
 

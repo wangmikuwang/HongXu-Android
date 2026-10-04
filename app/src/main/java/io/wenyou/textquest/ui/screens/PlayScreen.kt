@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.compose.ui.platform.testTag
 
 import io.wenyou.textquest.ui.theme.readableAccent
@@ -41,17 +42,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -161,17 +154,17 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                 },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        Icon(AppIcons.ArrowBack, "返回")
                     }
                 },
                 actions = {
                     IconButton(onClick = { achievementsOpen = true }) { Text("🏆", Modifier.semantics { contentDescription = "成就馆" }, fontSize = 20.sp) }
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(Icons.Filled.Person, "剧情记忆与人物关系") }
+                    IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(AppIcons.Person, "剧情记忆与人物关系") }
                     IconButton(onClick = { showProvider = true },
                         enabled = ui.providers.isNotEmpty()) {
-                        Icon(Icons.Filled.Build, "切换 AI 服务")
+                        Icon(AppIcons.Build, "切换 AI 服务")
                     }
-                    IconButton(onClick = { vm.saveNow() }, enabled = ui.stage != PlayStage.INIT && ui.stage != PlayStage.ROLE_SELECT) { Icon(Icons.Filled.Check, "存档") }
+                    IconButton(onClick = { vm.saveNow() }, enabled = ui.stage != PlayStage.INIT && ui.stage != PlayStage.ROLE_SELECT) { Icon(AppIcons.Check, "存档") }
                 }
             )
         },
@@ -299,7 +292,7 @@ private fun ProviderOption(
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (selected) {
-                Icon(Icons.Filled.Check, "当前", tint = MaterialTheme.colorScheme.readableAccent())
+                Icon(AppIcons.Check, "当前", tint = MaterialTheme.colorScheme.readableAccent())
             }
         }
     }
@@ -476,7 +469,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
                             Text("AI 未给出选项。", style = MaterialTheme.typography.bodySmall)
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 FilledTonalButton(onClick = { vm.continueAi() }, modifier = Modifier.weight(1f)) {
-                                    Icon(Icons.Filled.Refresh, null); Spacer(Modifier.width(6.dp)); Text("继续生成")
+                                    Icon(AppIcons.Refresh, null); Spacer(Modifier.width(6.dp)); Text("继续生成")
                                 }
                                 if (ui.aiTargetExit) {
                                     AppOutlinedButton(onClick = { vm.aiExitToMainline() }, modifier = Modifier.weight(1f)) {
@@ -550,7 +543,7 @@ private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
                     },
                     enabled = text.isNotBlank()
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Send, "发送", tint = MaterialTheme.colorScheme.readableAccent())
+                    Icon(AppIcons.Send, "发送", tint = MaterialTheme.colorScheme.readableAccent())
                 }
             }
             AppTextButton(onClick = { vm.dmSend("继续") }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
@@ -577,7 +570,7 @@ private fun StoppedPanel(ui: PlayUi, vm: PlayViewModel, nav: NavHostController) 
             Spacer(Modifier.height(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { vm.restart() }, modifier = Modifier.fillMaxWidth()) {
-                    Icon(Icons.Filled.PlayArrow, null)
+                    Icon(AppIcons.PlayArrow, null)
                     Spacer(Modifier.width(6.dp))
                     Text("再来一次")
                 }

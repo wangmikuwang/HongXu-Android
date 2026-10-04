@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.AppIcons
 import io.wenyou.textquest.ui.theme.distributedAccent
 import io.wenyou.textquest.ui.theme.accentForeground
 import io.wenyou.textquest.ui.theme.LocalAccentPalette
@@ -26,11 +27,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -210,7 +206,7 @@ private fun HomeWelcome(
             Button(onClick = onContinue, colors = ButtonDefaults.buttonColors(
                 containerColor = distributedAccent(0, MaterialTheme.colorScheme.primary),
                 contentColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(distributedAccent(0, MaterialTheme.colorScheme.primary)) else MaterialTheme.colorScheme.onPrimary), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
-                Icon(Icons.Filled.PlayArrow, null)
+                Icon(AppIcons.PlayArrow, null)
                 Spacer(Modifier.width(6.dp))
                 io.wenyou.textquest.ui.common.RawText(if (hasSave) "继续旅程" else "开始剧情")
             }
@@ -262,7 +258,7 @@ private fun MissingProviderCard(onClick: () -> Unit) {
             Modifier.fillMaxWidth().clickable(onClick = onClick).padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(Icons.Filled.Build, null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
+            Icon(AppIcons.Build, null, tint = MaterialTheme.colorScheme.onTertiaryContainer)
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 Text("还没有接入 AI 服务", style = MaterialTheme.typography.titleMedium)
@@ -305,7 +301,7 @@ private fun ContinueCard(card: HomeCard, accentIndex: Int, onClick: () -> Unit, 
                 }
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Filled.Delete, "删除", tint = MaterialTheme.colorScheme.outline)
+                Icon(AppIcons.Delete, "删除", tint = MaterialTheme.colorScheme.outline)
             }
         }
     }

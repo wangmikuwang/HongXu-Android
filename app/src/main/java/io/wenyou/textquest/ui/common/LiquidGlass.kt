@@ -120,7 +120,7 @@ fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScop
 fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
     val material = io.wenyou.textquest.ui.theme.LocalAppearance.current.glassMaterial
     val blurDp = when (material) { "clear" -> 3f; "frosted" -> 12f; else -> 7f }
-    val glassAlpha = when (material) { "clear" -> .16f; "frosted" -> .55f; else -> .25f }
+    val glassAlpha = when (material) { "clear" -> .12f; "frosted" -> .45f; else -> .20f }
     val backdrop = LocalBackdrop.current
     val sample = rememberGraphicsLayer()
     var origin by remember { mutableStateOf(Offset.Zero) }
@@ -145,7 +145,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
         }
     }
     val shape = if (pill) RoundedCornerShape(50) else RoundedCornerShape(30.dp)
-    return this.shadow(8.dp, shape, clip = false).clip(shape).onSizeChanged { bounds = it }.onGloballyPositioned { origin = it.positionInRoot() }
+    return this.shadow(6.dp, shape, clip = false).clip(shape).onSizeChanged { bounds = it }.onGloballyPositioned { origin = it.positionInRoot() }
         .drawWithCache {
             // Cap background samples on high-resolution displays; text and controls stay full resolution.
             val sampleScale = minOf(0.5f, 540f / size.width.coerceAtLeast(1f))
@@ -161,7 +161,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
                     RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(shader, "backdrop"), blur).asComposeRenderEffect()
                 } else blur.asComposeRenderEffect()
             }
-            val highlight = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.06f else 0.10f), Color.Transparent))
+            val highlight = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.04f else 0.06f), Color.Transparent))
             val border = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.34f else 0.60f), Color.White.copy(alpha = 0.03f), Color.White.copy(alpha = 0.22f)))
             val radius = androidx.compose.ui.geometry.CornerRadius(corner)
             val stroke = Stroke(0.6.dp.toPx())
@@ -211,7 +211,10 @@ half4 main(float2 p) {
     float2 uv = clamp(p - normal * rim * 8.0 * density, float2(0.5), extent - 0.5);
     half4 c = backdrop.eval(uv);
     float light = max(dot(normal, float2(-0.70710678, -0.70710678)), 0.0);
-    float glint = light * light * light * rim * 0.14;
+    // Grazing reflections stay at the rim; the center remains transparent.
+    float edge = 1.0 - smoothstep(0.0, 2.0 * density, abs(d));
+    float opposite = max(dot(normal, float2(0.70710678, 0.70710678)), 0.0);
+    float glint = light * light * light * rim * 0.10 + opposite * edge * 0.035;
     return half4(min(c.rgb + half3(glint), half3(1.0)), c.a);
 }
 """

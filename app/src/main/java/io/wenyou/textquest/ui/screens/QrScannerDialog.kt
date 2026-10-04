@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppIcons
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -18,8 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import io.wenyou.textquest.ui.common.AppText as Text
@@ -154,7 +153,7 @@ fun QrScannerDialog(onResult: (String) -> Unit, onDismiss: () -> Unit) {
             )
 
             IconButton(onClick = onDismiss, modifier = Modifier.align(Alignment.TopStart).statusBarsPadding()) {
-                Icon(Icons.Filled.Close, "关闭", tint = Color.White)
+                Icon(AppIcons.Close, "关闭", tint = Color.White)
             }
 
             if (!granted) {

@@ -24,9 +24,6 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
@@ -67,7 +64,7 @@ internal fun PrideGallery(unlocked: Boolean, enabled: Boolean, showLgbt: Boolean
     var nextIndex by rememberSaveable { mutableIntStateOf(0) }
     Scaffold(topBar = {
         CenterAlignedTopAppBar(title = { Text("旗帜墙") }, navigationIcon = {
-            IconButton(onClick = onDismiss) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
+            IconButton(onClick = onDismiss) { Icon(AppIcons.ArrowBack, "返回") }
         })
     }) { padding ->
         Column(Modifier.padding(padding).padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -100,7 +97,7 @@ internal fun PrideGallery(unlocked: Boolean, enabled: Boolean, showLgbt: Boolean
                                 PrideFlag(theme, Modifier.fillMaxWidth())
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     io.wenyou.textquest.ui.common.RawText(theme.label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
-                                    if (enabled && selectedTheme == theme) Icon(Icons.Filled.Check, "已选中", Modifier.size(20.dp))
+                                    if (enabled && selectedTheme == theme) Icon(AppIcons.Check, "已选中", Modifier.size(20.dp))
                                 }
                                 io.wenyou.textquest.ui.common.RawText(theme.description, style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wenyou.textquest.ui.theme.readableAccent
 
@@ -21,10 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -76,13 +73,13 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
                 title = { io.wenyou.textquest.ui.common.RawText(if (ui.isNew) "接入 AI 服务" else "编辑服务") },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        Icon(AppIcons.ArrowBack, "返回")
                     }
                 },
                 actions = {
                     if (!ui.isNew) {
                         IconButton(onClick = { showDelete = true }) {
-                            Icon(Icons.Filled.Delete, "删除服务", tint = MaterialTheme.colorScheme.error)
+                            Icon(AppIcons.Delete, "删除服务", tint = MaterialTheme.colorScheme.error)
                         }
                     }
                 }
@@ -187,7 +184,7 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
                         else Text("测试连接")
                     }
                     Button(onClick = { vm.save() }, modifier = Modifier.weight(1f)) {
-                        Icon(Icons.Filled.Check, null)
+                        Icon(AppIcons.Check, null)
                         Spacer(Modifier.width(6.dp))
                         Text("保存")
                     }

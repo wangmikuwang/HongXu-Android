@@ -1,0 +1,28 @@
+{
+  "sha": "d1e2c48641fd5f4910ee42a144dc1c84b1a9a4ee",
+  "mapping": {
+    "Add": "add-outline",
+    "ArrowBack": "chevron-back-outline",
+    "ArrowForward": "chevron-forward-outline",
+    "Build": "construct-outline",
+    "Check": "checkmark-outline",
+    "Close": "close-outline",
+    "Create": "create-outline",
+    "Delete": "trash-outline",
+    "Edit": "create-outline",
+    "Home": "home-outline",
+    "Info": "information-circle-outline",
+    "KeyboardArrowLeft": "chevron-back-outline",
+    "KeyboardArrowRight": "chevron-forward-outline",
+    "List": "reader-outline",
+    "MoreVert": "ellipsis-horizontal-outline",
+    "Person": "person-outline",
+    "PlayArrow": "play-outline",
+    "Refresh": "refresh-outline",
+    "Search": "search-outline",
+    "Send": "paper-plane-outline",
+    "Settings": "settings-outline",
+    "Share": "share-outline",
+    "Star": "sparkles-outline"
+  }
+}

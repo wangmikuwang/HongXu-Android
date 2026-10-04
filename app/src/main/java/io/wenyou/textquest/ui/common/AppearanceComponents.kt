@@ -1,6 +1,5 @@
 package io.wenyou.textquest.ui.common
 
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import io.wenyou.textquest.ui.theme.readableAccent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
@@ -60,7 +59,7 @@ fun AppIcon(imageVector: ImageVector, contentDescription: String?, modifier: Mod
     val scheme = androidx.compose.material3.MaterialTheme.colorScheme
     val neutral = inherited == scheme.onSurface || inherited == scheme.onSurfaceVariant
     val resolved = if (tint != Color.Unspecified) tint
-        else if (appearance.iconStyle == "color" && neutral && imageVector != androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack)
+        else if (appearance.iconStyle == "color" && neutral && imageVector != AppIcons.ArrowBack)
             androidx.compose.material3.MaterialTheme.colorScheme.readableAccent()
         else LocalContentColor.current
     androidx.compose.material3.Icon(imageVector, contentDescription?.let { uiLabel(it, appearance.language) }, modifier, resolved)
