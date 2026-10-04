@@ -7,7 +7,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import io.wenyou.textquest.R
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import io.wenyou.textquest.data.AppearanceFiles
 import java.io.File
 
@@ -18,7 +17,7 @@ internal fun appearanceTypography(base: Typography, prefs: AppearancePrefs, cont
         FontFamily(Typeface.createFromFile(File(AppearanceFiles.fontDirectory(context), prefs.fontFile)))
     }.getOrNull()
     fun TextStyle.applyPrefs() = copy(fontFamily = family ?: DefaultAppFont,
-        fontWeight = if (prefs.fontWeight == 0) fontWeight else FontWeight(prefs.fontWeight))
+        fontWeight = prefs.resolveFontWeight(fontWeight))
     return base.copy(displayLarge = base.displayLarge.applyPrefs(), displayMedium = base.displayMedium.applyPrefs(),
         displaySmall = base.displaySmall.applyPrefs(), headlineLarge = base.headlineLarge.applyPrefs(),
         headlineMedium = base.headlineMedium.applyPrefs(), headlineSmall = base.headlineSmall.applyPrefs(),

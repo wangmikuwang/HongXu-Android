@@ -156,7 +156,7 @@ fun WenYouTheme(
     val colorScheme = prideTheme?.let { prideColors(configured, it) } ?: configured
     val systemDensity = androidx.compose.ui.platform.LocalDensity.current
     val densityScale = appearance.uiScale * (if (appearance.displayScale == 0) 1f else appearance.displayScale / 100f)
-    val typography = androidx.compose.runtime.remember(style, appearance.fontFile, appearance.fontWeight, context) {
+    val typography = androidx.compose.runtime.remember(style, appearance.fontFile, appearance.fontWeight, appearance.fontBold, context) {
         appearanceTypography(if (style == ThemeStyle.APPLE) AppleTypography else AppTypography, appearance, context)
     }
     CompositionLocalProvider(LocalThemeStyle provides style, LocalAppearance provides appearance, LocalGlassEnabled provides appearance.glassEnabled,

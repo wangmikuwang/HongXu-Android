@@ -31,6 +31,42 @@ class AppearanceUiTest {
             compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
         }
     }
+    @Test fun boldSwitchImmediatelyChangesRenderedTextAndRestoresWeight() {
+        var prefs by mutableStateOf(AppearancePrefs(fontWeight = 300))
+        var weight: androidx.compose.ui.text.font.FontWeight? = null
+        compose.setContent { WenYouTheme(appearance = prefs) {
+            Column {
+                Box(Modifier.fillMaxWidth().height(64.dp).background(androidx.compose.ui.graphics.Color.White).testTag("bold-proof")) {
+                    io.wenyou.textquest.ui.common.RawText("虹叙故事 ABC", color = androidx.compose.ui.graphics.Color.Black,
+                        fontSize = androidx.compose.ui.unit.TextUnit(24f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        onTextLayout = { weight = it.layoutInput.style.fontWeight })
+                }
+                Box(Modifier.weight(1f)) {
+                    AppearanceContent(prefs, ThemeStyle.MATERIAL, ThemeMode.LIGHT, false, false, emptyList(), "",
+                        { change -> prefs = change(prefs) }, {}, {}, {}, {}, {}, {}, {})
+                }
+            }
+        } }
+        fun darkPixels(): Int {
+            val bitmap = compose.onNodeWithTag("bold-proof").captureToImage().asAndroidBitmap()
+            var count = 0
+            for (y in 0 until bitmap.height) for (x in 0 until bitmap.width) {
+                if (android.graphics.Color.red(bitmap.getPixel(x, y)) < 128) count++
+            }
+            bitmap.recycle()
+            return count
+        }
+        val normal = darkPixels()
+        compose.onNodeWithTag("appearance-list").performScrollToNode(hasText("字体加粗"))
+        val toggle = compose.onAllNodes(SemanticsMatcher.keyIsDefined(androidx.compose.ui.semantics.SemanticsProperties.ToggleableState) and hasAnySibling(hasText("字体加粗"))).onFirst()
+        toggle.performClick().assertIsOn()
+        compose.runOnIdle { assertTrue(prefs.fontBold); assertEquals(androidx.compose.ui.text.font.FontWeight.Bold, weight) }
+        assertTrue("WenKai must visibly render bolder strokes", darkPixels() > normal * 1.05)
+        screenshot("font-bold.png")
+        toggle.performClick().assertIsOff()
+        compose.runOnIdle { assertEquals(300, prefs.fontWeight); assertEquals(androidx.compose.ui.text.font.FontWeight.Light, weight) }
+        assertEquals(normal, darkPixels())
+    }
     @Test fun bundledWenKaiIsDefaultAndImportedFontStillOverridesIt() {
         val context = compose.activity
         val asset = androidx.core.content.res.ResourcesCompat.getFont(context, R.font.lxgw_wenkai_regular)!!
@@ -79,7 +115,7 @@ class AppearanceUiTest {
         } finally { original.forEach { (component, state) -> manager.setComponentEnabledSetting(component, state, android.content.pm.PackageManager.DONT_KILL_APP) } }
     }
     @Test fun theLargestFontAndScaledInterfaceKeepTheDockUsable() {
-        val prefs = AppearancePrefs(glassEnabled = true, fontScale = 1.3f, uiScale = 1.1f, displayScale = 110)
+        val prefs = AppearancePrefs(glassEnabled = true, fontScale = 1.3f, fontBold = true, uiScale = 1.1f, displayScale = 110)
         compose.setContent { WenYouTheme(style = ThemeStyle.APPLE, appearance = prefs) {
             Box(Modifier.fillMaxWidth()) { GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, AppIcons.Home) }, 0, {}, Modifier.testTag("large-dock")) }
         } }
@@ -102,7 +138,7 @@ class AppearanceUiTest {
         }
         val store = SettingsStore(context)
         store.setShowLgbt(false); store.setThemeStyle(ThemeStyle.APPLE)
-        store.updateAppearance { it.copy(seed = "#FF6688", fontScale = 1.15f, uiScale = .9f, displayScale = 110, amoled = true, popupStyle = "dialog", splashEnabled = true, language = "en") }
+        store.updateAppearance { it.copy(seed = "#FF6688", fontBold = true, fontScale = 1.15f, uiScale = .9f, displayScale = 110, amoled = true, popupStyle = "dialog", splashEnabled = true, language = "en") }
         val restored = SettingsStore(context).state.value
         assertEquals(store.state.value.appearance, restored.appearance)
         assertFalse(restored.showLgbt); assertFalse(restored.prideThemesUnlocked); assertEquals(ThemeStyle.APPLE, restored.themeStyle)

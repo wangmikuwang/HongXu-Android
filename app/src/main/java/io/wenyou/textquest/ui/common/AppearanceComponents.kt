@@ -15,6 +15,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import io.wenyou.textquest.ui.theme.resolveFontWeight
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -32,7 +33,7 @@ fun AppText(text: String, modifier: Modifier = Modifier, color: Color = Color.Un
     minLines: Int = 1, onTextLayout: (TextLayoutResult) -> Unit = {}, style: TextStyle = LocalTextStyle.current) {
     val prefs = LocalAppearance.current
     androidx.compose.material3.Text(uiLabel(text, prefs.language), modifier, color, fontSize, fontStyle,
-        if (prefs.fontWeight == 0) fontWeight else FontWeight(prefs.fontWeight), fontFamily, letterSpacing,
+        prefs.resolveFontWeight(fontWeight ?: style.fontWeight), fontFamily, letterSpacing,
         textDecoration, textAlign, lineHeight, overflow, softWrap, maxLines, minLines, onTextLayout, style)
 }
 
@@ -46,7 +47,7 @@ fun RawText(text: String, modifier: Modifier = Modifier, color: Color = Color.Un
     minLines: Int = 1, onTextLayout: (TextLayoutResult) -> Unit = {}, style: TextStyle = LocalTextStyle.current) {
     val prefs = LocalAppearance.current
     androidx.compose.material3.Text(text, modifier, color, fontSize, fontStyle,
-        if (prefs.fontWeight == 0) fontWeight else FontWeight(prefs.fontWeight), fontFamily, letterSpacing,
+        prefs.resolveFontWeight(fontWeight ?: style.fontWeight), fontFamily, letterSpacing,
         textDecoration, textAlign, lineHeight, overflow, softWrap, maxLines, minLines, onTextLayout, style)
 }
 
@@ -96,7 +97,7 @@ private val EnglishLabels = mapOf(
     "安卓液态玻璃" to "Liquid Glass", "列表条目样式" to "List style", "图标样式" to "Icon style", "选项弹窗样式" to "Selection popup",
     "主题与色彩" to "Theme & color", "主题模式" to "Theme mode", "深色风格" to "Dark style", "主题颜色来源" to "Color source",
     "自定义主题颜色" to "Custom color", "高级配色" to "Advanced colors", "色彩风格" to "Palette style", "色彩标准" to "Color specification",
-    "主题色" to "Accent color", "字体与密度" to "Font & density", "字体大小" to "Font size", "全局字重" to "Font weight",
+    "主题色" to "Accent color", "字体与密度" to "Font & density", "字体大小" to "Font size", "全局字重" to "Font weight", "字体加粗" to "Bold text",
     "应用字体" to "App font", "恢复默认字体" to "Reset font", "界面缩放" to "UI scale", "显示大小微调" to "Display fine tuning",
     "显示缩放" to "Display scale", "开屏与图标" to "Startup & icon", "应用图标" to "App icon", "图标外观" to "Icon shell",
     "使用开屏壁纸" to "Startup wallpaper", "随机展示开屏壁纸" to "Random wallpaper", "选择开屏壁纸" to "Choose wallpaper",

@@ -8,6 +8,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AppearancePolicyTest {
+    @Test fun boldOverlayPersistsAndRestoresPreviousWeight() {
+        val legacy = kotlinx.serialization.json.Json.decodeFromString<AppearancePrefs>("{\"fontWeight\":300}")
+        assertFalse(legacy.fontBold)
+        assertNull(AppearancePrefs().resolveFontWeight(null))
+        assertEquals(androidx.compose.ui.text.font.FontWeight.Light, legacy.resolveFontWeight(null))
+        val bold = legacy.copy(fontBold = true)
+        assertEquals(androidx.compose.ui.text.font.FontWeight.Bold, bold.resolveFontWeight(null))
+        assertEquals(androidx.compose.ui.text.font.FontWeight.ExtraBold,
+            AppearancePrefs(fontBold = true).resolveFontWeight(androidx.compose.ui.text.font.FontWeight.ExtraBold))
+        assertEquals(bold, kotlinx.serialization.json.Json.decodeFromString<AppearancePrefs>(
+            kotlinx.serialization.json.Json.encodeToString(AppearancePrefs.serializer(), bold)))
+        assertEquals(legacy.resolveFontWeight(null), bold.copy(fontBold = false).resolveFontWeight(null))
+    }
+
     @Test fun corruptAndOutOfRangePreferencesCannotBreakTheInterface() {
         val prefs = AppearancePrefs(seed = "bad", fontScale = Float.NaN, uiScale = Float.POSITIVE_INFINITY,
             displayScale = 500, fontWeight = 9000, fontFile = "../../credentials", roleColors = mapOf("light_text" to "oops")).normalized()

@@ -154,6 +154,7 @@ fun AppearanceContent(prefs: AppearancePrefs, style: ThemeStyle, mode: ThemeMode
         item { SectionHeader("字体与密度") }
         item { TonalCard {
             Choice("字体大小", listOf("小" to .9f, "标准" to 1f, "大" to 1.15f, "更大" to 1.3f), prefs.fontScale, { value -> update { it.copy(fontScale = value) } })
+            Toggle("字体加粗", prefs.fontBold, { value -> update { it.copy(fontBold = value) } })
             Choice("全局字重", listOf("默认" to 0, "轻" to 300, "常规" to 400, "中等" to 500, "粗" to 700), prefs.fontWeight, { value -> update { it.copy(fontWeight = value) } })
             Preference("应用字体", prefs.fontName.ifBlank { "霞鹜文楷" }, importFont)
             if (prefs.fontFile.isNotEmpty()) Preference("恢复默认字体", "霞鹜文楷", resetFont)

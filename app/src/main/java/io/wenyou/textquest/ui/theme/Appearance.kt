@@ -3,6 +3,7 @@ package io.wenyou.textquest.ui.theme
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import kotlinx.serialization.Serializable
+import androidx.compose.ui.text.font.FontWeight
 
 /** Durable appearance preferences; user content and credentials are kept elsewhere. */
 @Immutable
@@ -22,6 +23,7 @@ data class AppearancePrefs(
     val roleColors: Map<String, String> = emptyMap(),
     val fontScale: Float = 1f,
     val fontWeight: Int = 0,
+    val fontBold: Boolean = false,
     val fontFile: String = "",
     val fontName: String = "",
     val uiScale: Float = 1f,
@@ -57,6 +59,12 @@ data class AppearancePrefs(
         glassMaterial = glassMaterial.takeIf { it in listOf("clear", "balanced", "frosted") } ?: "balanced",
         dockLabels = dockLabels.takeIf { it in listOf("both", "icons", "text") } ?: "both"
     )
+}
+
+/** Bolding is an overlay so disabling it restores the user's previous weight. */
+internal fun AppearancePrefs.resolveFontWeight(original: FontWeight?): FontWeight? {
+    val selected = if (fontWeight == 0) original else FontWeight(fontWeight)
+    return if (fontBold) FontWeight(maxOf(selected?.weight ?: 400, 700)) else selected
 }
 
 fun normalizeHex(raw: String): String? = raw.trim().removePrefix("#").takeIf {
