@@ -652,10 +652,11 @@ private fun SavesDialog(
 @Composable
 private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSaves: () -> Unit, onShare: () -> Unit, onDelete: () -> Unit) {
     val color = avatarColor(story.colorIndex)
-    val aiNodes = story.nodes.values.count { it.kind == NodeKind.AI }
+    val introduction = story.cardIntroduction()
     var menuOpen by remember { mutableStateOf(false) }
     val modeText = if (story.mode == StoryMode.AI_DIRECTOR) "AI 导演" else "分支剧本"
     Card(
+        modifier = Modifier.testTag("story-card-${story.id}"),
         shape = MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
     ) {
@@ -668,7 +669,7 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                 ) {
                     io.wenyou.textquest.ui.common.RawText(story.title, style = MaterialTheme.typography.titleLarge, maxLines = 2,
                         overflow = TextOverflow.Ellipsis)
-                    if (story.subtitle.isNotBlank())
+                    if (story.subtitle.isNotBlank() && story.subtitle.trim() != introduction)
                         io.wenyou.textquest.ui.common.RawText(story.subtitle, style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
                             overflow = TextOverflow.Ellipsis)
@@ -687,28 +688,31 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                 }
             }
             Spacer(Modifier.height(10.dp))
+            if (introduction.isNotBlank()) {
+                io.wenyou.textquest.ui.common.RawText(introduction, style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth().testTag("story-intro-${story.id}"))
+                Spacer(Modifier.height(10.dp))
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
-                FlowRow(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Pill(modeText, container = MaterialTheme.colorScheme.secondaryContainer)
-                    if (story.genre.isNotBlank()) Pill(story.genre)
-                    // 内容标签：LGBT 与 18+ 可同时存在；都没有则标「全年龄」
-                    if (story.lgbt) {
-                        Pill(ContentClass.LGBT.label, container = MaterialTheme.colorScheme.tertiaryContainer, accentIndex = 2)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth().testTag("story-markers-${story.id}"),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Pill(modeText, container = MaterialTheme.colorScheme.secondaryContainer)
+                        if (story.lgbt) Pill(ContentClass.LGBT.label,
+                            container = MaterialTheme.colorScheme.tertiaryContainer, accentIndex = 2)
+                        if (story.adult) Pill(ContentClass.ADULT.label,
+                            container = MaterialTheme.colorScheme.primaryContainer, accentIndex = 1)
                     }
-                    if (story.adult) {
-                        Pill(ContentClass.ADULT.label, container = MaterialTheme.colorScheme.primaryContainer, accentIndex = 1)
-                    }
-                    if (!story.lgbt && !story.adult) {
-                        Pill(ContentClass.ALL_AGE.label, container = MaterialTheme.colorScheme.secondaryContainer)
-                    }
-                    Pill("${story.nodes.size} 场景")
-                    if (aiNodes > 0) Pill("$aiNodes AI 场景", container = MaterialTheme.colorScheme.tertiaryContainer, accentIndex = 3)
-                    if (story.characterIds.isNotEmpty())
-                        Pill("${story.characterIds.size} 位人物")
+                    io.wenyou.textquest.ui.common.RawText(buildList {
+                        if (story.genre.isNotBlank()) add(story.genre)
+                        add("${story.nodes.size} 场景")
+                        if (story.characterIds.isNotEmpty()) add("${story.characterIds.size} 位人物")
+                    }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
                 Spacer(Modifier.width(8.dp))
                 FilledIconButton(onClick = onPlay) {

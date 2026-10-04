@@ -274,6 +274,53 @@ class AiAuthoringUiTest {
         } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
     }
 
+    @Test fun storyCardsShowIntroductionsAndOnlyEssentialMarkers() {
+        val ok = client()
+        try {
+            val container = container(ok)
+            val overview = "雨夜，一封没有署名的信把旧城的人们联系在一起。你要在咖啡馆里寻找遗失的约定，并选择是否说出真相。".repeat(5)
+            val story = Story("intro", "雨夜来信", subtitle = "一封没有署名的来信", genre = "都市 · 悬疑 · 情感",
+                mode = StoryMode.AI_DIRECTOR, adult = true, lgbt = true, characterIds = listOf("a", "b"),
+                nodes = mapOf("start" to StoryNode("start", kind = NodeKind.AI, text = "门响了")),
+                ai = AiStorySettings(worldSummary = overview, directorExtra = "不应该显示的导演规则"))
+            runBlocking { container.library.upsertStory(story) }
+            container.settings.unlockPrideThemes()
+            container.settings.setShowLgbt(true)
+            container.settings.setAdultContent(true)
+            container.settings.setDynamicColor(false)
+            container.settings.updateAppearance { it.copy(fontScale = 1.3f, fontBold = true) }
+            compose.runOnIdle { compose.activity.setContent {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.width(320.dp).fillMaxHeight()) { WenYouAppRoot(container) }
+            } }
+            compose.onNode(hasText("剧情") and hasClickAction()).performClick()
+            val card = hasAnyAncestor(hasTestTag("story-card-intro"))
+            val markers = hasAnyAncestor(hasTestTag("story-markers-intro"))
+            for (style in listOf(ThemeStyle.MATERIAL, ThemeStyle.APPLE)) for (mode in listOf(ThemeMode.LIGHT, ThemeMode.DARK)) {
+                compose.runOnIdle { container.settings.setThemeStyle(style); container.settings.setThemeMode(mode) }
+                compose.onNodeWithTag("story-intro-intro").assertIsDisplayed().assertTextEquals(overview.take(300))
+                val layouts = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+                compose.onNodeWithTag("story-intro-intro").performSemanticsAction(androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult) { action -> assertTrue(action(layouts)) }
+                assertEquals(2, layouts.single().lineCount)
+                assertTrue(layouts.single().isLineEllipsized(1))
+                compose.onNode(hasText("AI 导演") and markers).assertIsDisplayed()
+                compose.onNode(hasText("18+") and markers).assertIsDisplayed()
+                compose.onNode(hasText("LGBT") and markers).assertIsDisplayed()
+                compose.onNode(hasText("全年龄") and card).assertDoesNotExist()
+                compose.onNode(hasText("1 AI 场景") and card).assertDoesNotExist()
+                compose.onNode(hasText("都市 · 悬疑 · 情感") and markers).assertDoesNotExist()
+                compose.onNodeWithText("都市 · 悬疑 · 情感 · 1 场景 · 2 位人物").assertIsDisplayed()
+                compose.onNodeWithText("不应该显示的导演规则").assertDoesNotExist()
+                compose.onNodeWithContentDescription("游玩").assertIsDisplayed()
+                screenshot("story-intro-${style.name.lowercase()}-${mode.name.lowercase()}.png")
+            }
+            runBlocking { container.library.upsertStory(story.copy(adult = false, lgbt = false)) }
+            compose.onNode(hasText("18+") and markers).assertDoesNotExist()
+            compose.onNode(hasText("全年龄") and card).assertDoesNotExist()
+            compose.onNodeWithContentDescription("更多").performClick()
+            compose.onNodeWithText("读取存档").assertIsDisplayed()
+        } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+    }
+
     @Test fun longCardTitlesKeepSpaceAndActionsAtLargeFont() {
         val ok = client()
         try {
@@ -354,8 +401,8 @@ class AiAuthoringUiTest {
             compose.onNodeWithText("AI 一句话创建").assertIsDisplayed()
             compose.onNodeWithText("关闭").performClick()
             compose.onNodeWithContentDescription("剧情", useUnmergedTree = true).performClick()
-            compose.onNodeWithText("悬疑").assertExists()
-            compose.onNodeWithText("1 位人物").assertExists()
+            compose.onNodeWithText("悬疑", substring = true).assertExists()
+            compose.onNodeWithText("1 位人物", substring = true).assertExists()
             compose.onNodeWithText("分支剧本").performClick().assertIsSelected()
             compose.onNodeWithText("雨城").assertDoesNotExist()
             compose.onAllNodesWithText("全部")[0].performClick()
