@@ -188,6 +188,12 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
             }
 
             if (category == "ai") {
+                item {
+                    TonalCard(Modifier.clickable { nav.navigate(R.PROVIDERS) }.testTag("settings-manage-providers")) {
+                        Text("管理 AI 服务", style = MaterialTheme.typography.titleMedium)
+                        Text("添加、编辑服务与模型，查看生成用量和费用", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
                 item { SectionHeader("AI 与生成") }
                 item {
                     TonalCard {

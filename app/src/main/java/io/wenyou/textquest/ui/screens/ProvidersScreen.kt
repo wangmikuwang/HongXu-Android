@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Scaffold
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -37,6 +39,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -55,19 +59,25 @@ import io.wenyou.textquest.ui.vm.Vms
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProvidersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
-    val libraryVm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(it) })
-    val settingsVm: SettingsViewModel = viewModel(factory = Vms.factory { SettingsViewModel(it) })
+    val libraryVm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(container) })
+    val settingsVm: SettingsViewModel = viewModel(factory = Vms.factory { SettingsViewModel(container) })
     val providers by libraryVm.providers.collectAsState()
     val prefs by settingsVm.ui.collectAsState()
     var pendingDelete by remember { mutableStateOf<ApiProfile?>(null) }
 
-    HubScaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("AI 服务") }) },
-        nav = nav
+    Scaffold(
+        topBar = { CenterAlignedTopAppBar(title = { Text("AI 服务") }, navigationIcon = {
+            IconButton(onClick = { nav.navigateUp() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") }
+        }) },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(onClick = { nav.navigate(R.providerEdit("new")) },
+                modifier = Modifier.semantics { contentDescription = "添加服务" },
+                icon = { Icon(Icons.Filled.Add, null) }, text = { Text("添加服务") })
+        }
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             LazyColumn(
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 116.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item {
@@ -99,12 +109,7 @@ fun ProvidersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                     }
                 }
             }
-            ExtendedFloatingActionButton(
-                onClick = { nav.navigate(R.providerEdit("new")) },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp),
-                icon = { Icon(Icons.Filled.Add, null) },
-                text = { Text("添加服务") }
-            )
+
         }
     }
 

@@ -326,6 +326,23 @@ class AiAuthoringUiTest {
                 }
                 screenshot("settings-menu-${style.name.lowercase()}.png")
                 compose.onNodeWithTag("settings-ai").performClick()
+                compose.onNodeWithTag("settings-manage-providers").performClick()
+                try { compose.waitUntil(5_000) { compose.onNodeWithContentDescription("添加服务").isDisplayed() } }
+                catch (failure: Throwable) {
+                    InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot()?.let { bitmap ->
+                        File(compose.activity.cacheDir, "services-failure.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG,100,it) }
+                    }
+                    File(compose.activity.cacheDir, "services-semantics.txt").writeText(compose.onRoot().printToString())
+                    throw failure
+                }
+                screenshot("settings-services-${style.name.lowercase()}.png")
+                compose.onNodeWithContentDescription("添加服务").assertIsDisplayed()
+                compose.onNodeWithContentDescription("主页", useUnmergedTree = true).assertDoesNotExist()
+                compose.onNodeWithContentDescription("添加服务").performClick()
+                compose.waitUntil(5_000) { compose.onNodeWithText("接入 AI 服务").isDisplayed() }
+                compose.onNodeWithText("接入 AI 服务").assertIsDisplayed()
+                compose.onNodeWithContentDescription("返回").performClick()
+                compose.onNodeWithContentDescription("返回").performClick()
                 compose.onNode(hasScrollToIndexAction()).performScrollToNode(hasText("默认服务"))
                 compose.onNodeWithText("默认服务").assertIsDisplayed()
                 compose.onNodeWithText("导出备份").assertDoesNotExist()

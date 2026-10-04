@@ -64,7 +64,7 @@ import io.wenyou.textquest.ui.vm.Vms
 @Composable
 fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, providerId: String) {
     val vm: ProviderEditorViewModel = viewModel(
-        factory = Vms.factory { ProviderEditorViewModel(if (providerId == "new") null else providerId, it) }
+        factory = Vms.factory { ProviderEditorViewModel(if (providerId == "new") null else providerId, container) }
     )
     val ui by vm.ui.collectAsState()
     val profile = ui.profile

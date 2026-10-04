@@ -32,7 +32,7 @@ class SettingsMenuUiTest {
    compose.onNodeWithTag("settings-menu").performScrollToNode(hasText("系统与关于"))
    compose.onNodeWithTag("settings-system").performClick()
    assertEquals("system", selected)
-   File(compose.activity.cacheDir, "ui-110-settings-menu-$isDark.png").outputStream().use {
+   File(compose.activity.cacheDir, "ui-111-settings-menu-$isDark.png").outputStream().use {
     compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
    }
   }

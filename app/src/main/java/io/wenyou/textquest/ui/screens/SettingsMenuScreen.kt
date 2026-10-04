@@ -32,7 +32,7 @@ internal data class SettingsSection(val id: String, val title: String, val summa
 
 internal val settingsSections = listOf(
     SettingsSection("appearance", "外观与主题", "调整界面风格、颜色、字体、大小和图标", Icons.Outlined.Star, Color(0xFFFF416C), "液态玻璃 帧率 深色 语言 壁纸 字重 缩放"),
-    SettingsSection("ai", "AI 与生成", "设置默认服务、后台生成与进度通知", Icons.Outlined.Refresh, Color(0xFF30BF60), "默认服务 通知 续航 后台"),
+    SettingsSection("ai", "AI 服务与生成", "管理服务、默认模型、后台生成与通知", Icons.Outlined.Refresh, Color(0xFF30BF60), "API 接口 密钥 模型 默认服务 通知 续航 后台 费用"),
     SettingsSection("content", "内容偏好", "管理预置剧情与人物的内容范围", Icons.Outlined.Person, Color(0xFFFFA000), "剧情 人物 成人"),
     SettingsSection("rules", "角色规则", "创建和管理人物使用的底层基调", Icons.Outlined.Build, Color(0xFF2789EF), "底层基调 规则"),
     SettingsSection("backup", "存储与备份", "导入、导出剧情、人物、服务与存档", Icons.Outlined.Create, Color(0xFFAA55DC), "数据 导出 导入 迁移 恢复"),

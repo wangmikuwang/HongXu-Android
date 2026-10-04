@@ -1,4 +1,12 @@
 package io.wenyou.textquest.ui
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.core.animateFloatAsState
+import io.wenyou.textquest.ui.common.AppMotion
+import io.wenyou.textquest.ui.common.LocalDockPosition
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -117,7 +125,7 @@ object R {
     fun play(storyId: String, saveId: String = "new") = "play/$storyId/$saveId"
     fun bottomRuleEdit(id: String) = "bottom_rule_edit/$id"
 
-    val HUBS = setOf(HOME, STORIES, CHARACTERS, PROVIDERS, SETTINGS)
+    val HUBS = setOf(HOME, STORIES, CHARACTERS, SETTINGS)
 }
 
 @Composable
@@ -137,8 +145,32 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                 )
             }
             val nav = rememberNavController()
-            CompositionLocalProvider(LocalPrideGalleryOpen provides { nav.navigate(R.PRIDE) { launchSingleTop = true } }) {
-                NavHost(navController = nav, startDestination = R.HOME) {
+            val entry by nav.currentBackStackEntryAsState()
+            var dockIndex by remember { mutableStateOf(0) }
+            LaunchedEffect(entry?.destination?.route) {
+                val index = listOf(R.HOME, R.STORIES, R.CHARACTERS, R.SETTINGS).indexOf(entry?.destination?.route)
+                if (index >= 0) dockIndex = index
+            }
+            val dockPosition = animateFloatAsState(dockIndex.toFloat(), AppMotion.selection(), label = "navigation-lens")
+            CompositionLocalProvider(LocalDockPosition provides dockPosition, LocalPrideGalleryOpen provides { nav.navigate(R.PRIDE) { launchSingleTop = true } }) {
+                NavHost(navController = nav, startDestination = R.HOME,
+                    enterTransition = {
+                        if (initialState.destination.route in R.HUBS && targetState.destination.route in R.HUBS) fadeIn(AppMotion.fade())
+                        else slideInHorizontally(AppMotion.page()) { it } + fadeIn(AppMotion.fade())
+                    },
+                    exitTransition = {
+                        if (initialState.destination.route in R.HUBS && targetState.destination.route in R.HUBS) fadeOut(AppMotion.fade())
+                        else slideOutHorizontally(AppMotion.page()) { -it / 4 } + fadeOut(AppMotion.fade())
+                    },
+                    popEnterTransition = {
+                        if (initialState.destination.route in R.HUBS && targetState.destination.route in R.HUBS) fadeIn(AppMotion.fade())
+                        else slideInHorizontally(AppMotion.page()) { -it / 4 } + fadeIn(AppMotion.fade())
+                    },
+                    popExitTransition = {
+                        if (initialState.destination.route in R.HUBS && targetState.destination.route in R.HUBS) fadeOut(AppMotion.fade())
+                        else slideOutHorizontally(AppMotion.page()) { it } + fadeOut(AppMotion.fade())
+                    }
+                ) {
                     composable(R.HOME) { HomeScreen(container, nav) }
                     composable(R.STORIES) { StoryListScreen(container, nav) }
                     composable(
@@ -210,12 +242,11 @@ fun HubBottomBar(nav: NavHostController) {
         HubItem(R.HOME, "主页", Icons.Filled.Home),
         HubItem(R.STORIES, "剧情", Icons.AutoMirrored.Filled.List),
         HubItem(R.CHARACTERS, "角色", Icons.Filled.Person),
-        HubItem(R.PROVIDERS, "AI 服务", Icons.Filled.Build),
         HubItem(R.SETTINGS, "设置", Icons.Filled.Settings)
     )
     val apple = LocalGlassEnabled.current
     if (apple) {
-        val outlined = listOf(Icons.Outlined.Home, Icons.AutoMirrored.Outlined.List, Icons.Outlined.Person, Icons.Outlined.Build, Icons.Outlined.Settings)
+        val outlined = listOf(Icons.Outlined.Home, Icons.AutoMirrored.Outlined.List, Icons.Outlined.Person, Icons.Outlined.Settings)
         GlassDock(items.mapIndexed { index, item -> DockItem(item.label, outlined[index]) }, items.indexOfFirst { it.route == current }.coerceAtLeast(0), { index ->
             val route = items[index].route
             if (current != route) nav.navigate(route) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }

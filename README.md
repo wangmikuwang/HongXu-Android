@@ -389,3 +389,7 @@ app/src/main/java/io/wenyou/textquest/
 协议参考：[DeepSeek 流式用量](https://api-docs.deepseek.com/api/create-chat-completion/)、[Anthropic 流式用量](https://platform.claude.com/docs/en/build-with-claude/streaming)、[Gemini usageMetadata](https://ai.google.dev/api/generate-content#UsageMetadata)。
 
 设置首页采用搜索与分类入口，外观、AI生成、内容偏好、角色规则、备份和系统关于分别进入二级页面。原有设置及备份内容保留。
+
+AI 服务已并入「设置 → AI 服务与生成 → 管理 AI 服务」，底部导航保留主页、剧情、角色、设置四项。服务编辑、默认服务及用量费用功能保留。
+
+页面进入与返回使用统一的水平过渡，底部主页面采用短渐变。玻璃胶囊在切换页面时连续移动，拖动松手和按钮按压使用弹簧反馈；动画数值在绘制层读取，避免逐帧重新排版，遵循系统动画时长设置。

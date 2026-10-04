@@ -64,9 +64,9 @@ class AppearanceUiTest {
     @Test fun theLargestFontAndScaledInterfaceKeepTheDockUsable() {
         val prefs = AppearancePrefs(glassEnabled = true, fontScale = 1.3f, uiScale = 1.1f, displayScale = 110)
         compose.setContent { WenYouTheme(style = ThemeStyle.APPLE, appearance = prefs) {
-            Box(Modifier.fillMaxWidth()) { GlassDock(listOf("主页", "剧情", "角色", "AI 服务", "设置").map { DockItem(it, Icons.Outlined.Home) }, 0, {}, Modifier.testTag("large-dock")) }
+            Box(Modifier.fillMaxWidth()) { GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, Icons.Outlined.Home) }, 0, {}, Modifier.testTag("large-dock")) }
         } }
-        compose.onNode(hasText("AI 服务") and hasClickAction()).assertIsDisplayed()
+        compose.onNode(hasText("角色") and hasClickAction()).assertIsDisplayed()
         compose.onNode(hasText("设置") and hasClickAction()).assertIsDisplayed()
         screenshot("dock-large-font.png")
     }
@@ -96,12 +96,12 @@ class AppearanceUiTest {
     @Test fun dockClickAndDragSelectWholeItemsWithoutClipping() {
         var selected by mutableIntStateOf(0)
         compose.setContent { WenYouTheme(style = ThemeStyle.APPLE) {
-            Box(Modifier.width(360.dp)) { GlassDock(listOf("主页", "剧情", "角色", "AI 服务", "设置").map { DockItem(it, Icons.Outlined.Home) }, selected, { selected = it }, Modifier.testTag("dock")) }
+            Box(Modifier.width(360.dp)) { GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, Icons.Outlined.Home) }, selected, { selected = it }, Modifier.testTag("dock")) }
         } }
         compose.onNode(hasText("角色") and hasClickAction()).performClick().assertIsSelected()
         assertEquals(2, selected)
         compose.onNodeWithTag("dock").performTouchInput { swipe(centerLeft + androidx.compose.ui.geometry.Offset(12f, 0f), centerRight - androidx.compose.ui.geometry.Offset(12f, 0f), 500) }
-        compose.runOnIdle { assertEquals(4, selected) }
+        compose.runOnIdle { assertEquals(3, selected) }
         compose.onNode(hasText("设置") and hasClickAction()).assertIsSelected()
         screenshot("dock-whole-item.png")
     }

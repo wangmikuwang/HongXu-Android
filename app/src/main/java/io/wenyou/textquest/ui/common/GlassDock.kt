@@ -2,6 +2,8 @@ package io.wenyou.textquest.ui.common
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
@@ -11,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import io.wenyou.textquest.ui.common.AppIcon as Icon
 import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -38,7 +41,9 @@ fun GlassDock(items: List<DockItem>, selected: Int, onSelect: (Int) -> Unit, mod
     var dragPosition by remember { mutableStateOf<Float?>(null) }
     val latestSelect by rememberUpdatedState(onSelect)
     val currentSelected by rememberUpdatedState(selected)
-    val position = animateFloatAsState(selected.toFloat(), spring(dampingRatio = .82f, stiffness = 550f), label = "dock-lens")
+    val position = LocalDockPosition.current ?: animateFloatAsState(selected.toFloat(), AppMotion.selection(), label = "dock-lens")
+    val dragging by remember { derivedStateOf { dragPosition != null } }
+    val stretch = animateFloatAsState(if (!dragging) 1f else 1.04f, AppMotion.selection(), label = "dock-stretch")
     BoxWithConstraints(modifier.fillMaxWidth().heightIn(min = 64.dp).onSizeChanged { widthPx = it.width.toFloat() }
         .pointerInput(items.size) {
             detectHorizontalDragGestures(
@@ -50,17 +55,20 @@ fun GlassDock(items: List<DockItem>, selected: Int, onSelect: (Int) -> Unit, mod
         }) {
         val slot = maxWidth / items.size
         val indicatorColor = distributedAccent(selected + 2, MaterialTheme.colorScheme.onSurface.copy(alpha = .08f))
+        val indicatorFill = animateColorAsState(indicatorColor, AppMotion.fade(), label = "dock-color")
         Box(Modifier.padding(4.dp).width((slot - 8.dp).coerceAtLeast(1.dp)).height(56.dp)
-            .graphicsLayer { translationX = (dragPosition ?: position.value) * with(density) { slot.toPx() }; scaleX = if (dragPosition == null) 1f else 1.04f }
-            .background(indicatorColor, RoundedCornerShape(50)))
+            .graphicsLayer { translationX = (dragPosition ?: position.value) * with(density) { slot.toPx() }; scaleX = stretch.value; scaleY = 1f / stretch.value }
+            .drawBehind { drawRoundRect(indicatorFill.value, cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2)) })
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)) {
             items.forEachIndexed { index, item ->
                 val accent = distributedAccent(index + 2, MaterialTheme.colorScheme.readableAccent())
                 val tint = if (index == selected && LocalAccentPalette.current.isNotEmpty()) accentForeground(indicatorColor) else if (index == selected) {
                     if (androidx.core.graphics.ColorUtils.calculateContrast(accent.toArgb(), MaterialTheme.colorScheme.surface.toArgb()) >= 4.5) accent else MaterialTheme.colorScheme.onSurface
                 } else MaterialTheme.colorScheme.onSurface
+                val interaction = remember { MutableInteractionSource() }
                 Column(Modifier.weight(1f).heightIn(min = 64.dp)
-                    .selectable(index == selected, role = Role.Tab, onClick = { latestSelect(index) })
+                    .selectable(index == selected, role = Role.Tab, interactionSource = interaction, indication = null, onClick = { latestSelect(index) })
+                    .pressMotion(interaction)
                     .padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
                     if (prefs.dockLabels != "text") Icon(item.icon, contentDescription = item.label, tint = tint, modifier = Modifier.size(26.dp))
                     if (prefs.dockLabels != "icons") {

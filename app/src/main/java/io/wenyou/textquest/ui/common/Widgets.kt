@@ -8,6 +8,7 @@ import io.wenyou.textquest.ui.theme.LocalAccentPalette
 import androidx.compose.material.icons.filled.Check
 
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.selection.selectable
@@ -63,7 +64,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 fun AppTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit) {
-    androidx.compose.material3.TextButton(onClick = onClick, modifier = modifier, enabled = enabled,
+    val interaction = remember { MutableInteractionSource() }
+    androidx.compose.material3.TextButton(onClick = onClick, modifier = modifier.pressMotion(interaction), interactionSource = interaction, enabled = enabled,
         colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.readableAccent()),
         content = content)
 }
@@ -71,14 +73,15 @@ fun AppTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: B
 @Composable
 fun AppOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit) {
+    val interaction = remember { MutableInteractionSource() }
     if (LocalThemeStyle.current == ThemeStyle.APPLE) {
-        androidx.compose.material3.FilledTonalButton(onClick = onClick, modifier = modifier, enabled = enabled,
+        androidx.compose.material3.FilledTonalButton(onClick = onClick, modifier = modifier.pressMotion(interaction), interactionSource = interaction, enabled = enabled,
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                 contentColor = MaterialTheme.colorScheme.readableAccent()), content = content)
         return
     }
-    androidx.compose.material3.OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled,
+    androidx.compose.material3.OutlinedButton(onClick = onClick, modifier = modifier.pressMotion(interaction), interactionSource = interaction, enabled = enabled,
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.readableAccent()),
         content = content)
 }
