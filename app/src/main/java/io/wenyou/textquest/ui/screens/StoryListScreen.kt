@@ -59,12 +59,12 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledIconButton
 import io.wenyou.textquest.ui.common.FilterTag
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -349,7 +349,7 @@ fun ShareTextDialog(title: String, code: String, onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(6.dp))
-                Text(
+                io.wenyou.textquest.ui.common.RawText(
                     if (copied) "已复制到剪贴板" else "可复制，或直接调用系统分享。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
@@ -405,7 +405,7 @@ private fun ConnectingIndicator(label: String, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(9.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = alpha)))
         Spacer(Modifier.width(8.dp))
-        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.readableAccent())
+        io.wenyou.textquest.ui.common.RawText(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.readableAccent())
     }
 }
 
@@ -478,7 +478,7 @@ fun ShareQrDialog(title: String, code: String, onDismiss: () -> Unit) {
                         textAlign = TextAlign.Center)
                 }
                 Spacer(Modifier.height(6.dp))
-                Text(
+                io.wenyou.textquest.ui.common.RawText(
                     if (copied) "已复制分享码文本" else "也可点「复制文本」手动粘贴。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
@@ -567,7 +567,7 @@ fun ImportTextDialog(onDismiss: () -> Unit, onImport: (String, (String) -> Unit)
                 )
                 if (result.isNotBlank()) {
                     Spacer(Modifier.height(6.dp))
-                    Text(result, style = MaterialTheme.typography.bodySmall,
+                    io.wenyou.textquest.ui.common.RawText(result, style = MaterialTheme.typography.bodySmall,
                         color = if (result.startsWith("导入成功")) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.error)
                 }
@@ -616,9 +616,9 @@ private fun FilterEmptyState(title: String, body: String, showReset: Boolean, on
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(title, style = MaterialTheme.typography.titleLarge)
+        io.wenyou.textquest.ui.common.RawText(title, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))
-        Text(body, style = MaterialTheme.typography.bodyMedium,
+        io.wenyou.textquest.ui.common.RawText(body, style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center)
         Spacer(Modifier.height(6.dp))
@@ -650,7 +650,7 @@ private fun SavesDialog(
                     saves.forEach { slot ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f).clickable { onLoad(slot) }) {
-                                Text(slot.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
+                                io.wenyou.textquest.ui.common.RawText(slot.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
                                 Text("${slot.state.history.size} 步 · ${LibraryViewModel.formatWhen(slot.updatedAt)}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -685,10 +685,10 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                 Column(
                     Modifier.weight(1f).padding(top = 2.dp).clickable(onClick = onEdit)
                 ) {
-                    Text(story.title, style = MaterialTheme.typography.titleLarge, maxLines = 2,
+                    io.wenyou.textquest.ui.common.RawText(story.title, style = MaterialTheme.typography.titleLarge, maxLines = 2,
                         overflow = TextOverflow.Ellipsis)
                     if (story.subtitle.isNotBlank())
-                        Text(story.subtitle, style = MaterialTheme.typography.bodySmall,
+                        io.wenyou.textquest.ui.common.RawText(story.subtitle, style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1,
                             overflow = TextOverflow.Ellipsis)
                 }

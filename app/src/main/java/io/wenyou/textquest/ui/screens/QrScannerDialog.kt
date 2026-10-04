@@ -20,9 +20,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -143,7 +143,7 @@ fun QrScannerDialog(onResult: (String) -> Unit, onDismiss: () -> Unit) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.align(Alignment.Center).offset(y = frame + 20.dp)
             )
-            Text(
+            io.wenyou.textquest.ui.common.RawText(
                 status,
                 color = Color(0xFF8DFFA0),
                 fontSize = 13.sp,

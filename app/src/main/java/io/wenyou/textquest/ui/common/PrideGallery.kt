@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
+import io.wenyou.textquest.ui.common.AppIcon as Icon
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -97,10 +99,10 @@ internal fun PrideGallery(unlocked: Boolean, enabled: Boolean, showLgbt: Boolean
                             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 PrideFlag(theme, Modifier.fillMaxWidth())
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(theme.label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+                                    io.wenyou.textquest.ui.common.RawText(theme.label, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
                                     if (enabled && selectedTheme == theme) Icon(Icons.Filled.Check, "已选中", Modifier.size(20.dp))
                                 }
-                                Text(theme.description, style = MaterialTheme.typography.bodySmall,
+                                io.wenyou.textquest.ui.common.RawText(theme.description, style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }

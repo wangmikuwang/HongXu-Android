@@ -30,13 +30,13 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -73,7 +73,7 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(if (ui.isNew) "接入 AI 服务" else "编辑服务") },
+                title = { io.wenyou.textquest.ui.common.RawText(if (ui.isNew) "接入 AI 服务" else "编辑服务") },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
@@ -101,7 +101,7 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
             if (ui.message.isNotBlank()) {
                 item {
                     TonalCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
-                        Text(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        io.wenyou.textquest.ui.common.RawText(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
                     }
                 }
             }
@@ -151,7 +151,7 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
                             onValueChange = { vm.setTemperature(it.toDouble()) },
                             valueRange = 0.0f..1.5f
                         )
-                        Text(String.format("%.2f", profile.temperature), style = MaterialTheme.typography.labelMedium)
+                        io.wenyou.textquest.ui.common.RawText(String.format("%.2f", profile.temperature), style = MaterialTheme.typography.labelMedium)
                     }
                     Spacer(Modifier.height(4.dp))
                     IntField(
@@ -234,7 +234,7 @@ private fun ModelPickerCard(ui: ProviderEditorState, vm: ProviderEditorViewModel
             }
             if (ui.listMessage.isNotBlank()) {
                 Spacer(Modifier.width(10.dp))
-                Text(ui.listMessage, style = MaterialTheme.typography.bodySmall,
+                io.wenyou.textquest.ui.common.RawText(ui.listMessage, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.readableAccent(MaterialTheme.colorScheme.tertiary),
                     modifier = Modifier.weight(1f))
             }
@@ -250,7 +250,7 @@ private fun ModelPickerCard(ui: ProviderEditorState, vm: ProviderEditorViewModel
                     FilterChip(
                         selected = model == ui.profile?.model,
                         onClick = { vm.setModel(model) },
-                        label = { Text(model, maxLines = 1) }
+                        label = { io.wenyou.textquest.ui.common.RawText(model, maxLines = 1) }
                     )
                 }
             }
@@ -267,7 +267,7 @@ private fun IntField(value: Int, onChange: (Int) -> Unit, label: String) {
             draft = raw
             raw.toIntOrNull()?.let(onChange)
         },
-        label = { Text(label) },
+        label = { io.wenyou.textquest.ui.common.RawText(label) },
         singleLine = true,
         modifier = Modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)

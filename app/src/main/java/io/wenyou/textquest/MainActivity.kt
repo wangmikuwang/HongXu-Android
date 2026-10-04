@@ -12,7 +12,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val app = application as WenYouApp
         setContent {
-            WenYouAppRoot(app.container)
+            WenYouAppRoot(app.container, showStartup = true)
         }
     }
 }

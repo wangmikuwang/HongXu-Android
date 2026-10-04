@@ -27,10 +27,10 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -146,13 +146,13 @@ private fun ProviderCard(
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(profile.name, style = MaterialTheme.typography.titleMedium)
+                    io.wenyou.textquest.ui.common.RawText(profile.name, style = MaterialTheme.typography.titleMedium)
                     if (isDefault) {
                         Spacer(Modifier.width(6.dp))
                         Pill("默认", container = MaterialTheme.colorScheme.primary)
                     }
                 }
-                Text(profile.kind.label, style = MaterialTheme.typography.bodySmall,
+                io.wenyou.textquest.ui.common.RawText(profile.kind.label, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                 Text("模型：${profile.model}", style = MaterialTheme.typography.bodySmall, maxLines = 1)
                 Text("地址：${profile.baseUrl}", style = MaterialTheme.typography.bodySmall,

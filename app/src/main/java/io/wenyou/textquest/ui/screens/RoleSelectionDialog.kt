@@ -5,6 +5,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import io.wenyou.textquest.ui.common.AppIcon as Icon
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -45,8 +47,8 @@ private fun RoleRow(id: String, name: String, description: String, emoji: String
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         EmojiBadge(emoji, avatarColor(colorIndex), size = 40.dp)
         Column(Modifier.weight(1f)) {
-            Text(name, style = MaterialTheme.typography.titleSmall)
-            if (description.isNotBlank()) Text(description, style = MaterialTheme.typography.bodySmall, maxLines = 2,
+            io.wenyou.textquest.ui.common.RawText(name, style = MaterialTheme.typography.titleSmall)
+            if (description.isNotBlank()) io.wenyou.textquest.ui.common.RawText(description, style = MaterialTheme.typography.bodySmall, maxLines = 2,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         RadioButton(selected = selectedId == id, onClick = null)

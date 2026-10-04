@@ -22,12 +22,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -70,7 +70,7 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(if (ui.isNew) "新建角色" else "编辑角色") },
+                title = { io.wenyou.textquest.ui.common.RawText(if (ui.isNew) "新建角色" else "编辑角色") },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
@@ -91,7 +91,7 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
             item { AppTextButton(onClick = { revisionOpen = true }) { Text("一句话修改") } }
             if (ui.message.isNotBlank()) {
                 item { TonalCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
-                    Text(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                    io.wenyou.textquest.ui.common.RawText(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
                 } }
             }
             item {
@@ -170,7 +170,7 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
                                         val next = if (selected) char.bottomRuleIds - r.id else char.bottomRuleIds + r.id
                                         vm.setBottomRuleIds(next)
                                     },
-                                    label = { Text(r.name) }
+                                    label = { io.wenyou.textquest.ui.common.RawText(r.name) }
                                 )
                             }
                         }
@@ -225,7 +225,7 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
                                 valueRange = 0f..100f,
                                 modifier = Modifier.weight(1f)
                             )
-                            Text(v.toInt().toString(), modifier = Modifier.width(28.dp),
+                            io.wenyou.textquest.ui.common.RawText(v.toInt().toString(), modifier = Modifier.width(28.dp),
                                 textAlign = TextAlign.End,
                                 style = MaterialTheme.typography.labelLarge)
                         }

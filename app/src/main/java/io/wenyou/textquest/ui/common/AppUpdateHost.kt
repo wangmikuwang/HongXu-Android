@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import io.wenyou.textquest.ui.common.AppIcon as Icon
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -73,7 +75,7 @@ internal fun AppUpdateHost(vm: AppUpdateViewModel, content: @Composable () -> Un
             text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                 AppUpdateCard(state, { vm.check() }, vm::download, openDownloads, openRelease, vm::install)
             } },
-            confirmButton = { AppTextButton(onClick = vm::dismissPrompt) { Text(if (state.downloading) "后台下载" else "稍后再说") } })
+            confirmButton = { AppTextButton(onClick = vm::dismissPrompt) { io.wenyou.textquest.ui.common.RawText(if (state.downloading) "后台下载" else "稍后再说") } })
     }
 }
 

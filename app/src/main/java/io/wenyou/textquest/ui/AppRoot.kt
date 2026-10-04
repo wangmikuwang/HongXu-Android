@@ -33,19 +33,30 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Build
+import androidx.compose.material.icons.automirrored.outlined.List
+import io.wenyou.textquest.ui.theme.LocalAppearance
+import io.wenyou.textquest.ui.theme.LocalGlassEnabled
+import io.wenyou.textquest.ui.common.DockItem
+import io.wenyou.textquest.ui.common.GlassDock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.foundation.layout.fillMaxSize
 import io.wenyou.textquest.ui.theme.LocalThemeStyle
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.CompositionLocalProvider
 import io.wenyou.textquest.ui.common.LocalPrideGalleryOpen
 import io.wenyou.textquest.ui.common.PrideGallery
@@ -82,6 +93,7 @@ object R {
     const val CHARACTERS = "characters"
     const val PROVIDERS = "providers"
     const val SETTINGS = "settings"
+    const val APPEARANCE = "appearance"
     const val PRIDE = "pride"
 
     const val ARG_STORY = "storyId"
@@ -107,16 +119,18 @@ object R {
 }
 
 @Composable
-fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewModel = viewModel()) {
+fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewModel = viewModel(), showStartup: Boolean = false) {
     val prefs by container.settings.state.collectAsStateWithLifecycle()
-    WenYouTheme(prefs.themeMode, prefs.dynamicColor, prefs.themeStyle, prefs.prideTheme) {
+    WenYouTheme(prefs.themeMode, prefs.dynamicColor, prefs.themeStyle, prefs.prideTheme, prefs.appearance) {
+        io.wenyou.textquest.ui.common.AppearanceWindow(prefs.appearance, MaterialTheme.colorScheme.background.luminance() < .5f)
+        Box(Modifier.fillMaxSize()) {
         AppUpdateHost(updateVm) {
             val writeError by container.library.writeError.collectAsStateWithLifecycle()
             if (writeError != null) {
                 AlertDialog(
                     onDismissRequest = container.library::clearWriteError,
                     title = { Text("保存失败") },
-                    text = { Text(writeError.orEmpty()) },
+                    text = { io.wenyou.textquest.ui.common.RawText(writeError.orEmpty()) },
                     confirmButton = { AppTextButton(onClick = container.library::clearWriteError) { Text("知道了") } }
                 )
             }
@@ -149,6 +163,7 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                         ProviderEditScreen(container, nav, providerId = id)
                     }
                     composable(R.SETTINGS) { SettingsScreen(container, nav, updateVm) }
+                    composable(R.APPEARANCE) { io.wenyou.textquest.ui.screens.AppearanceScreen(container, nav) }
                     composable(R.PRIDE) {
                         PrideGallery(prefs.prideThemesUnlocked, prefs.prideThemesEnabled, prefs.showLgbt,
                             container.settings::unlockPrideThemes, container.settings::setPrideThemesEnabled,
@@ -176,6 +191,8 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                 }
             }
         }
+        if (showStartup) io.wenyou.textquest.ui.common.StartupOverlay(prefs.appearance)
+        }
     }
 }
 
@@ -191,7 +208,15 @@ fun HubBottomBar(nav: NavHostController) {
         HubItem(R.PROVIDERS, "AI 服务", Icons.Filled.Build),
         HubItem(R.SETTINGS, "设置", Icons.Filled.Settings)
     )
-    val apple = LocalThemeStyle.current == ThemeStyle.APPLE
+    val apple = LocalGlassEnabled.current
+    if (apple) {
+        val outlined = listOf(Icons.Outlined.Home, Icons.AutoMirrored.Outlined.List, Icons.Outlined.Person, Icons.Outlined.Build, Icons.Outlined.Settings)
+        GlassDock(items.mapIndexed { index, item -> DockItem(item.label, outlined[index]) }, items.indexOfFirst { it.route == current }.coerceAtLeast(0), { index ->
+            val route = items[index].route
+            if (current != route) nav.navigate(route) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
+        })
+        return
+    }
     val navigationItems: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
         items.forEachIndexed { index, item ->
             val indicator = distributedAccent(index + 2, MaterialTheme.colorScheme.primaryContainer)
@@ -218,7 +243,7 @@ fun HubBottomBar(nav: NavHostController) {
                     }
                 },
                 icon = { Icon(item.icon, contentDescription = item.label) },
-                label = { Text(item.label) }
+                label = { io.wenyou.textquest.ui.common.RawText(item.label) }
             )
         }
     }
@@ -242,7 +267,7 @@ fun HubScaffold(
     nav: NavHostController,
     content: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit
 ) {
-    if (LocalThemeStyle.current == ThemeStyle.APPLE) {
+    if (LocalGlassEnabled.current) {
         val density = LocalDensity.current
         var barHeight by remember { mutableStateOf(112.dp) }
         GlassBackdrop(

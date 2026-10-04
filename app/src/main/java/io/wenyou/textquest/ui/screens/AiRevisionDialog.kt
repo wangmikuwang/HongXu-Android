@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import io.wenyou.textquest.ui.common.AppIcon as Icon
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.testTag
@@ -38,7 +40,7 @@ internal fun AiRevisionDialog(container: WenYouApp.AppContainer, original: AppBu
             Text("修改当前未保存的内容；先查看预览，再应用到表单，最后按保存。")
             AppField(instruction, { if (!busy) { instruction = it.take(2000); preview = null } }, "修改要求", modifier = Modifier.testTag("revision-instruction"), minLines = 2, maxLines = 4)
             if (busy) LinearProgressIndicator(Modifier.fillMaxWidth())
-            if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)
+            if (error.isNotBlank()) io.wenyou.textquest.ui.common.RawText(error, color = MaterialTheme.colorScheme.error)
             preview?.let { CreationPreview(it) }
             UsagePanel(container.chatClient.usage)
         }
@@ -56,15 +58,15 @@ internal fun AiRevisionDialog(container: WenYouApp.AppContainer, original: AppBu
                 catch (e: Exception) { error = AiDirector.errorMessage(e) }
                 finally { busy = false }
             }
-        }) { Text(if (preview == null) "生成修改预览" else "应用到表单") }
-    }, dismissButton = { AppTextButton(onClick = close) { Text(if (busy) "取消生成" else "关闭") } })
+        }) { io.wenyou.textquest.ui.common.RawText(if (preview == null) "生成修改预览" else "应用到表单") }
+    }, dismissButton = { AppTextButton(onClick = close) { io.wenyou.textquest.ui.common.RawText(if (busy) "取消生成" else "关闭") } })
 }
 
 @Composable
 internal fun CreationPreview(bundle: AppBundle) {
     bundle.stories.forEach { s -> TonalCard {
         Text("${s.coverEmoji} ${s.title}", style = MaterialTheme.typography.titleMedium)
-        Text(s.subtitle); Text("题材：${s.genre} · ${s.mode.label}")
+        io.wenyou.textquest.ui.common.RawText(s.subtitle); Text("题材：${s.genre} · ${s.mode.label}")
         Text("世界观：${s.ai.worldSummary}")
         Text("叙事风格：${s.ai.tone}"); Text("导演要求：${s.ai.directorExtra}")
         Text("初始变量：${s.initialVariables.entries.joinToString { "${it.key}=${it.value}" }}")
@@ -72,20 +74,20 @@ internal fun CreationPreview(bundle: AppBundle) {
         Text("内容：${if (s.lgbt) "LGBT " else ""}${if (s.adult) "18+" else "全年龄"}")
         s.nodes.forEach { (id, node) ->
             Text("${if (id == s.startNodeId) "开场 · " else ""}${node.title.ifBlank { "场景" }}", style = MaterialTheme.typography.labelLarge)
-            Text(node.text)
+            io.wenyou.textquest.ui.common.RawText(node.text)
             if (node.prompt.isNotBlank()) Text("生成要求：${node.prompt}")
             node.choices.forEach { Text("· ${it.text}${if (it.hint.isBlank()) "" else "（${it.hint}）"}") }
         }
     } }
     bundle.characters.forEach { c -> TonalCard {
         Text("${c.emoji} ${c.name}", style = MaterialTheme.typography.titleMedium)
-        Text(c.tagline); Text("性取向：${c.orientation.label}")
+        io.wenyou.textquest.ui.common.RawText(c.tagline); Text("性取向：${c.orientation.label}")
         Text("性格：${c.personality}"); Text("背景：${c.background}")
         Text("说话方式：${c.speechStyle}"); Text("台词：${c.exampleDialogue}"); Text("招呼：${c.greeting}")
         Text("附加人设：${c.extraPrompt}"); Text("底层基调：${c.bottomPrompt}")
         bundle.bottomRules.filter { it.id in c.bottomRuleIds }.forEach { Text("${it.name}：${it.content}") }
         Text("初始外观：${c.initial.description}")
-        Text(c.initial.metrics.entries.joinToString(" · ") { "${CharacterMetrics.label(it.key)} ${it.value}" })
+        io.wenyou.textquest.ui.common.RawText(c.initial.metrics.entries.joinToString(" · ") { "${CharacterMetrics.label(it.key)} ${it.value}" })
         Text("初始标记：${c.initial.flags.joinToString()}")
         Text("内容：${if (c.lgbt) "LGBT " else ""}${if (c.adult) "18+" else "全年龄"}")
     } }

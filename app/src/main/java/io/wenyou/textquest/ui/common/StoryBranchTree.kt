@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.*
+import io.wenyou.textquest.ui.common.AppIcon as Icon
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -93,7 +95,7 @@ fun StoryBranchTreeDialog(story: Story, onEdit: (String) -> Unit, onDismiss: () 
             }, actions = { AppTextButton(onClick = { collapsed = emptySet() }) { Text("全部展开") } })
         }) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
-                Text(story.title, Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.titleMedium)
+                io.wenyou.textquest.ui.common.RawText(story.title, Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.titleMedium)
                 Text("点击节点编辑；条件分支展示所有可能出口。左右滑动查看深层分支。",
                     Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall)
                 Row(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
@@ -138,12 +140,12 @@ private fun BranchNode(story: Story, row: BranchRow, collapsed: Boolean, onToggl
             colors = CardDefaults.cardColors(containerColor = if (row.kind == BranchKind.MISSING) colors.errorContainer else colors.surfaceContainerHigh),
             modifier = Modifier.width(300.dp)) {
             Column(Modifier.padding(12.dp)) {
-                Text(row.label, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(node?.title?.ifBlank { row.nodeId.orEmpty() } ?: row.nodeId ?: "游玩时生成",
+                io.wenyou.textquest.ui.common.RawText(row.label, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                io.wenyou.textquest.ui.common.RawText(node?.title?.ifBlank { row.nodeId.orEmpty() } ?: row.nodeId ?: "游玩时生成",
                     style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text("$marker${if (row.depth > 12) " · 第${row.depth}层" else ""}", style = MaterialTheme.typography.bodySmall,
                     color = if (row.kind == BranchKind.MISSING) colors.error else colors.onSurfaceVariant)
-                if (row.expandable) AppTextButton(onClick = onToggle) { Text(if (collapsed) "展开分支" else "折叠分支") }
+                if (row.expandable) AppTextButton(onClick = onToggle) { io.wenyou.textquest.ui.common.RawText(if (collapsed) "展开分支" else "折叠分支") }
             }
         }
     }

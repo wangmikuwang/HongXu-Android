@@ -118,6 +118,9 @@ fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScop
 /** Background sampling, blur and edge lensing are isolated from readable foreground text. */
 @Composable
 fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
+    val material = io.wenyou.textquest.ui.theme.LocalAppearance.current.glassMaterial
+    val blurDp = when (material) { "clear" -> 3f; "frosted" -> 12f; else -> 7f }
+    val glassAlpha = when (material) { "clear" -> .16f; "frosted" -> .55f; else -> .25f }
     val backdrop = LocalBackdrop.current
     val sample = rememberGraphicsLayer()
     var origin by remember { mutableStateOf(Offset.Zero) }
@@ -150,7 +153,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
             val corner = if (pill) minOf(size.width, size.height) / 2f else minOf(30.dp.toPx(), size.height / 2f)
             sample.clip = true
             if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
-                val blur = RenderEffect.createBlurEffect(5.5.dp.toPx() * sampleScale, 5.5.dp.toPx() * sampleScale, Shader.TileMode.CLAMP)
+                val blur = RenderEffect.createBlurEffect(blurDp.dp.toPx() * sampleScale, blurDp.dp.toPx() * sampleScale, Shader.TileMode.CLAMP)
                 sample.renderEffect = if (Build.VERSION.SDK_INT >= 33 && shader != null) {
                     shader.setFloatUniform("extent", sampleSize.width.toFloat(), sampleSize.height.toFloat())
                     shader.setFloatUniform("radius", corner * sampleScale)
@@ -167,7 +170,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
                     val image = frozen
                     if (image != null) drawImage(image, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
                     else drawRect(tint.copy(alpha = 0.82f))
-                    drawRect(tint.copy(alpha = if (dark) 0.24f else 0.28f))
+                    drawRect(tint.copy(alpha = glassAlpha))
                 } else if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
                     val offset = origin - backdrop.origin
                     sample.record(size = sampleSize) {
@@ -177,7 +180,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
                         }
                     }
                     scale(1f / sampleScale, 1f / sampleScale, pivot = Offset.Zero) { drawLayer(sample) }
-                    drawRect(tint.copy(alpha = if (dark) 0.24f else 0.28f))
+                    drawRect(tint.copy(alpha = glassAlpha))
                 } else {
                     // ponytail: Android 8–11 retain readable tinted glass; GPU backdrop effects need Android 12+.
                     drawRect(tint.copy(alpha = 0.94f))

@@ -40,12 +40,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -118,7 +118,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(story?.title?.ifBlank { "未命名剧情" } ?: "剧情编辑器", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                title = { io.wenyou.textquest.ui.common.RawText(story?.title?.ifBlank { "未命名剧情" } ?: "剧情编辑器", maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
@@ -147,7 +147,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
             if (ui.message.isNotBlank()) {
                 item {
                     TonalCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
-                        Text(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        io.wenyou.textquest.ui.common.RawText(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
                     }
                 }
             }
@@ -292,10 +292,10 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                                 Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(KIND_META[node?.kind] ?: "•", style = MaterialTheme.typography.titleMedium)
+                                io.wenyou.textquest.ui.common.RawText(KIND_META[node?.kind] ?: "•", style = MaterialTheme.typography.titleMedium)
                                 Spacer(Modifier.width(10.dp))
                                 Column(Modifier.weight(1f)) {
-                                    Text(node?.title?.ifBlank { id } ?: id,
+                                    io.wenyou.textquest.ui.common.RawText(node?.title?.ifBlank { id } ?: id,
                                         style = MaterialTheme.typography.titleSmall,
                                         fontWeight = FontWeight.SemiBold)
                                     val preview = when (node?.kind) {
@@ -303,7 +303,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                                         else -> node?.text.orEmpty().replace('\n', ' ').take(40)
                                     }
                                     if (preview.isNotBlank())
-                                        Text(preview, style = MaterialTheme.typography.bodySmall,
+                                        io.wenyou.textquest.ui.common.RawText(preview, style = MaterialTheme.typography.bodySmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
                                 }
                                 if (!selected) {
@@ -492,7 +492,7 @@ private fun ChoiceEditor(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CondRows(title: String, conds: List<Cond>, onChange: (List<Cond>) -> Unit) {
-    Text(title, style = MaterialTheme.typography.labelLarge)
+    io.wenyou.textquest.ui.common.RawText(title, style = MaterialTheme.typography.labelLarge)
     conds.forEachIndexed { i, cond ->
         Row(verticalAlignment = Alignment.CenterVertically) {
             AppDropdown(
@@ -506,7 +506,7 @@ private fun CondRows(title: String, conds: List<Cond>, onChange: (List<Cond>) ->
             OutlinedTextField(
                 value = cond.name,
                 onValueChange = { onChange(conds.replace(i, cond.copy(name = it))) },
-                label = { Text(if (cond.type == CondType.VAR) "变量名" else "标记名") },
+                label = { io.wenyou.textquest.ui.common.RawText(if (cond.type == CondType.VAR) "变量名" else "标记名") },
                 singleLine = true,
                 modifier = Modifier.weight(1.5f)
             )
@@ -542,7 +542,7 @@ private fun CondRows(title: String, conds: List<Cond>, onChange: (List<Cond>) ->
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EffectRows(title: String, effects: List<Effect>, onChange: (List<Effect>) -> Unit) {
-    Text(title, style = MaterialTheme.typography.labelLarge)
+    io.wenyou.textquest.ui.common.RawText(title, style = MaterialTheme.typography.labelLarge)
     effects.forEachIndexed { i, effect ->
         Column(Modifier.padding(vertical = 2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -557,7 +557,7 @@ private fun EffectRows(title: String, effects: List<Effect>, onChange: (List<Eff
                 OutlinedTextField(
                     value = effect.name,
                     onValueChange = { onChange(effects.replace(i, effect.copy(name = it))) },
-                    label = { Text(if (effect.type == EffectType.ROLL) "结果变量" else "变量/标记名") },
+                    label = { io.wenyou.textquest.ui.common.RawText(if (effect.type == EffectType.ROLL) "结果变量" else "变量/标记名") },
                     singleLine = true,
                     modifier = Modifier.weight(1.4f)
                 )
@@ -649,7 +649,7 @@ private fun FlagRows(flags: Set<String>, onAdd: (String) -> Unit, onRemove: (Str
         flags.forEach { f ->
             AssistChip(
                 onClick = { onRemove(f) },
-                label = { Text(f) },
+                label = { io.wenyou.textquest.ui.common.RawText(f) },
                 trailingIcon = { Icon(Icons.Filled.Close, null, Modifier.width(16.dp).height(16.dp)) }
             )
         }
@@ -690,7 +690,7 @@ private fun NumField(
             draft = raw
             raw.toDoubleOrNull()?.let(onChange)
         },
-        label = { Text(label) },
+        label = { io.wenyou.textquest.ui.common.RawText(label) },
         singleLine = true,
         modifier = modifier,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)

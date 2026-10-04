@@ -24,11 +24,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
@@ -181,61 +181,15 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
             if (ui.message.isNotBlank()) {
                 item {
                     TonalCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
-                        Text(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                        io.wenyou.textquest.ui.common.RawText(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
                     }
                 }
             }
 
-            item { SectionHeader("外观") }
             item {
-                TonalCard {
-                    AppDropdown(
-                        label = "界面风格",
-                        options = listOf("Material You" to ThemeStyle.MATERIAL, "液态玻璃" to ThemeStyle.APPLE),
-                        selected = ui.style,
-                        onSelect = vm::setStyle
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    AppDropdown(
-                        label = "主题模式",
-                        options = listOf(
-                            "跟随系统" to ThemeMode.SYSTEM,
-                            "浅色" to ThemeMode.LIGHT,
-                            "深色" to ThemeMode.DARK
-                        ),
-                        selected = ui.mode,
-                        onSelect = { vm.setMode(it) }
-                    )
-                }
-            }
-            if (ui.prideUnlocked && ui.prideEnabled) item {
-                TonalCard {
-                    AppDropdown(label = "旗帜配色",
-                        options = listOf("默认配色" to null) + PrideTheme.entries.map { it.label to it },
-                        selected = ui.prideTheme, onSelect = vm::setPrideTheme)
-                    ui.prideTheme?.let {
-                        Spacer(Modifier.height(12.dp))
-                        Text(it.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-            }
-            if (ui.style == ThemeStyle.MATERIAL && ui.prideTheme == null) item {
-                TonalCard {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Column(Modifier.weight(1f)) {
-                            Text("动态取色（壁纸配色）", style = MaterialTheme.typography.labelLarge)
-                            Text(
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                                    "从壁纸生成整套色调角色（Android 12+）"
-                                else "此设备需要 Android 12+ 才能使用动态取色",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(checked = ui.dynamicColor,
-                            onCheckedChange = { vm.setDynamic(it) },
-                            enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                    }
+                TonalCard(Modifier.clickable { nav.navigate(R.APPEARANCE) }) {
+                    Text("外观与主题", style = MaterialTheme.typography.titleMedium)
+                    Text("界面风格、颜色、字体、大小与图标", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
@@ -328,7 +282,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                     Text("崩溃日志保存位置", style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(6.dp))
                     val dir = vm.crashDir()
-                    Text(if (dir != null) "已设置：$dir" else "默认保存在应用内。可选择系统文档目录。",
+                    io.wenyou.textquest.ui.common.RawText(if (dir != null) "已设置：$dir" else "默认保存在应用内。可选择系统文档目录。",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(10.dp))

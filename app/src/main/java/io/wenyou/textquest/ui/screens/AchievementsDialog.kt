@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
+import io.wenyou.textquest.ui.common.AppIcon as Icon
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -53,9 +55,9 @@ internal fun AchievementsContent(records: List<AchievementRecord>, onDismiss: ()
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("${if (unlocked) "🏆" else "🔒"} ${achievement.title}", style = MaterialTheme.typography.titleMedium)
-                        Text(achievement.description, style = MaterialTheme.typography.bodyMedium)
+                        io.wenyou.textquest.ui.common.RawText(achievement.description, style = MaterialTheme.typography.bodyMedium)
                         LinearProgressIndicator(progress = { progress.toFloat() / achievement.target }, modifier = Modifier.fillMaxWidth())
-                        Text(if (unlocked) "已解锁 · ${DateFormat.getDateInstance().format(Date(record!!.unlockedAt))}"
+                        io.wenyou.textquest.ui.common.RawText(if (unlocked) "已解锁 · ${DateFormat.getDateInstance().format(Date(record!!.unlockedAt))}"
                             else "未解锁 · $progress / ${achievement.target}", style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

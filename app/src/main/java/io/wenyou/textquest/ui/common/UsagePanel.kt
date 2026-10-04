@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import io.wenyou.textquest.ui.common.AppIcon as Icon
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -47,9 +49,9 @@ fun UsagePanel(tracker: UsageTracker, showLast: Boolean = true) {
                         Text("已估算 ${list.size} 次：$currency ${String.format(Locale.ROOT, "%.6f", list.sumOf { it.estimatedCost!! })}" + if (list.any { it.estimatedCostUpper != null }) "–${String.format(Locale.ROOT, "%.6f", list.sumOf { it.estimatedCostUpper ?: it.estimatedCost!! })}" else "")
                     }
                     Text("${records.count { it.estimatedCost == null }} 次费用未知；未收录的模型或第三方服务，请到 AI 服务编辑页填写单价。")
-                    if (error.isNotBlank()) Text(error, color = MaterialTheme.colorScheme.error)
+                    if (error.isNotBlank()) io.wenyou.textquest.ui.common.RawText(error, color = MaterialTheme.colorScheme.error)
                     records.asReversed().forEach { r ->
-                        Text(SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault()).format(Date(r.time)) + "\n" + r.label(), style = MaterialTheme.typography.bodySmall)
+                        io.wenyou.textquest.ui.common.RawText(SimpleDateFormat("MM-dd HH:mm:ss", Locale.getDefault()).format(Date(r.time)) + "\n" + r.label(), style = MaterialTheme.typography.bodySmall)
                         HorizontalDivider()
                     }
                 }

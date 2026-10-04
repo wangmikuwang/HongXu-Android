@@ -11,6 +11,7 @@ import androidx.activity.compose.BackHandler
 
 import io.wenyou.textquest.ui.common.GlassBackdrop
 import io.wenyou.textquest.ui.common.liquidGlass
+import io.wenyou.textquest.ui.theme.LocalGlassEnabled
 import io.wenyou.textquest.ui.theme.LocalThemeStyle
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import androidx.compose.ui.layout.onSizeChanged
@@ -61,7 +62,7 @@ import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -72,7 +73,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -151,9 +152,9 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
             CenterAlignedTopAppBar(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(ui.story?.title ?: "对局", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        io.wenyou.textquest.ui.common.RawText(ui.story?.title ?: "对局", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         if (ui.nodeTitle.isNotBlank() && ui.nodeTitle != ui.story?.title) {
-                            Text(ui.nodeTitle, style = MaterialTheme.typography.labelSmall,
+                            io.wenyou.textquest.ui.common.RawText(ui.nodeTitle, style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
@@ -178,7 +179,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     ) { padding ->
         BoxWithConstraints(Modifier.padding(padding).consumeWindowInsets(padding).imePadding().fillMaxSize()) {
         val panelHeight = maxHeight * 0.5f
-        val glass = LocalThemeStyle.current == ThemeStyle.APPLE
+        val glass = LocalGlassEnabled.current
         val historyContent: @Composable () -> Unit = {
             LazyColumn(
                 state = listState,
@@ -292,9 +293,9 @@ private fun ProviderOption(
     ) {
         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(label, style = MaterialTheme.typography.titleSmall)
+                io.wenyou.textquest.ui.common.RawText(label, style = MaterialTheme.typography.titleSmall)
                 if (sub.isNotBlank())
-                    Text(sub, style = MaterialTheme.typography.bodySmall,
+                    io.wenyou.textquest.ui.common.RawText(sub, style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
             if (selected) {
@@ -327,7 +328,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                 Column(Modifier.padding(14.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Surface(shape = RoundedCornerShape(50), color = color) {
-                            Text(char?.emoji ?: "🎭",
+                            io.wenyou.textquest.ui.common.RawText(char?.emoji ?: "🎭",
                                 Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                 fontSize = 13.sp)
                         }
@@ -337,7 +338,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                     }
                     Spacer(Modifier.height(8.dp))
                     SelectionContainer {
-                        Text(text, style = MaterialTheme.typography.bodyLarge)
+                        io.wenyou.textquest.ui.common.RawText(text, style = MaterialTheme.typography.bodyLarge)
                     }
                 }
             }
@@ -350,7 +351,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                 ) {
                     Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
                         if (entry.speakerId.isNotBlank()) Text("${entry.speaker} · 你", style = MaterialTheme.typography.labelSmall)
-                        Text(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                        io.wenyou.textquest.ui.common.RawText(text, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSecondaryContainer)
                     }
                 }
             }
@@ -369,7 +370,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                         color = MaterialTheme.colorScheme.onTertiaryContainer)
                     Spacer(Modifier.height(8.dp))
                     SelectionContainer {
-                        Text(text, style = MaterialTheme.typography.bodyLarge,
+                        io.wenyou.textquest.ui.common.RawText(text, style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onTertiaryContainer)
                     }
                 }
@@ -377,7 +378,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
         }
         EntryKind.SYSTEM -> {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(text, style = MaterialTheme.typography.bodySmall,
+                io.wenyou.textquest.ui.common.RawText(text, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.readableAccent(),
                     fontStyle = FontStyle.Italic)
             }
@@ -387,7 +388,7 @@ private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.errorContainer
             ) {
-                Text(text,
+                io.wenyou.textquest.ui.common.RawText(text,
                     Modifier.padding(12.dp),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onErrorContainer)
@@ -446,7 +447,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
                             onClick = { vm.chooseAuthored(i) },
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                             shape = RoundedCornerShape(18.dp)
-                        ) { Text(choice.text) }
+                        ) { io.wenyou.textquest.ui.common.RawText(choice.text) }
                     }
                 } else if (ui.pendingAiChoices.isNotEmpty()) {
                     Text("你的选择：", style = MaterialTheme.typography.labelLarge,
@@ -457,7 +458,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
                             onClick = { vm.chooseAi(i) },
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                             shape = RoundedCornerShape(18.dp)
-                        ) { Text(choice.text) }
+                        ) { io.wenyou.textquest.ui.common.RawText(choice.text) }
                     }
                     if (ui.aiTargetExit) {
                         AppOutlinedButton(
@@ -509,7 +510,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
 @Composable
 private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
     var text by rememberSaveable { mutableStateOf("") }
-    Surface(Modifier.fillMaxWidth(), color = if (LocalThemeStyle.current == ThemeStyle.APPLE) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLow) {
+    Surface(Modifier.fillMaxWidth(), color = if (LocalGlassEnabled.current) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             if (ui.pendingAiChoices.isNotEmpty()) {
                 Text("AI 导演给的走向灵感（点一下直接采用，也可自由输入）：",
@@ -519,7 +520,7 @@ private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ui.pendingAiChoices.forEach { c ->
                         FilterChip(selected = false, onClick = { vm.dmSend(c.text) },
-                            label = { Text(c.text, maxLines = 1, overflow = TextOverflow.Ellipsis) })
+                            label = { io.wenyou.textquest.ui.common.RawText(c.text, maxLines = 1, overflow = TextOverflow.Ellipsis) })
                     }
                 }
             }
@@ -570,9 +571,9 @@ private fun StoppedPanel(ui: PlayUi, vm: PlayViewModel, nav: NavHostController) 
         modifier = Modifier.fillMaxWidth().padding(12.dp)
     ) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(ui.stoppedTitle.ifBlank { "这一局结束了" },
+            io.wenyou.textquest.ui.common.RawText(ui.stoppedTitle.ifBlank { "这一局结束了" },
                 style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-            Text(ui.stoppedMessage, style = MaterialTheme.typography.bodyMedium)
+            io.wenyou.textquest.ui.common.RawText(ui.stoppedMessage, style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { vm.restart() }, modifier = Modifier.fillMaxWidth()) {
@@ -613,7 +614,7 @@ private fun CharacterStateDrawer(ui: PlayUi) {
         ) {
             Text("剧情记忆与人物关系", style = MaterialTheme.typography.titleLarge)
             Text("剧情记忆", style = MaterialTheme.typography.titleMedium)
-            Text(ui.session?.memory?.ifBlank { "AI 续写后会自动记录关键事件，随存档保存。" } ?: "暂无剧情记忆", style = MaterialTheme.typography.bodySmall)
+            io.wenyou.textquest.ui.common.RawText(ui.session?.memory?.ifBlank { "AI 续写后会自动记录关键事件，随存档保存。" } ?: "暂无剧情记忆", style = MaterialTheme.typography.bodySmall)
             Text("人物关系与状态", style = MaterialTheme.typography.titleMedium)
             if (ui.session?.characterStates.isNullOrEmpty()) {
                 Text("还没有角色状态。剧情里为角色设置「好感度/身体状况/穿着」等效果后，这里会实时显示。",
@@ -636,7 +637,7 @@ private fun CharacterStateDrawer(ui: PlayUi) {
                                 Text("${d.icon} ${d.label}",
                                     style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.weight(1f))
-                                Text(GameEngine.formatNumber(CharacterMetrics.clamp(v)),
+                                io.wenyou.textquest.ui.common.RawText(GameEngine.formatNumber(CharacterMetrics.clamp(v)),
                                     style = MaterialTheme.typography.bodySmall)
                             }
                             LinearProgressIndicator(
@@ -684,13 +685,13 @@ private fun ThinkingBlock(reasoning: String) {
                 modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
             ) {
                 Text("🧠 AI 思考过程", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                Text(if (expanded) "收起" else "展开",
+                io.wenyou.textquest.ui.common.RawText(if (expanded) "收起" else "展开",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.readableAccent())
             }
             if (expanded && reasoning.isNotBlank()) {
                 Spacer(Modifier.height(6.dp))
-                Text(reasoning,
+                io.wenyou.textquest.ui.common.RawText(reasoning,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.fillMaxWidth())

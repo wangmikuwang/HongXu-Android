@@ -36,10 +36,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.res.stringResource
 import androidx.compose.runtime.Composable
@@ -196,16 +196,16 @@ private fun HomeWelcome(
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(Modifier.padding(horizontal = 4.dp, vertical = 8.dp)) {
-            Text(title, style = MaterialTheme.typography.headlineLarge)
+            io.wenyou.textquest.ui.common.RawText(title, style = MaterialTheme.typography.headlineLarge)
             Spacer(Modifier.height(8.dp))
             Text("让你的故事继续", style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         TonalCard {
-            Text(if (hasSave) "正在续写" else "故事，从这里开始", style = MaterialTheme.typography.labelLarge,
+            io.wenyou.textquest.ui.common.RawText(if (hasSave) "正在续写" else "故事，从这里开始", style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(Modifier.height(8.dp))
-            Text(journeyTitle ?: "开启第一段旅程", style = MaterialTheme.typography.headlineSmall,
+            io.wenyou.textquest.ui.common.RawText(journeyTitle ?: "开启第一段旅程", style = MaterialTheme.typography.headlineSmall,
                 maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(16.dp))
             Button(onClick = onContinue, colors = ButtonDefaults.buttonColors(
@@ -213,7 +213,7 @@ private fun HomeWelcome(
                 contentColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(distributedAccent(0, MaterialTheme.colorScheme.primary)) else MaterialTheme.colorScheme.onPrimary), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) {
                 Icon(Icons.Filled.PlayArrow, null)
                 Spacer(Modifier.width(6.dp))
-                Text(if (hasSave) "继续旅程" else "开始剧情")
+                io.wenyou.textquest.ui.common.RawText(if (hasSave) "继续旅程" else "开始剧情")
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -294,8 +294,8 @@ private fun ContinueCard(card: HomeCard, accentIndex: Int, onClick: () -> Unit, 
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f).clickable(onClick = onClick)) {
-                Text(card.slot.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(story?.title ?: "（剧情已删除）", style = MaterialTheme.typography.bodyMedium,
+                io.wenyou.textquest.ui.common.RawText(card.slot.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                io.wenyou.textquest.ui.common.RawText(story?.title ?: "（剧情已删除）", style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(4.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -324,9 +324,9 @@ private fun MiniStoryRow(
         EmojiBadge(emoji, if (LocalAccentPalette.current.isNotEmpty()) color else color.copy(alpha = 0.35f), size = 40.dp, fontSize = 20.sp)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            io.wenyou.textquest.ui.common.RawText(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
             if (subtitle.isNotBlank())
-                Text(subtitle, style = MaterialTheme.typography.bodySmall,
+                io.wenyou.textquest.ui.common.RawText(subtitle, style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }

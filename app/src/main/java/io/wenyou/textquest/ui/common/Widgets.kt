@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.common
+import io.wenyou.textquest.ui.theme.LocalAppearance
 import io.wenyou.textquest.ui.theme.LocalThemeStyle
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import io.wenyou.textquest.ui.theme.distributedAccent
@@ -42,7 +43,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -97,7 +98,7 @@ fun EmojiBadge(
         color = color
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(emoji, style = MaterialTheme.typography.titleLarge.copy(fontSize = fontSize))
+            io.wenyou.textquest.ui.common.RawText(emoji, style = MaterialTheme.typography.titleLarge.copy(fontSize = fontSize))
         }
     }
 }
@@ -111,7 +112,7 @@ fun Pill(text: String, modifier: Modifier = Modifier, container: Color? = null, 
         shape = RoundedCornerShape(50),
         color = fill ?: MaterialTheme.colorScheme.surfaceContainerHigh
     ) {
-        Text(
+        io.wenyou.textquest.ui.common.RawText(
             text,
             maxLines = 2, overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.labelMedium,
@@ -134,7 +135,7 @@ fun FilterTag(label: String, selected: Boolean, onClick: () -> Unit, modifier: M
             else Surface(modifier = Modifier.size(10.dp), shape = CircleShape, color = accent,
                 border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)) {}
         }} else null,
-        shape = RoundedCornerShape(50), label = { Text(label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
+        shape = RoundedCornerShape(50), label = { io.wenyou.textquest.ui.common.RawText(label, maxLines = 2, overflow = TextOverflow.Ellipsis) },
         colors = FilterChipDefaults.filterChipColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
             labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -169,7 +170,7 @@ fun SwitchRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(
+            io.wenyou.textquest.ui.common.RawText(
                 subtitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -189,7 +190,7 @@ fun TonalCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.large,
+        shape = if (LocalAppearance.current.listStyle == "rounded") RoundedCornerShape(24.dp) else MaterialTheme.shapes.large,
         colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -232,10 +233,10 @@ fun AppField(
         singleLine = singleLine,
         minLines = effMin,
         maxLines = effMax,
-        placeholder = if (placeholder.isNotBlank()) ({ Text(placeholder) }) else null,
+        placeholder = if (placeholder.isNotBlank()) ({ io.wenyou.textquest.ui.common.RawText(placeholder) }) else null,
         keyboardOptions = keyboardOptions,
         visualTransformation = visualTransformation,
-        supportingText = if (supporting.isNotBlank()) ({ Text(supporting) }) else null
+        supportingText = if (supporting.isNotBlank()) ({ io.wenyou.textquest.ui.common.RawText(supporting) }) else null
     )
 }
 
@@ -252,6 +253,21 @@ fun <T> AppDropdown(
     error: String? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
+    if (LocalAppearance.current.popupStyle == "dialog") {
+        Box(modifier) {
+            OutlinedTextField(value = options.firstOrNull { it.second == selected }?.first ?: "", onValueChange = {},
+                readOnly = true, enabled = enabled, singleLine = true, label = { Text(label) },
+                modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { expanded = true })
+            Box(Modifier.matchParentSize().clickable(enabled = enabled) { expanded = true })
+        }
+        if (expanded) androidx.compose.material3.AlertDialog(onDismissRequest = { expanded = false }, title = { Text(label) },
+            text = { androidx.compose.foundation.lazy.LazyColumn { options.forEach { (name, value) -> item {
+                Row(Modifier.fillMaxWidth().selectable(value == selected, role = Role.RadioButton, onClick = { onSelect(value); expanded = false }).padding(12.dp)) {
+                    androidx.compose.material3.RadioButton(value == selected, onClick = null); io.wenyou.textquest.ui.common.RawText(name, Modifier.padding(start = 12.dp))
+                }
+            } } } }, confirmButton = { AppTextButton(onClick = { expanded = false }) { Text("关闭") } })
+        return
+    }
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { if (enabled) expanded = it },
@@ -271,12 +287,12 @@ fun <T> AppDropdown(
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor(androidx.compose.material3.MenuAnchorType.PrimaryNotEditable, enabled).fillMaxWidth(),
             isError = error != null,
-            supportingText = error?.let { { Text(it) } }
+            supportingText = error?.let { { io.wenyou.textquest.ui.common.RawText(it) } }
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEach { (text, value) ->
                 DropdownMenuItem(
-                    text = { Text(text) },
+                    text = { io.wenyou.textquest.ui.common.RawText(text) },
                     onClick = {
                         onSelect(value)
                         expanded = false

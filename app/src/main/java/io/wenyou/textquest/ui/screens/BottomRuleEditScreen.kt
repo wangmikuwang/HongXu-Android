@@ -15,11 +15,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
+import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -46,7 +46,7 @@ fun BottomRuleEditScreen(container: WenYouApp.AppContainer, nav: NavHostControll
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(if (ui.isNew) "新建底层基调" else "编辑底层基调") },
+                title = { io.wenyou.textquest.ui.common.RawText(if (ui.isNew) "新建底层基调" else "编辑底层基调") },
                 navigationIcon = {
                     IconButton(onClick = { nav.navigateUp() }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
@@ -66,7 +66,7 @@ fun BottomRuleEditScreen(container: WenYouApp.AppContainer, nav: NavHostControll
         ) {
             if (ui.message.isNotBlank()) {
                 item { TonalCard(containerColor = MaterialTheme.colorScheme.tertiaryContainer) {
-                    Text(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                    io.wenyou.textquest.ui.common.RawText(ui.message, color = MaterialTheme.colorScheme.onTertiaryContainer)
                 } }
             }
             item {

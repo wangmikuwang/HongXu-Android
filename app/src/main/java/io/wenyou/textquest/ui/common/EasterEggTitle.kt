@@ -5,7 +5,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Text
+import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
@@ -18,7 +18,7 @@ internal fun EasterEggTitle(text: String, style: TextStyle, tapMessage: String, 
     var taps by remember { mutableIntStateOf(0) }
     var lastTap by remember { mutableLongStateOf(0L) }
     var surprise by rememberSaveable { mutableStateOf<String?>(null) }
-    Text(text, style = style, modifier = Modifier.heightIn(min = 48.dp).combinedClickable(
+    io.wenyou.textquest.ui.common.RawText(text, style = style, modifier = Modifier.heightIn(min = 48.dp).combinedClickable(
         onClickLabel = "连点五次探索彩蛋",
         onLongClickLabel = "探索彩蛋",
         onClick = {
@@ -35,7 +35,7 @@ internal fun EasterEggTitle(text: String, style: TextStyle, tapMessage: String, 
     surprise?.let { message ->
         AlertDialog(onDismissRequest = { surprise = null },
             title = { Text("你发现了彩蛋！") },
-            text = { Text(message) },
+            text = { io.wenyou.textquest.ui.common.RawText(message) },
             confirmButton = { AppTextButton(onClick = { surprise = null }) { Text("收下惊喜") } })
     }
 }
