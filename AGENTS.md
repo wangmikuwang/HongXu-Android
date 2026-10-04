@@ -8,7 +8,7 @@ Public UI, documentation and release notes must describe this application only. 
 
 ## Shared project knowledge (required)
 
-Before starting work, read `F:/OneDrive/Documents/harness/PROJECT_KNOWLEDGE_BASE.md` when available, or follow `.codex/KNOWLEDGE_BASE.md`. Treat it as the current internal source of project requirements and status, not a one-time handoff.
+Before starting work, read `F:/OneDrive/Documents/projects/PROJECT_KNOWLEDGE_BASE.md` when available, or follow `.codex/KNOWLEDGE_BASE.md`. Treat it as the current internal source of project requirements and status, not a one-time handoff.
 
 After every fix, feature, theme, configuration, version, release, or documentation change, update the corresponding current state and append the request, changed files, validation results, release state, and remaining work to that knowledge base before finishing. Re-read before writing so concurrent agent records are preserved. Never commit or publish the private knowledge base, its pointers, migration archives, user attachments, or credentials.
 

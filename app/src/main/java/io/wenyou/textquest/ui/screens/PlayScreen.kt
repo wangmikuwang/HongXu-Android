@@ -183,7 +183,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                 )
             ) {
                 itemsIndexed(history) { _, entry ->
-                    StoryEntry(entry, ui)
+                    StoryEntry(entry, ui.characters)
                     Spacer(Modifier.height(10.dp))
                 }
                 if (live) {
@@ -303,13 +303,13 @@ private fun ProviderOption(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun StoryEntry(entry: LogEntry, ui: PlayUi) {
+private fun StoryEntry(entry: LogEntry, characters: List<CharacterData>) {
     val text = entry.text
     if (text.isBlank() && entry.reasoning.isBlank()) return
     if (entry.reasoning.isNotBlank()) ThinkingBlock(entry.reasoning)
     when (entry.kind) {
         EntryKind.CHARACTER -> {
-            val char = ui.characters.firstOrNull { it.id == entry.speakerId }
+            val char = characters.firstOrNull { it.id == entry.speakerId }
             val color = avatarColor(char?.colorIndex ?: 0)
             val name = entry.speaker.ifBlank { char?.name ?: "角色" }
             Card(

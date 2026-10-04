@@ -58,7 +58,10 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Distributed builds: R8 + resource shrinking, signed with the key already used by published APKs.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            signingConfig = signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

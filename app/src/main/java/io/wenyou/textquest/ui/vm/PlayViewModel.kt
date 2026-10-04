@@ -44,7 +44,6 @@ data class PlayUi(
     val nodeTitle: String = "",
     val visibleChoices: List<ChoiceData> = emptyList(),
     val pendingAiChoices: List<AiChoice> = emptyList(),
-    val aiDelta: String = "",
     val aiReasoningDelta: String = "",
     val aiTargetExit: Boolean = false,
     val stoppedTitle: String = "",
@@ -191,7 +190,7 @@ class PlayViewModel internal constructor(
                 _ui.update {
                     it.copy(stage = PlayStage.AUTHORED, nodeId = nodeId, nodeTitle = node.title,
                         visibleChoices = choices, pendingAiChoices = emptyList(),
-                        providerMissing = provider() == null, aiDelta = "")
+                        providerMissing = provider() == null)
                 }
                 if (choices.isEmpty() && node.endTarget.isNotBlank() && node.endTarget != nodeId) {
                     advanceTo(node.endTarget, autoVisited + nodeId)
@@ -217,7 +216,7 @@ class PlayViewModel internal constructor(
                     _ui.update {
                         it.copy(stage = PlayStage.AUTHORED, nodeId = nodeId, nodeTitle = node.title,
                             visibleChoices = emptyList(), pendingAiChoices = s.pendingAiChoices.map(::toAiChoice),
-                            aiDelta = "", aiTargetExit = node.endTarget.isNotBlank(),
+                            aiTargetExit = node.endTarget.isNotBlank(),
                             providerMissing = provider() == null)
                     }
                     return
@@ -225,7 +224,7 @@ class PlayViewModel internal constructor(
                 _ui.update {
                     it.copy(stage = PlayStage.AI_WORKING, nodeId = nodeId, nodeTitle = node.title,
                         visibleChoices = emptyList(), pendingAiChoices = emptyList(),
-                        aiDelta = "", aiTargetExit = node.endTarget.isNotBlank(),
+                        aiTargetExit = node.endTarget.isNotBlank(),
                         providerMissing = provider() == null)
                 }
                 runAiScene()
@@ -299,7 +298,7 @@ class PlayViewModel internal constructor(
         session = session?.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
         val next = choice.next.ifBlank { "@self" }
         if (next != "@self" && story.nodes.containsKey(next)) {
-            _ui.update { it.copy(pendingAiChoices = emptyList(), aiDelta = "") }
+            _ui.update { it.copy(pendingAiChoices = emptyList()) }
             advanceTo(next)
         } else {
             runAiScene()
@@ -312,7 +311,7 @@ class PlayViewModel internal constructor(
         val node = story.nodes[_ui.value.nodeId] ?: return
         val target = node.endTarget
         if (target.isBlank() || target == node.id || !story.nodes.containsKey(target)) return
-        _ui.update { it.copy(pendingAiChoices = emptyList(), aiDelta = "") }
+        _ui.update { it.copy(pendingAiChoices = emptyList()) }
         advanceTo(target)
     }
 
@@ -336,14 +335,15 @@ class PlayViewModel internal constructor(
         // 已有生成任务在运行时，不再发起新的并发请求（覆盖快速连点等场景）
         if (aiJob?.isActive == true) return
         session = s.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
-        _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiDelta = "", aiReasoningDelta = "", pendingAiChoices = emptyList(), providerMissing = false) }
+        _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiReasoningDelta = "", pendingAiChoices = emptyList(), providerMissing = false) }
         launchAiJob { job ->
             try {
+                val reasoning = ReasoningStream()
                 val scene = director.generateScene(profile, story, node, ui.characters, s,
                     adult = story.adult,
                     bottomRules = library.bottomRules.value,
-                    onReasoning = { r -> _ui.update { it.copy(aiReasoningDelta = it.aiReasoningDelta + r) } },
-                    onDelta = { delta -> _ui.update { it.copy(aiDelta = it.aiDelta + delta) } })
+                    onReasoning = reasoning::append,
+                    onDelta = { reasoning.flush() })
                 if (job.isActive && aiJob === job) {
                     aiJob = null
                     finishAiScene(scene)
@@ -353,6 +353,27 @@ class PlayViewModel internal constructor(
             } catch (t: Throwable) {
                 if (job.isActive) aiFailed(t)
             }
+        }
+    }
+
+    /** Streams reasoning at most ~20 times per second instead of copying the whole text into UI state per token. */
+    private inner class ReasoningStream {
+        private val text = StringBuilder()
+        private var dirty = false
+        private var publishedAt = 0L
+
+        fun append(chunk: String) {
+            text.append(chunk)
+            dirty = true
+            if (System.nanoTime() - publishedAt >= 50_000_000L) flush()
+        }
+
+        fun flush() {
+            if (!dirty) return
+            dirty = false
+            publishedAt = System.nanoTime()
+            val snapshot = text.toString()
+            _ui.update { it.copy(aiReasoningDelta = snapshot) }
         }
     }
 
@@ -420,7 +441,7 @@ class PlayViewModel internal constructor(
         val exit = node?.endTarget?.takeIf { it.isNotBlank() && it != node.id && story.nodes.containsKey(it) }
         if (choices.isEmpty()) {
             session = session?.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = exit == null)
-            _ui.update { it.copy(stage = PlayStage.AUTHORED, aiDelta = "", aiReasoningDelta = "", pendingAiChoices = emptyList(), visibleChoices = emptyList()) }
+            _ui.update { it.copy(stage = PlayStage.AUTHORED, aiReasoningDelta = "", pendingAiChoices = emptyList(), visibleChoices = emptyList()) }
             if (exit != null) {
                 advanceTo(exit)
             } else {
@@ -428,7 +449,7 @@ class PlayViewModel internal constructor(
             }
         } else {
             session = session?.copy(pendingAiChoices = choices.map(::toChoiceData), aiAwaitingChoice = true)
-            _ui.update { it.copy(stage = PlayStage.AUTHORED, aiDelta = "", aiReasoningDelta = "", pendingAiChoices = choices, visibleChoices = emptyList()) }
+            _ui.update { it.copy(stage = PlayStage.AUTHORED, aiReasoningDelta = "", pendingAiChoices = choices, visibleChoices = emptyList()) }
         }
     }
 
@@ -462,21 +483,22 @@ class PlayViewModel internal constructor(
         if (ui.stage != PlayStage.DM_INPUT || aiJob?.isActive == true) return
         appendEntries(listOf(playerEntry(trimmed)))
         session = session?.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
-        _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiDelta = "", aiReasoningDelta = "", pendingAiChoices = emptyList()) }
+        _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiReasoningDelta = "", pendingAiChoices = emptyList()) }
         launchAiJob { job ->
             try {
+                val reasoning = ReasoningStream()
                 val scene = director.directorTurn(profile, story, ui.characters, s, trimmed,
                     adult = story.adult,
                     bottomRules = library.bottomRules.value,
-                    onReasoning = { r -> _ui.update { it.copy(aiReasoningDelta = it.aiReasoningDelta + r) } },
-                    onDelta = { delta -> _ui.update { it.copy(aiDelta = it.aiDelta + delta) } })
+                    onReasoning = reasoning::append,
+                    onDelta = { reasoning.flush() })
                 if (job.isActive && aiJob === job) {
                     session = session?.let { it.copy(aiTurns = (it.aiTurns.coerceAtLeast(0).toLong() + 1).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
                     appendEntries(scene.logEntries(ui.characters))
                     session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
                     applyStateChanges(scene.stateEffects)
                     session = session?.copy(pendingAiChoices = scene.choices.map(::toChoiceData), aiAwaitingChoice = true)
-                    _ui.update { it.copy(aiDelta = "", aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = scene.choices) }
+                    _ui.update { it.copy(aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = scene.choices) }
                 }
             } catch (e: CancellationException) {
                 throw e
@@ -485,7 +507,7 @@ class PlayViewModel internal constructor(
                     // Restore the unconsumed turn so retrying a suggestion never duplicates player input.
                     session = s
                     appendEntries(listOf(LogEntry(EntryKind.ERROR, speaker = "系统", text = "AI 导演出错：${AiDirector.errorMessage(t)}")))
-                    _ui.update { it.copy(aiDelta = "", aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = ui.pendingAiChoices) }
+                    _ui.update { it.copy(aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = ui.pendingAiChoices) }
                 }
             }
         }
@@ -516,7 +538,7 @@ class PlayViewModel internal constructor(
         val fresh = GameEngine.newSession(story, _ui.value.characters)
         _ui.update {
             it.copy(activeSaveId = null, saveName = "", lastMessage = "",
-                pendingAiChoices = emptyList(), aiDelta = "", aiReasoningDelta = "", stoppedTitle = "", stoppedMessage = "")
+                pendingAiChoices = emptyList(), aiReasoningDelta = "", stoppedTitle = "", stoppedMessage = "")
         }
         prepareRoleSelection(fresh)
     }
