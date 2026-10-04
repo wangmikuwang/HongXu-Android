@@ -1,8 +1,6 @@
 package io.wenyou.textquest.ui.screens
 import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onSizeChanged
 
 import io.wenyou.textquest.ui.theme.readableAccent
 
@@ -49,7 +47,6 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledIconButton
 import io.wenyou.textquest.ui.common.FilterTag
 import io.wenyou.textquest.ui.common.AppIcon as Icon
@@ -153,10 +150,8 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         nav = nav
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
-            val density = LocalDensity.current
-            var createHeight by remember { mutableStateOf(56.dp) }
             LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = createHeight + 40.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 item {
@@ -179,7 +174,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                     item {
                         FilterEmptyState(
                             title = if (totalStories > 0) "该分类下暂无剧情" else "还没有任何剧情",
-                            body = if (totalStories > 0) "试试切换上方分类，或清除筛选查看全部。" else "点右下角「＋」编一个分支故事，或用内置示例练手。",
+                            body = if (totalStories > 0) "试试切换上方分类，或清除筛选查看全部。" else "点底栏「创建」编一个故事，或用内置示例练手。",
                             showReset = totalStories > 0,
                             onReset = {
                                 vm.setModeFilter(StoryModeFilter.ALL)
@@ -198,13 +193,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                     }
                 }
             }
-            ExtendedFloatingActionButton(
-                onClick = { nav.navigate(R.storyEdit("new")) },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
-                    .onSizeChanged { createHeight = with(density) { it.height.toDp() } },
-                icon = { Icon(AppIcons.Add, null) },
-                text = { Text("新建剧情") }
-            )
+
         }
     }
 

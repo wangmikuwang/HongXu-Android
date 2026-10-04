@@ -102,7 +102,7 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         else nav.navigate(R.STORIES)
                     },
                     onCreate = { creationOpen = true },
-                    onNewStory = { nav.navigate(R.storyEdit("new")) }
+                    onNewStory = { nav.navigate(R.CREATE) }
                 )
             }
 
@@ -142,7 +142,7 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         AppTextButton(onClick = { nav.navigate(R.STORIES) }) { Text("全部剧情") }
                     }
                     if (stories.isEmpty()) {
-                        Text("点击上方「新建剧情」开始创作。",
+                        Text("点击底栏「创建」开始创作。",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 4.dp))
@@ -218,7 +218,7 @@ private fun HomeWelcome(
                 Text("AI 创建")
             }
             AppOutlinedButton(onClick = onNewStory, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
-                Text("新建剧情")
+                Text("手动创建")
             }
         }
     }

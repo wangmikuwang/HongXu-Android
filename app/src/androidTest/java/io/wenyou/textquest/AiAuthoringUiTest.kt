@@ -116,6 +116,49 @@ class AiAuthoringUiTest {
         } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
     }
 
+    @Test fun centralCreationTabOpensBothEditorsAndAiWithoutWritingDrafts() {
+        val ok = client()
+        try {
+            val container = container(ok)
+            container.settings.setDynamicColor(false)
+            container.settings.updateAppearance { it.copy(fontScale = 1.3f, fontBold = true) }
+            compose.runOnIdle { compose.activity.setContent {
+                androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.width(320.dp).fillMaxHeight()) { WenYouAppRoot(container) }
+            } }
+            for (style in listOf(ThemeStyle.MATERIAL, ThemeStyle.APPLE)) {
+                compose.runOnIdle { container.settings.setThemeStyle(style) }
+                compose.onNode(hasText("创建") and hasClickAction()).performClick().assertIsSelected()
+                val tabs = listOf("主页", "剧情", "创建", "角色", "设置").map {
+                    compose.onNode(hasText(it) and hasClickAction()).fetchSemanticsNode()
+                }
+                assertTrue(tabs.zipWithNext().all { (left, right) -> left.positionInRoot.x < right.positionInRoot.x })
+                compose.onNodeWithTag("create-story").performScrollTo().performClick()
+                compose.waitUntil(5_000) { compose.onAllNodesWithContentDescription("保存剧情").fetchSemanticsNodes().isNotEmpty() && compose.onNodeWithContentDescription("保存剧情").isDisplayed() }
+                compose.onNodeWithContentDescription("保存剧情").assertIsDisplayed()
+                compose.onNodeWithContentDescription("返回").performClick()
+                compose.onNodeWithTag("create-character").performScrollTo().performClick()
+                compose.waitUntil(5_000) { compose.onAllNodesWithText("新建角色").fetchSemanticsNodes().size == 1 && compose.onNodeWithText("新建角色").isDisplayed() }
+                compose.onNodeWithText("新建角色").assertIsDisplayed()
+                compose.onNodeWithContentDescription("返回").performClick()
+                compose.onNodeWithTag("create-ai").performScrollTo().performClick()
+                compose.onNodeWithTag("creation-idea").assertIsDisplayed()
+                compose.onNodeWithText("关闭").performClick()
+                compose.onNodeWithTag("create-story").performScrollTo()
+                screenshot("creation-hub-${style.name.lowercase()}.png")
+                assertTrue(container.library.stories.value.isEmpty())
+                assertTrue(container.library.characters.value.isEmpty())
+                compose.onNode(hasText("角色") and hasClickAction()).performClick().assertIsSelected()
+                compose.onNodeWithText("新建角色").assertDoesNotExist()
+                compose.onNode(hasText("剧情") and hasClickAction()).performClick().assertIsSelected()
+                compose.onNodeWithText("新建剧情").assertDoesNotExist()
+                compose.onNode(hasText("主页") and hasClickAction()).performClick()
+                compose.onNodeWithText("手动创建").performClick()
+                compose.onNodeWithTag("create-story").assertIsDisplayed()
+                compose.onNode(hasText("主页") and hasClickAction()).performClick()
+            }
+        } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
+    }
+
     @Test fun createRevisePreviewSaveAndReviseStoryForm() {
         val ok = client()
         try {
@@ -179,12 +222,13 @@ class AiAuthoringUiTest {
             compose.onNodeWithText("剧情库").assertIsDisplayed()
             compose.onNode(hasScrollToIndexAction()).performScrollToIndex(16)
             screenshot("list-bottom-clear-actions.png")
-            val create = compose.onNode(hasClickAction() and hasAnyDescendant(hasText("新建剧情")), useUnmergedTree = true).fetchSemanticsNode()
+            compose.onNodeWithText("新建剧情").assertDoesNotExist()
+            val create = compose.onNode(hasText("创建") and hasClickAction()).fetchSemanticsNode()
             val play = compose.onAllNodes(hasClickAction() and hasAnyDescendant(hasContentDescription("游玩")), useUnmergedTree = true).fetchSemanticsNodes().maxBy { it.positionInRoot.y }
             // Use layout coordinates: bitmap-backed glass can report clipped semantics bounds.
             compose.runOnIdle {
                 assertTrue("The create control must remain within the viewport", create.size.height > 0 && create.positionInRoot.y + create.size.height <= compose.activity.window.decorView.height)
-                assertTrue("The final play button must remain above the floating create button", play.positionInRoot.y + play.size.height < create.positionInRoot.y)
+                assertTrue("The final play button must remain above the bottom navigation", play.positionInRoot.y + play.size.height < create.positionInRoot.y)
             }
             screenshot("list-bottom-clear-actions.png")
             compose.onNode(hasText("设置") and hasClickAction()).performClick()
@@ -281,7 +325,7 @@ class AiAuthoringUiTest {
                         container.settings.setThemeMode(mode)
                     }
                     compose.onNodeWithText("开始剧情").assertIsDisplayed()
-                    compose.onNodeWithText("新建剧情").assertIsDisplayed()
+                    compose.onNodeWithText("手动创建").assertIsDisplayed()
                     screenshot("home-${style.name.lowercase()}-${mode.name.lowercase()}.png")
                 }
             }

@@ -1,8 +1,6 @@
 package io.wenyou.textquest.ui.screens
 import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.layout.onSizeChanged
 
 import io.wenyou.textquest.ui.theme.readableAccent
 
@@ -34,7 +32,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import io.wenyou.textquest.ui.common.FilterTag
 import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
@@ -121,10 +118,8 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
         nav = nav
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
-            val density = LocalDensity.current
-            var createHeight by remember { mutableStateOf(56.dp) }
             LazyColumn(
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = createHeight + 40.dp),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 item {
@@ -152,13 +147,7 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
                     }
                 }
             }
-            ExtendedFloatingActionButton(
-                onClick = { nav.navigate(R.charEdit("new")) },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(20.dp)
-                    .onSizeChanged { createHeight = with(density) { it.height.toDp() } },
-                icon = { Icon(AppIcons.Add, null) },
-                text = { Text("新建角色") }
-            )
+
         }
     }
 

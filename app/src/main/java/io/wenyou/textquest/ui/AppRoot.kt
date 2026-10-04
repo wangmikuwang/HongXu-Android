@@ -88,6 +88,7 @@ import io.wenyou.textquest.ui.theme.WenYouTheme
 object R {
     const val HOME = "home"
     const val STORIES = "stories"
+    const val CREATE = "create"
     const val CHARACTERS = "characters"
     const val PROVIDERS = "providers"
     const val SETTINGS = "settings"
@@ -115,7 +116,8 @@ object R {
     fun play(storyId: String, saveId: String = "new") = "play/$storyId/$saveId"
     fun bottomRuleEdit(id: String) = "bottom_rule_edit/$id"
 
-    val HUBS = setOf(HOME, STORIES, CHARACTERS, SETTINGS)
+    val HUB_ROUTES = listOf(HOME, STORIES, CREATE, CHARACTERS, SETTINGS)
+    val HUBS = HUB_ROUTES.toSet()
 }
 
 @Composable
@@ -138,7 +140,7 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
             val entry by nav.currentBackStackEntryAsState()
             var dockIndex by remember { mutableStateOf(0) }
             LaunchedEffect(entry?.destination?.route) {
-                val index = listOf(R.HOME, R.STORIES, R.CHARACTERS, R.SETTINGS).indexOf(entry?.destination?.route)
+                val index = R.HUB_ROUTES.indexOf(entry?.destination?.route)
                 if (index >= 0) dockIndex = index
             }
             val dockPosition = animateFloatAsState(dockIndex.toFloat(), AppMotion.selection(), label = "navigation-lens")
@@ -170,6 +172,7 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                         val id = entry.arguments?.getString(R.ARG_STORY) ?: "new"
                         StoryEditScreen(container, nav, storyId = id)
                     }
+                    composable(R.CREATE) { io.wenyou.textquest.ui.screens.CreationHubScreen(container, nav) }
                     composable(R.CHARACTERS) { CharactersScreen(container, nav) }
                     composable(
                         R.CHAR_EDIT,
@@ -231,6 +234,7 @@ fun HubBottomBar(nav: NavHostController) {
     val items = listOf(
         HubItem(R.HOME, "主页", AppIcons.Home),
         HubItem(R.STORIES, "剧情", AppIcons.List),
+        HubItem(R.CREATE, "创建", AppIcons.Add),
         HubItem(R.CHARACTERS, "角色", AppIcons.Person),
         HubItem(R.SETTINGS, "设置", AppIcons.Settings)
     )
