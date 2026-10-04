@@ -4,6 +4,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
+import io.wenyou.textquest.ui.theme.readableAccent
 import io.wenyou.textquest.ui.theme.distributedAccent
 import io.wenyou.textquest.ui.theme.accentForeground
 import io.wenyou.textquest.ui.theme.LocalAccentPalette
@@ -196,9 +197,9 @@ fun HubBottomBar(nav: NavHostController) {
             val indicator = distributedAccent(index + 2, MaterialTheme.colorScheme.primaryContainer)
             NavigationBarItem(
                 colors = if (apple) NavigationBarItemDefaults.colors(
-                    selectedIconColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(indicator) else MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedIconColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(indicator) else MaterialTheme.colorScheme.readableAccent(),
                     selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                    indicatorColor = indicator
+                    indicatorColor = if (LocalAccentPalette.current.isNotEmpty()) indicator else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
                 ) else NavigationBarItemDefaults.colors(
                     selectedIconColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(indicator) else MaterialTheme.colorScheme.onPrimaryContainer,
                     selectedTextColor = MaterialTheme.colorScheme.onSurface,

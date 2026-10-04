@@ -142,7 +142,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
         }
     }
     val shape = if (pill) RoundedCornerShape(50) else RoundedCornerShape(30.dp)
-    return this.shadow(12.dp, shape, clip = false).clip(shape).onSizeChanged { bounds = it }.onGloballyPositioned { origin = it.positionInRoot() }
+    return this.shadow(8.dp, shape, clip = false).clip(shape).onSizeChanged { bounds = it }.onGloballyPositioned { origin = it.positionInRoot() }
         .drawWithCache {
             // Cap background samples on high-resolution displays; text and controls stay full resolution.
             val sampleScale = minOf(0.5f, 540f / size.width.coerceAtLeast(1f))
@@ -150,7 +150,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
             val corner = if (pill) minOf(size.width, size.height) / 2f else minOf(30.dp.toPx(), size.height / 2f)
             sample.clip = true
             if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
-                val blur = RenderEffect.createBlurEffect(6.dp.toPx() * sampleScale, 6.dp.toPx() * sampleScale, Shader.TileMode.CLAMP)
+                val blur = RenderEffect.createBlurEffect(5.5.dp.toPx() * sampleScale, 5.5.dp.toPx() * sampleScale, Shader.TileMode.CLAMP)
                 sample.renderEffect = if (Build.VERSION.SDK_INT >= 33 && shader != null) {
                     shader.setFloatUniform("extent", sampleSize.width.toFloat(), sampleSize.height.toFloat())
                     shader.setFloatUniform("radius", corner * sampleScale)
@@ -158,16 +158,16 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
                     RenderEffect.createChainEffect(RenderEffect.createRuntimeShaderEffect(shader, "backdrop"), blur).asComposeRenderEffect()
                 } else blur.asComposeRenderEffect()
             }
-            val highlight = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.08f else 0.14f), Color.Transparent))
-            val border = Brush.linearGradient(listOf(Color.White.copy(alpha = 0.75f), Color.White.copy(alpha = 0.10f), Color.White.copy(alpha = 0.38f)))
+            val highlight = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.06f else 0.10f), Color.Transparent))
+            val border = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.34f else 0.60f), Color.White.copy(alpha = 0.03f), Color.White.copy(alpha = 0.22f)))
             val radius = androidx.compose.ui.geometry.CornerRadius(corner)
-            val stroke = Stroke(1.dp.toPx())
+            val stroke = Stroke(0.6.dp.toPx())
             onDrawWithContent {
                 if (backdrop != null && backdrop.scrolling && Build.VERSION.SDK_INT >= 31) {
                     val image = frozen
                     if (image != null) drawImage(image, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
                     else drawRect(tint.copy(alpha = 0.82f))
-                    drawRect(tint.copy(alpha = if (dark) 0.28f else 0.36f))
+                    drawRect(tint.copy(alpha = if (dark) 0.24f else 0.28f))
                 } else if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
                     val offset = origin - backdrop.origin
                     sample.record(size = sampleSize) {
@@ -177,7 +177,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
                         }
                     }
                     scale(1f / sampleScale, 1f / sampleScale, pivot = Offset.Zero) { drawLayer(sample) }
-                    drawRect(tint.copy(alpha = if (dark) 0.28f else 0.36f))
+                    drawRect(tint.copy(alpha = if (dark) 0.24f else 0.28f))
                 } else {
                     // ponytail: Android 8–11 retain readable tinted glass; GPU backdrop effects need Android 12+.
                     drawRect(tint.copy(alpha = 0.94f))
@@ -208,7 +208,7 @@ half4 main(float2 p) {
     float2 uv = clamp(p - normal * rim * 8.0 * density, float2(0.5), extent - 0.5);
     half4 c = backdrop.eval(uv);
     float light = max(dot(normal, float2(-0.70710678, -0.70710678)), 0.0);
-    float glint = light * light * light * rim * 0.22;
+    float glint = light * light * light * rim * 0.14;
     return half4(min(c.rgb + half3(glint), half3(1.0)), c.a);
 }
 """

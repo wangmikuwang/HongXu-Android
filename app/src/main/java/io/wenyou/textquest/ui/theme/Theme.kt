@@ -35,25 +35,25 @@ internal fun appleColors(dark: Boolean) = if (dark) darkColorScheme(
     primary = Color(0xFF80B8FF), onPrimary = Color(0xFF002B55),
     primaryContainer = Color(0xFF12395C), onPrimaryContainer = Color(0xFFD6E9FF),
     secondary = Color(0xFFBFC6D0), secondaryContainer = Color(0xFF30343B), onSecondaryContainer = Color.White,
-    tertiaryContainer = Color(0xFF253D35), onTertiaryContainer = Color(0xFFDCF5E8),
+    tertiaryContainer = Color(0xFF242426), onTertiaryContainer = Color(0xFFF5F5F7),
     background = Color.Black, onBackground = Color(0xFFF5F5F7),
     surface = Color(0xFF1C1C1E), onSurface = Color(0xFFF5F5F7),
     surfaceContainerLowest = Color.Black, surfaceContainerLow = Color(0xFF1C1C1E),
     surfaceContainer = Color(0xFF242426), surfaceContainerHigh = Color(0xFF2C2C2E), surfaceContainerHighest = Color(0xFF3A3A3C),
-    surfaceVariant = Color(0xFF2C2C2E), onSurfaceVariant = Color(0xFFCACAD0), outline = Color(0xFF96969D)
+    surfaceVariant = Color(0xFF2C2C2E), onSurfaceVariant = Color(0xFFCACAD0), outline = Color(0xFF96969D), outlineVariant = Color(0xFF38383A), surfaceTint = Color.Transparent
 ) else lightColorScheme(
     primary = Color(0xFF0066CC), onPrimary = Color.White,
     primaryContainer = Color(0xFFE3F0FF), onPrimaryContainer = Color(0xFF003366),
     secondary = Color(0xFF526070), secondaryContainer = Color(0xFFE9EDF2), onSecondaryContainer = Color(0xFF252A31),
-    tertiaryContainer = Color(0xFFE5F3EB), onTertiaryContainer = Color(0xFF214D38),
+    tertiaryContainer = Color.White, onTertiaryContainer = Color(0xFF1C1C1E),
     background = Color(0xFFF2F2F7), onBackground = Color(0xFF1C1C1E),
     surface = Color.White, onSurface = Color(0xFF1C1C1E),
     surfaceContainerLowest = Color.White, surfaceContainerLow = Color.White,
     surfaceContainer = Color(0xFFF8F8FA), surfaceContainerHigh = Color(0xFFECECF1), surfaceContainerHighest = Color(0xFFE4E4E9),
-    surfaceVariant = Color(0xFFECECF1), onSurfaceVariant = Color(0xFF56565E), outline = Color(0xFF767680)
+    surfaceVariant = Color(0xFFECECF1), onSurfaceVariant = Color(0xFF56565E), outline = Color(0xFF767680), outlineVariant = Color(0xFFD1D1D6), surfaceTint = Color.Transparent
 )
 val LocalThemeStyle = staticCompositionLocalOf { ThemeStyle.MATERIAL }
-private val AppleShapes = Shapes(small = RoundedCornerShape(8.dp), medium = RoundedCornerShape(12.dp), large = RoundedCornerShape(18.dp))
+private val AppleShapes = Shapes(extraSmall = RoundedCornerShape(6.dp), small = RoundedCornerShape(10.dp), medium = RoundedCornerShape(14.dp), large = RoundedCornerShape(22.dp), extraLarge = RoundedCornerShape(30.dp))
 private val AppShapes = Shapes(
     extraSmall = RoundedCornerShape(4.dp), small = RoundedCornerShape(8.dp),
     medium = RoundedCornerShape(16.dp), large = RoundedCornerShape(24.dp),

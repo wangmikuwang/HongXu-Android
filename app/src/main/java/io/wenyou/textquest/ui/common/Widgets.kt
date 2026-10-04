@@ -1,4 +1,6 @@
 package io.wenyou.textquest.ui.common
+import io.wenyou.textquest.ui.theme.LocalThemeStyle
+import io.wenyou.textquest.ui.theme.ThemeStyle
 import io.wenyou.textquest.ui.theme.distributedAccent
 import io.wenyou.textquest.ui.theme.accentForeground
 import io.wenyou.textquest.ui.theme.LocalAccentPalette
@@ -68,6 +70,13 @@ fun AppTextButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: B
 @Composable
 fun AppOutlinedButton(onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true,
     content: @Composable RowScope.() -> Unit) {
+    if (LocalThemeStyle.current == ThemeStyle.APPLE) {
+        androidx.compose.material3.FilledTonalButton(onClick = onClick, modifier = modifier, enabled = enabled,
+            shape = RoundedCornerShape(50),
+            colors = ButtonDefaults.filledTonalButtonColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.readableAccent()), content = content)
+        return
+    }
     androidx.compose.material3.OutlinedButton(onClick = onClick, modifier = modifier, enabled = enabled,
         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.readableAccent()),
         content = content)
@@ -138,9 +147,9 @@ fun FilterTag(label: String, selected: Boolean, onClick: () -> Unit, modifier: M
 fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     Text(
         title,
-        style = MaterialTheme.typography.titleMedium,
+        style = if (LocalThemeStyle.current == ThemeStyle.APPLE) MaterialTheme.typography.labelLarge else MaterialTheme.typography.titleMedium,
         fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurface,
+        color = if (LocalThemeStyle.current == ThemeStyle.APPLE) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
         modifier = modifier.padding(start = 4.dp, top = 12.dp, bottom = 6.dp)
     )
 }
@@ -216,7 +225,10 @@ fun AppField(
             focusedTextColor = MaterialTheme.colorScheme.onSurface,
             focusedLabelColor = MaterialTheme.colorScheme.readableAccent(),
             focusedBorderColor = MaterialTheme.colorScheme.readableAccent(),
-            cursorColor = MaterialTheme.colorScheme.readableAccent()),
+            cursorColor = MaterialTheme.colorScheme.readableAccent(),
+            unfocusedBorderColor = if (LocalThemeStyle.current == ThemeStyle.APPLE) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline,
+            focusedContainerColor = if (LocalThemeStyle.current == ThemeStyle.APPLE) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent,
+            unfocusedContainerColor = if (LocalThemeStyle.current == ThemeStyle.APPLE) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent),
         singleLine = singleLine,
         minLines = effMin,
         maxLines = effMax,

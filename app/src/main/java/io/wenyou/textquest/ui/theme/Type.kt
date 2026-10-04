@@ -73,9 +73,10 @@ val AppTypography = Typography(
 )
 
 val AppleTypography = AppTypography.copy(
-    headlineLarge = AppTypography.headlineLarge.copy(fontFamily = FontFamily.Default),
-    displaySmall = AppTypography.displaySmall.copy(fontSize = 34.sp, lineHeight = 41.sp),
-    titleLarge = AppTypography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+    headlineLarge = AppTypography.headlineLarge.copy(fontFamily = FontFamily.Default, fontSize = 34.sp, lineHeight = 41.sp, letterSpacing = 0.sp),
+    displaySmall = AppTypography.displaySmall.copy(fontFamily = FontFamily.Default, fontSize = 34.sp, lineHeight = 41.sp, letterSpacing = 0.sp),
+    titleLarge = AppTypography.titleLarge.copy(fontFamily = FontFamily.Default, fontSize = 20.sp, lineHeight = 26.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+    labelSmall = AppTypography.labelSmall.copy(fontFamily = FontFamily.Default, fontSize = 11.sp, lineHeight = 15.sp, letterSpacing = 0.sp),
     bodyLarge = AppTypography.bodyLarge.copy(fontSize = 17.sp, lineHeight = 27.sp, letterSpacing = 0.sp),
     bodyMedium = AppTypography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 24.sp, letterSpacing = 0.sp)
 )

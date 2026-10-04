@@ -67,6 +67,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -530,7 +531,13 @@ private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
                     modifier = Modifier.weight(1f),
                     maxLines = 3,
                     minLines = 1,
-                    shape = RoundedCornerShape(22.dp)
+                    shape = RoundedCornerShape(22.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.readableAccent(),
+                        cursorColor = MaterialTheme.colorScheme.readableAccent(),
+                        unfocusedBorderColor = if (LocalThemeStyle.current == ThemeStyle.APPLE) MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outline,
+                        focusedContainerColor = if (LocalThemeStyle.current == ThemeStyle.APPLE) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.75f) else Color.Transparent,
+                        unfocusedContainerColor = if (LocalThemeStyle.current == ThemeStyle.APPLE) MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.75f) else Color.Transparent)
                 )
                 Spacer(Modifier.width(8.dp))
                 IconButton(
