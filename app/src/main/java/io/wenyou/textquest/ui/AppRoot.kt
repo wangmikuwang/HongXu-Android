@@ -94,6 +94,8 @@ object R {
     const val PROVIDERS = "providers"
     const val SETTINGS = "settings"
     const val APPEARANCE = "appearance"
+    const val SETTINGS_DETAIL = "settings_detail/{category}"
+    fun settingsDetail(category: String) = "settings_detail/$category"
     const val PRIDE = "pride"
 
     const val ARG_STORY = "storyId"
@@ -163,6 +165,9 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                         ProviderEditScreen(container, nav, providerId = id)
                     }
                     composable(R.SETTINGS) { SettingsScreen(container, nav, updateVm) }
+                    composable(R.SETTINGS_DETAIL, arguments = listOf(navArgument("category") { type = NavType.StringType })) { entry ->
+                        SettingsScreen(container, nav, updateVm, category = entry.arguments?.getString("category") ?: "system")
+                    }
                     composable(R.APPEARANCE) { io.wenyou.textquest.ui.screens.AppearanceScreen(container, nav) }
                     composable(R.PRIDE) {
                         PrideGallery(prefs.prideThemesUnlocked, prefs.prideThemesEnabled, prefs.showLgbt,

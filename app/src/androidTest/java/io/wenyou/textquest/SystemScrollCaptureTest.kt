@@ -52,13 +52,14 @@ class SystemScrollCaptureTest {
         targets.single()
     }
 
-    @Test fun settingsExposeSystemTargetInBothAppearances() {
+    @Test fun settingsExposeSystemTargetInBothAppearancesAndLargeText() {
         val prefix = "scroll-test-${UUID.randomUUID()}"
         val context = object : ContextWrapper(compose.activity.applicationContext) {
             override fun getFilesDir() = File(cacheDir, prefix).apply { mkdirs() }
             override fun getSharedPreferences(name: String, mode: Int) = super.getSharedPreferences("$prefix-$name", mode)
         }
         val container = WenYouApp.AppContainer(context)
+        container.settings.updateAppearance { it.copy(fontScale = 1.3f, uiScale = 1.1f) }
         lateinit var view: View
         compose.runOnIdle { compose.activity.setContent {
             view = LocalView.current

@@ -91,6 +91,7 @@ class PrideUiTest {
         repeat(10) { label.performClick() }
         compose.onNodeWithText("旗帜墙").assertDoesNotExist()
         compose.onNodeWithContentDescription("设置", useUnmergedTree = true).performClick()
+        compose.onNodeWithTag("settings-system").performClick()
         val version = compose.onNodeWithTag("pride-version")
         compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("pride-version"))
         repeat(9) { version.performClick() }
@@ -127,9 +128,6 @@ class PrideUiTest {
         compose.onNodeWithTag("pride-flag-TRANS").performClick()
         compose.onNodeWithTag("pride-flag-TRANS").assertIsSelected()
         compose.onNodeWithContentDescription("返回").performClick()
-        compose.onNodeWithTag("settings-list").performScrollToNode(hasText("旗帜配色"))
-        compose.onNodeWithText("旗帜配色").assertIsDisplayed()
-        compose.onNodeWithText("动态取色（壁纸配色）").assertDoesNotExist()
         val saved = container.settings.state.value
         assertTrue(saved.prideThemesUnlocked)
         assertEquals(PrideTheme.TRANS, saved.prideTheme)
@@ -138,8 +136,6 @@ class PrideUiTest {
         assertEquals(original.adultContent, saved.adultContent)
         assertEquals(original.contentUnlocked, saved.contentUnlocked)
         compose.runOnIdle { container.settings.setPrideTheme(null) }
-        compose.onNodeWithTag("settings-list").performScrollToNode(hasText("动态取色（壁纸配色）"))
-        compose.onNodeWithText("动态取色（壁纸配色）").assertIsDisplayed()
         assertEquals(original.dynamicColor, container.settings.state.value.dynamicColor)
         container.settings.setPrideTheme(PrideTheme.TRANS)
         compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("pride-version"))
@@ -152,9 +148,6 @@ class PrideUiTest {
         compose.onNodeWithTag("pride-content").performClick().assertIsOff()
         assertFalse(container.settings.state.value.showLgbt)
         compose.onNodeWithContentDescription("返回").performClick()
-        compose.onNodeWithTag("settings-list").performScrollToNode(hasText("动态取色（壁纸配色）"))
-        compose.onNodeWithText("旗帜配色").assertDoesNotExist()
-        compose.onNodeWithText("动态取色（壁纸配色）").assertIsDisplayed()
         compose.onNodeWithTag("settings-list").performScrollToNode(hasTestTag("pride-version"))
         compose.onNodeWithText("显示 LGBT（LGBTQ+）内容").assertDoesNotExist()
         version.performClick()

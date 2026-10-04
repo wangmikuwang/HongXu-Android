@@ -387,3 +387,5 @@ app/src/main/java/io/wenyou/textquest/
 价格参考：[DeepSeek 官方人民币价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)、[美元价格](https://api-docs.deepseek.com/quick_start/pricing/)。
 
 协议参考：[DeepSeek 流式用量](https://api-docs.deepseek.com/api/create-chat-completion/)、[Anthropic 流式用量](https://platform.claude.com/docs/en/build-with-claude/streaming)、[Gemini usageMetadata](https://ai.google.dev/api/generate-content#UsageMetadata)。
+
+设置首页采用搜索与分类入口，外观、AI生成、内容偏好、角色规则、备份和系统关于分别进入二级页面。原有设置及备份内容保留。
