@@ -47,7 +47,6 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
@@ -96,7 +95,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
     val vm: StoryEditorViewModel = viewModel(
         factory = Vms.factory { StoryEditorViewModel(if (storyId == "new") null else storyId, container) }
     )
-    val ui by vm.ui.collectAsState()
+    val ui by vm.ui.collectAsStateWithLifecycle()
     val bottomRules by container.library.bottomRules.collectAsStateWithLifecycle()
     val story = ui.story
     var revisionOpen by remember { mutableStateOf(false) }
@@ -338,7 +337,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NodeEditor(vm: StoryEditorViewModel, node: StoryNode, allNodeIds: List<String>) {
-    val ui by vm.ui.collectAsState()
+    val ui by vm.ui.collectAsStateWithLifecycle()
     val chars = ui.characters
     TonalCard {
         AppDropdown(

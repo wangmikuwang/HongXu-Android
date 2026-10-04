@@ -8,7 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
-// 版本号从 version.properties 读取：每次改动执行 `gradlew bumpVersion` 即升一次版。
+// 版本号从 version.properties 读取；共享工作区通过本地协调工具同步。
 val versionProps = Properties().apply {
     rootProject.file("version.properties").inputStream().use { load(it) }
 }

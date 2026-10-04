@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,7 +22,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -38,9 +38,9 @@ import io.wenyou.textquest.ui.vm.Vms
 @Composable
 fun BottomRuleEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, ruleId: String) {
     val vm: BottomRuleEditorViewModel = viewModel(
-        factory = Vms.factory { BottomRuleEditorViewModel(if (ruleId == "new") null else ruleId, it) }
+        factory = Vms.factory { BottomRuleEditorViewModel(if (ruleId == "new") null else ruleId, container) }
     )
-    val ui by vm.ui.collectAsState()
+    val ui by vm.ui.collectAsStateWithLifecycle()
     val rule = ui.rule
 
     Scaffold(

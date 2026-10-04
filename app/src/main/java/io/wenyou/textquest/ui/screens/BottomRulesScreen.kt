@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wenyou.textquest.ui.common.AppTextButton
 
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,8 +52,8 @@ import io.wenyou.textquest.ui.vm.Vms
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BottomRulesScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
-    val vm: BottomRulesViewModel = viewModel(factory = Vms.factory { BottomRulesViewModel(it) })
-    val rules by vm.rules.collectAsState()
+    val vm: BottomRulesViewModel = viewModel(factory = Vms.factory { BottomRulesViewModel(container) })
+    val rules by vm.rules.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<String?>(null) }
 
     Scaffold(

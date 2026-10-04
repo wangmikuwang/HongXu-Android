@@ -1,5 +1,7 @@
 package io.wenyou.textquest.ui.common
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import io.wenyou.textquest.ui.theme.readableAccent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -49,17 +51,30 @@ fun RawText(text: String, modifier: Modifier = Modifier, color: Color = Color.Un
         textDecoration, textAlign, lineHeight, overflow, softWrap, maxLines, minLines, onTextLayout, style)
 }
 
+/** Icon preferences affect glyph color, never add a second background or shrink the glyph. */
 @Composable
 fun AppIcon(imageVector: ImageVector, contentDescription: String?, modifier: Modifier = Modifier,
-    tint: Color = LocalContentColor.current) {
-    val styled = if (LocalAppearance.current.iconStyle == "color") modifier.background(tint.copy(alpha = .13f), RoundedCornerShape(7.dp)).padding(3.dp) else modifier
-    androidx.compose.material3.Icon(imageVector, contentDescription?.let { uiLabel(it, LocalAppearance.current.language) }, styled, tint)
+    tint: Color = Color.Unspecified) {
+    val appearance = LocalAppearance.current
+    val inherited = LocalContentColor.current
+    val scheme = androidx.compose.material3.MaterialTheme.colorScheme
+    val neutral = inherited == scheme.onSurface || inherited == scheme.onSurfaceVariant
+    val resolved = if (tint != Color.Unspecified) tint
+        else if (appearance.iconStyle == "color" && neutral && imageVector != androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack)
+            androidx.compose.material3.MaterialTheme.colorScheme.readableAccent()
+        else LocalContentColor.current
+    androidx.compose.material3.Icon(imageVector, contentDescription?.let { uiLabel(it, appearance.language) }, modifier, resolved)
 }
 
 @Composable
-fun AppIcon(painter: Painter, contentDescription: String?, modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
-    val styled = if (LocalAppearance.current.iconStyle == "color") modifier.background(tint.copy(alpha = .13f), RoundedCornerShape(7.dp)).padding(3.dp) else modifier
-    androidx.compose.material3.Icon(painter, contentDescription?.let { uiLabel(it, LocalAppearance.current.language) }, styled, tint)
+fun AppIcon(painter: Painter, contentDescription: String?, modifier: Modifier = Modifier, tint: Color = Color.Unspecified) {
+    val appearance = LocalAppearance.current
+    val inherited = LocalContentColor.current
+    val scheme = androidx.compose.material3.MaterialTheme.colorScheme
+    val neutral = inherited == scheme.onSurface || inherited == scheme.onSurfaceVariant
+    val resolved = if (tint != Color.Unspecified) tint else if (appearance.iconStyle == "color" && neutral)
+        androidx.compose.material3.MaterialTheme.colorScheme.readableAccent() else LocalContentColor.current
+    androidx.compose.material3.Icon(painter, contentDescription?.let { uiLabel(it, appearance.language) }, modifier, resolved)
 }
 
 /** Only UI labels are translated; narrative, imported data, API output and text input are untouched. */
@@ -90,7 +105,7 @@ private val EnglishLabels = mapOf(
     "底部栏" to "Bottom dock", "标签显示" to "Dock labels", "玻璃材质" to "Glass material", "通透" to "Clear", "均衡" to "Balanced", "磨砂" to "Frosted",
     "图标与文字" to "Icons & text", "仅图标" to "Icons", "仅文字" to "Text", "跟随系统" to "System", "浅色" to "Light", "深色" to "Dark",
     "默认" to "Default", "纯黑" to "AMOLED", "品牌配色" to "Brand", "壁纸取色" to "Wallpaper", "自定义" to "Custom",
-    "跟随预设" to "Preset", "统一圆角" to "Rounded", "彩色底图" to "Colored", "单色图标" to "Monochrome",
+    "跟随预设" to "Preset", "统一圆角" to "Rounded", "彩色图标" to "Colored", "单色图标" to "Monochrome",
     "跟随选项弹出" to "Anchored popup", "居中弹窗" to "Centered dialog", "液态玻璃" to "Liquid Glass", "标准" to "Standard",
     "小" to "Small", "大" to "Large", "更大" to "Extra large", "轻" to "Light", "常规" to "Regular", "中等" to "Medium", "粗" to "Bold",
     "紧凑" to "Compact", "宽松" to "Comfortable", "自动（系统）" to "Automatic", "系统默认字体" to "System font",

@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wenyou.textquest.ui.common.AppTextButton
 import io.wenyou.textquest.ui.common.AppOutlinedButton
 
@@ -34,7 +35,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,8 +61,8 @@ import io.wenyou.textquest.ui.vm.Vms
 fun ProvidersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val libraryVm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(container) })
     val settingsVm: SettingsViewModel = viewModel(factory = Vms.factory { SettingsViewModel(container) })
-    val providers by libraryVm.providers.collectAsState()
-    val prefs by settingsVm.ui.collectAsState()
+    val providers by libraryVm.providers.collectAsStateWithLifecycle()
+    val prefs by settingsVm.ui.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<ApiProfile?>(null) }
 
     Scaffold(

@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.ContextWrapper
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.background
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.runtime.*
@@ -93,6 +95,38 @@ class AppearanceUiTest {
         context.getSharedPreferences("wenyou_settings", Context.MODE_PRIVATE).edit().putString("appearance_v1", "invalid json").commit()
         assertEquals(AppearancePrefs(), SettingsStore(context).state.value.appearance)
     }
+    @Test fun colorIconsKeepBackArrowAndDockFreeOfExtraTiles() {
+        var prefs by mutableStateOf(AppearancePrefs(iconStyle = "color"))
+        compose.setContent { WenYouTheme(style = ThemeStyle.APPLE, appearance = prefs) {
+            Column(Modifier.width(360.dp).background(androidx.compose.ui.graphics.Color.White)) {
+                Row {
+                    io.wenyou.textquest.ui.common.AppIcon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, "返回",
+                        Modifier.size(24.dp).testTag("styled-back"), tint = androidx.compose.ui.graphics.Color.Black)
+                    androidx.compose.material3.Icon(androidx.compose.material.icons.Icons.AutoMirrored.Filled.ArrowBack, null,
+                        Modifier.size(24.dp).testTag("native-back"), tint = androidx.compose.ui.graphics.Color.Black)
+                }
+                CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides androidx.compose.ui.graphics.Color.White) {
+                    Row(Modifier.background(androidx.compose.ui.graphics.Color.Blue)) {
+                        io.wenyou.textquest.ui.common.AppIcon(Icons.Outlined.Home, null, Modifier.size(24.dp).testTag("button-glyph"))
+                        androidx.compose.material3.Icon(Icons.Outlined.Home, null, Modifier.size(24.dp).testTag("button-native"))
+                    }
+                }
+                GlassDock(listOf("主页", "剧情", "角色", "设置").map { DockItem(it, Icons.Outlined.Home) }, 0, {}, Modifier.testTag("plain-dock"))
+            }
+        } }
+        val back = compose.onNodeWithTag("styled-back").captureToImage().asAndroidBitmap()
+        val native = compose.onNodeWithTag("native-back").captureToImage().asAndroidBitmap()
+        assertTrue("Back arrow must have native glyph size and no tile", back.sameAs(native))
+        val button = compose.onNodeWithTag("button-glyph").captureToImage().asAndroidBitmap()
+        val buttonNative = compose.onNodeWithTag("button-native").captureToImage().asAndroidBitmap()
+        assertTrue("Colored preferences must preserve solid-button contrast", button.sameAs(buttonNative))
+        val colored = compose.onNodeWithTag("plain-dock").captureToImage().asAndroidBitmap()
+        compose.runOnIdle { prefs = prefs.copy(iconStyle = "mono") }
+        val plain = compose.onNodeWithTag("plain-dock").captureToImage().asAndroidBitmap()
+        assertTrue("Dock chrome must not acquire icon tiles from content preferences", colored.sameAs(plain))
+        screenshot("plain-navigation-icons.png")
+    }
+
     @Test fun dockClickAndDragSelectWholeItemsWithoutClipping() {
         var selected by mutableIntStateOf(0)
         compose.setContent { WenYouTheme(style = ThemeStyle.APPLE) {
@@ -114,7 +148,7 @@ class AppearanceUiTest {
         screenshot("appearance-display.png")
         compose.onNodeWithTag("appearance-list").performScrollToNode(hasText("图标样式"))
         compose.onNodeWithText("单色图标").performClick()
-        compose.onNodeWithText("彩色底图").performClick()
+        compose.onNodeWithText("彩色图标").performClick()
         compose.runOnIdle { assertEquals("color", prefs.iconStyle) }
         compose.onNodeWithTag("appearance-list").performScrollToNode(hasText("选项弹窗样式"))
         compose.onNodeWithText("跟随选项弹出").performClick()

@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wenyou.textquest.ui.theme.readableAccent
 
 import io.wenyou.textquest.ui.common.AppTextButton
@@ -38,7 +39,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,7 +66,7 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
     val vm: ProviderEditorViewModel = viewModel(
         factory = Vms.factory { ProviderEditorViewModel(if (providerId == "new") null else providerId, container) }
     )
-    val ui by vm.ui.collectAsState()
+    val ui by vm.ui.collectAsStateWithLifecycle()
     val profile = ui.profile
     var showDelete by remember { mutableStateOf(false) }
 

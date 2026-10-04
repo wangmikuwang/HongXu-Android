@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.wenyou.textquest.ui.common.AppTextButton
 
 import androidx.compose.foundation.layout.Arrangement
@@ -32,7 +33,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -60,7 +60,7 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
     val vm: CharacterEditorViewModel = viewModel(
         factory = Vms.factory { CharacterEditorViewModel(if (charId == "new") null else charId, container) }
     )
-    val ui by vm.ui.collectAsState()
+    val ui by vm.ui.collectAsStateWithLifecycle()
     val char = ui.char
     var revisionOpen by remember { mutableStateOf(false) }
     if (revisionOpen && char != null) AiRevisionDialog(container,

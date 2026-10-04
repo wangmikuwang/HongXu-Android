@@ -158,33 +158,44 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
      */
     suspend fun listModels(profile: ApiProfile): List<String> = withContext(Dispatchers.IO) {
         val call = listModelsCall(profile)
-        val response = call.execute()
-        try {
-            if (!response.isSuccessful) {
-                val body = response.body?.string()?.take(300) ?: ""
-                throw LlmException("HTTP ${response.code} 读取模型失败：${body.trim().ifBlank { "（无详情）" }}")
-            }
-            val text = response.body?.string().orEmpty()
-            val element = try {
-                if (text.isBlank()) null else AppJson.parseToJsonElement(text)
-            } catch (_: Throwable) {
-                null
-            } ?: return@withContext emptyList()
-            when (profile.kind) {
-                ProviderKind.OPENAI_COMPAT, ProviderKind.ANTHROPIC -> {
-                    element.jsonObject["data"]?.jsonArray?.mapNotNull { item ->
-                        (item.jsonObject["id"] as? JsonPrimitive)?.content?.takeIf { it.isNotBlank() }
-                    } ?: emptyList()
+        suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    if (continuation.isActive) continuation.resumeWith(Result.failure(e))
                 }
-                ProviderKind.GEMINI -> {
-                    element.jsonObject["models"]?.jsonArray?.mapNotNull { item ->
-                        (item.jsonObject["name"] as? JsonPrimitive)?.content
-                            ?.removePrefix("models/")?.takeIf { it.isNotBlank() }
-                    } ?: emptyList()
+
+                override fun onResponse(call: Call, response: Response) {
+                    val result = runCatching { response.use { parseModels(profile.kind, it) } }
+                    if (continuation.isActive) continuation.resumeWith(result)
                 }
+            })
+        }
+    }
+
+    private fun parseModels(kind: ProviderKind, response: Response): List<String> {
+        if (!response.isSuccessful) {
+            val body = response.body?.string()?.take(300) ?: ""
+            throw LlmException("HTTP ${response.code} 读取模型失败：${body.trim().ifBlank { "（无详情）" }}")
+        }
+        val text = response.body?.string().orEmpty()
+        val element = try {
+            if (text.isBlank()) null else AppJson.parseToJsonElement(text)
+        } catch (_: Exception) {
+            null
+        } ?: return emptyList()
+        return when (kind) {
+            ProviderKind.OPENAI_COMPAT, ProviderKind.ANTHROPIC -> {
+                element.jsonObject["data"]?.jsonArray?.mapNotNull { item ->
+                    (item.jsonObject["id"] as? JsonPrimitive)?.content?.takeIf { it.isNotBlank() }
+                } ?: emptyList()
             }
-        } finally {
-            try { response.close() } catch (_: Throwable) {}
+            ProviderKind.GEMINI -> {
+                element.jsonObject["models"]?.jsonArray?.mapNotNull { item ->
+                    (item.jsonObject["name"] as? JsonPrimitive)?.content
+                        ?.removePrefix("models/")?.takeIf { it.isNotBlank() }
+                } ?: emptyList()
+            }
         }
     }
 

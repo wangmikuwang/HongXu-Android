@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 
@@ -45,7 +46,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,10 +82,10 @@ import kotlinx.coroutines.withContext
 @Composable
 fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val vm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(container) })
-    val characters by vm.characters.collectAsState()
-    val stories by vm.stories.collectAsState()
-    val totalCharacters by vm.totalCharacters.collectAsState()
-    val filters by vm.filters.collectAsState()
+    val characters by vm.characters.collectAsStateWithLifecycle()
+    val stories by vm.stories.collectAsStateWithLifecycle()
+    val totalCharacters by vm.totalCharacters.collectAsStateWithLifecycle()
+    val filters by vm.filters.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<CharacterData?>(null) }
     var sharePicker by remember { mutableStateOf<CharacterData?>(null) }
     var shareCodeChar by remember { mutableStateOf<CharacterData?>(null) }

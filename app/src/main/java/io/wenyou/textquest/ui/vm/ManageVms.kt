@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import java.util.UUID
 
@@ -122,7 +123,9 @@ class CharacterEditorViewModel(
             try {
                 library.upsertCharacter(toSave)
                 _ui.update { it.copy(message = "已保存「${toSave.name}」", isNew = false) }
-            } catch (t: Throwable) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Exception) {
                 _ui.update { it.copy(message = "保存失败：${t.message}") }
             }
         }
@@ -261,7 +264,9 @@ class ProviderEditorViewModel(
         viewModelScope.launch {
             val result = try {
                 director.testProfile(p)
-            } catch (t: Throwable) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Exception) {
                 t.message ?: "未知错误"
             }
             _ui.update {
@@ -287,7 +292,9 @@ class ProviderEditorViewModel(
             try {
                 models = chatClient.listModels(p)
                 err = null
-            } catch (t: Throwable) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Exception) {
                 models = emptyList()
                 err = t.message ?: "未知错误"
             }
@@ -368,7 +375,9 @@ class BottomRuleEditorViewModel(
             try {
                 library.upsertBottomRule(toSave)
                 _ui.update { it.copy(message = "已保存「${toSave.name}」", isNew = false) }
-            } catch (t: Throwable) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (t: Exception) {
                 _ui.update { it.copy(message = "保存失败：${t.message}") }
             }
         }
@@ -440,7 +449,9 @@ class SettingsViewModel(container: WenYouApp.AppContainer) : ViewModel() {
                 val n = library.importBundle(bundle)
                 _message.value = "导入成功：$n 条数据"
             }
-        } catch (t: Throwable) {
+        } catch (e: CancellationException) {
+                throw e
+            } catch (t: Exception) {
             _message.value = "导入失败：${t.message}"
         }
     }

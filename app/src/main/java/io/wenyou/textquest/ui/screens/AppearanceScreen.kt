@@ -107,7 +107,7 @@ fun AppearanceContent(prefs: AppearancePrefs, style: ThemeStyle, mode: ThemeMode
             Text("默认跟随系统；固定档位可能增加耗电，只在前台应用。", style = MaterialTheme.typography.bodySmall)
             Toggle("安卓液态玻璃", prefs.glassEnabled, { value -> update { it.copy(glassEnabled = value) } })
             Choice("列表条目样式", listOf("跟随预设" to "follow", "统一圆角" to "rounded"), prefs.listStyle, { value -> update { it.copy(listStyle = value) } })
-            Choice("图标样式", listOf("单色图标" to "mono", "彩色底图" to "color"), prefs.iconStyle, { value -> update { it.copy(iconStyle = value) } })
+            Choice("图标样式", listOf("单色图标" to "mono", "彩色图标" to "color"), prefs.iconStyle, { value -> update { it.copy(iconStyle = value) } })
             Choice("选项弹窗样式", listOf("跟随选项弹出" to "anchor", "居中弹窗" to "dialog"), prefs.popupStyle, { value -> update { it.copy(popupStyle = value) } })
         } }
         item { SectionHeader("主题与色彩") }

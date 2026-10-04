@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 
@@ -67,7 +68,6 @@ import androidx.compose.material3.Surface
 import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -114,9 +114,9 @@ import io.wenyou.textquest.ui.vm.Vms
 @Composable
 fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val vm: LibraryViewModel = viewModel(factory = Vms.factory { LibraryViewModel(container) })
-    val stories by vm.stories.collectAsState()
-    val totalStories by vm.totalStories.collectAsState()
-    val filters by vm.filters.collectAsState()
+    val stories by vm.stories.collectAsStateWithLifecycle()
+    val totalStories by vm.totalStories.collectAsStateWithLifecycle()
+    val filters by vm.filters.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<Story?>(null) }
     var managesSaves by remember { mutableStateOf<Story?>(null) }
     // 分享：先选「分享码 or 二维码」，再进对应界面

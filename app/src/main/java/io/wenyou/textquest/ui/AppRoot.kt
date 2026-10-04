@@ -244,55 +244,38 @@ fun HubBottomBar(nav: NavHostController) {
         HubItem(R.CHARACTERS, "角色", Icons.Filled.Person),
         HubItem(R.SETTINGS, "设置", Icons.Filled.Settings)
     )
-    val apple = LocalGlassEnabled.current
-    if (apple) {
-        val outlined = listOf(Icons.Outlined.Home, Icons.AutoMirrored.Outlined.List, Icons.Outlined.Person, Icons.Outlined.Settings)
-        GlassDock(items.mapIndexed { index, item -> DockItem(item.label, outlined[index]) }, items.indexOfFirst { it.route == current }.coerceAtLeast(0), { index ->
-            val route = items[index].route
-            if (current != route) nav.navigate(route) { popUpTo(nav.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true }
-        })
-        return
-    }
-    val navigationItems: @Composable androidx.compose.foundation.layout.RowScope.() -> Unit = {
-        items.forEachIndexed { index, item ->
-            val indicator = distributedAccent(index + 2, MaterialTheme.colorScheme.primaryContainer)
-            NavigationBarItem(
-                colors = if (apple) NavigationBarItemDefaults.colors(
-                    selectedIconColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(indicator) else MaterialTheme.colorScheme.readableAccent(),
-                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                    indicatorColor = if (LocalAccentPalette.current.isNotEmpty()) indicator else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f)
-                ) else NavigationBarItemDefaults.colors(
-                    selectedIconColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(indicator) else MaterialTheme.colorScheme.onPrimaryContainer,
-                    selectedTextColor = MaterialTheme.colorScheme.onSurface,
-                    indicatorColor = indicator,
-                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
-                ),
-                selected = current == item.route,
-                onClick = {
-                    if (current != item.route) {
-                        nav.navigate(item.route) {
-                            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                },
-                icon = { Icon(item.icon, contentDescription = item.label) },
-                label = { io.wenyou.textquest.ui.common.RawText(item.label) }
-            )
+    fun selectRoute(index: Int) {
+        val route = items[index].route
+        if (current == route) return
+        nav.navigate(route) {
+            popUpTo(nav.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
         }
     }
-    if (apple) {
-        // Material's fixed item gaps squeeze 64dp indicators on a narrow capsule.
-        androidx.compose.foundation.layout.Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp, vertical = 8.dp)
-                .then(Modifier.heightIn(min = 80.dp)),
-            verticalAlignment = Alignment.CenterVertically,
-            content = navigationItems
-        )
+    if (LocalGlassEnabled.current) {
+        val outlined = listOf(Icons.Outlined.Home, Icons.AutoMirrored.Outlined.List, Icons.Outlined.Person, Icons.Outlined.Settings)
+        GlassDock(items.mapIndexed { index, item -> DockItem(item.label, outlined[index]) },
+            items.indexOfFirst { it.route == current }.coerceAtLeast(0), ::selectRoute)
     } else {
-        NavigationBar(content = navigationItems)
+        NavigationBar {
+            items.forEachIndexed { index, item ->
+                val indicator = distributedAccent(index + 2, MaterialTheme.colorScheme.primaryContainer)
+                NavigationBarItem(
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(indicator) else MaterialTheme.colorScheme.onPrimaryContainer,
+                        selectedTextColor = MaterialTheme.colorScheme.onSurface,
+                        indicatorColor = indicator,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    selected = current == item.route,
+                    onClick = { selectRoute(index) },
+                    icon = { Icon(item.icon, contentDescription = item.label, tint = androidx.compose.material3.LocalContentColor.current) },
+                    label = { io.wenyou.textquest.ui.common.AppText(item.label) }
+                )
+            }
+        }
     }
 }
 
