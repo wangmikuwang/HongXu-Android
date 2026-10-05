@@ -11,11 +11,13 @@ class EasterEggUiTest {
 
     @Test fun discoverThreeSurprisesWithoutChangingSettingsOrAchievements() {
         assertEquals("虹叙", compose.activity.packageManager.getApplicationLabel(compose.activity.applicationInfo).toString())
+        compose.waitUntil(5_000) { compose.onAllNodesWithText(compose.activity.getString(R.string.app_name)).fetchSemanticsNodes().size == 1 }
         compose.onNodeWithText("虹叙").assertIsDisplayed()
         val container = (compose.activity.application as WenYouApp).container
         val settings = container.settings.state.value
         val achievements = container.library.achievements.value
         compose.onNodeWithContentDescription("设置", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("系统与关于").performClick()
         val title = compose.onNodeWithText(compose.activity.getString(R.string.app_name))
         repeat(4) { title.performClick() }
         compose.onNodeWithText("你发现了彩蛋！").assertDoesNotExist()
@@ -31,7 +33,8 @@ class EasterEggUiTest {
         repeat(4) { title.performClick() }
         compose.onNodeWithText("你发现了彩蛋！").assertDoesNotExist()
         compose.onNodeWithContentDescription("返回", useUnmergedTree = true).performClick()
-        compose.onNodeWithText("🏆 成就馆", substring = true).performClick()
+        compose.onNodeWithContentDescription("主页", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("成就馆 ·", substring = true).performClick()
         compose.onNodeWithText("成就馆").performTouchInput { longClick() }
         compose.onNodeWithText("🏅 隐藏奖杯：好奇心万岁", substring = true).assertIsDisplayed()
         compose.onNodeWithText("收下惊喜").performClick()

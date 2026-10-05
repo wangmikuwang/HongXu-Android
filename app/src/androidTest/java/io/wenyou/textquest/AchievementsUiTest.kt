@@ -24,7 +24,8 @@ class AchievementsUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun entryAndOfflineEndingShowDurableProgress() {
-        compose.onNodeWithText("🏆 成就馆", substring = true).performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithText(compose.activity.getString(R.string.app_name)).fetchSemanticsNodes().size == 1 }
+        compose.onNodeWithText("成就馆 ·", substring = true).performClick()
         compose.onNodeWithText("成就馆").assertIsDisplayed()
         compose.onNodeWithContentDescription("关闭成就馆").performClick()
         val dir = File(compose.activity.cacheDir, "achievement-test-${UUID.randomUUID()}")
@@ -36,6 +37,9 @@ class AchievementsUiTest {
         runBlocking { library.upsertStory(story) }
         lateinit var vm: PlayViewModel
         compose.runOnIdle { vm = PlayViewModel("test", "new", library, AiDirector(ChatClient())) { null } }
+        // New journeys start at role selection; play as the free identity.
+        compose.waitUntil(5_000) { vm.ui.value.stage == PlayStage.ROLE_SELECT }
+        compose.runOnIdle { vm.selectPlayerCharacter("") }
         compose.waitUntil(5_000) { vm.ui.value.stage == PlayStage.AUTHORED }
         compose.runOnIdle { repeat(10) { vm.chooseAuthored(0) }; vm.chooseAuthored(1) }
         compose.waitUntil(5_000) { library.achievements.value.count { it.unlockedAt > 0L } == 3 && vm.ui.value.achievementMessages.contains("FIRST_ENDING") }

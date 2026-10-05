@@ -21,7 +21,9 @@ class AppUpdatesUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
     @Test fun settingsCheckAndUpdateActionsWork() {
+        compose.waitUntil(5_000) { compose.onAllNodesWithText(compose.activity.getString(R.string.app_name)).fetchSemanticsNodes().size == 1 }
         compose.onNodeWithContentDescription("设置", useUnmergedTree = true).performClick()
+        compose.onNodeWithText("系统与关于").performClick()
         compose.onNodeWithText("检查更新").assertIsDisplayed().performClick()
         compose.waitUntil(30_000) { compose.onAllNodesWithText("当前没有可用的新版本").fetchSemanticsNodes().isNotEmpty() }
         val release = AppRelease("9.0.0", "一段很长的更新说明。".repeat(100), "update.apk", "", 35_000_000)
