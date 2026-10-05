@@ -8,7 +8,6 @@ import androidx.compose.material3.ButtonDefaults
 
 
 import io.wenyou.textquest.ui.common.AppTextButton
-import io.wenyou.textquest.ui.common.AppOutlinedButton
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,7 +30,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.FilledTonalButton
 import io.wenyou.textquest.ui.common.AppIcon as Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,10 +74,12 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val cards by vm.homeCards.collectAsStateWithLifecycle()
     val stories by vm.stories.collectAsStateWithLifecycle()
     val providers by vm.providers.collectAsStateWithLifecycle()
-    var creationOpen by rememberSaveable { mutableStateOf(false) }
     var achievementsOpen by rememberSaveable { mutableStateOf(false) }
     val achievements by container.library.achievements.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<HomeCard?>(null) }
+
+    val current = cards.firstOrNull { it.story != null }
+    val otherSaves = cards.filter { it !== current }
 
     HubScaffold(topBar = {}, nav = nav) { padding ->
         LazyColumn(
@@ -92,17 +92,13 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             item {
                 HomeWelcome(
                     title = stringResource(io.wenyou.textquest.R.string.app_name),
-                    journeyTitle = cards.firstOrNull { it.story != null }?.story?.title
-                        ?: stories.firstOrNull()?.title,
-                    hasSave = cards.any { it.story != null },
+                    journeyTitle = current?.story?.title ?: stories.firstOrNull()?.title,
+                    hasSave = current != null,
                     onContinue = {
-                        val last = cards.firstOrNull { it.story != null }
-                        if (last != null) nav.navigate(R.play(last.slot.state.storyId, last.slot.id))
+                        if (current != null) nav.navigate(R.play(current.slot.state.storyId, current.slot.id))
                         else if (stories.isNotEmpty()) nav.navigate(R.play(stories.first().id))
                         else nav.navigate(R.STORIES)
-                    },
-                    onCreate = { creationOpen = true },
-                    onNewStory = { nav.navigate(R.CREATE) }
+                    }
                 )
             }
 
@@ -123,9 +119,9 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                     Text("暂无存档，开始剧情后可保存进度。", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 4.dp))
                 }
-            } else {
-                item { SectionHeader("继续上次的旅程") }
-                itemsIndexed(cards, key = { _, card -> card.slot.id }) { index, card ->
+            } else if (otherSaves.isNotEmpty()) {
+                item { SectionHeader("其他存档") }
+                itemsIndexed(otherSaves, key = { _, card -> card.slot.id }) { index, card ->
                     ContinueCard(
                         card,
                         accentIndex = index + 3,
@@ -162,14 +158,13 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         }
     }
 
-    if (creationOpen) CreationDialog(container, nav, onDismiss = { creationOpen = false })
     if (achievementsOpen) AchievementsDialog(container.library, onDismiss = { achievementsOpen = false })
 
     pendingDelete?.let { card ->
         AlertDialog(
             onDismissRequest = { pendingDelete = null },
             title = { Text("删除存档？") },
-            text = { Text("「${card.slot.name}」（${card.story?.title ?: ""}）将无法恢复。") },
+            text = { Text("「${card.story?.title ?: card.slot.name}」的这份存档（${card.stepText}）将无法恢复。") },
             confirmButton = {
                 AppTextButton(onClick = {
                     vm.deleteSave(card.slot.id)
@@ -186,7 +181,7 @@ fun HomeScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
 @Composable
 private fun HomeWelcome(
     title: String, journeyTitle: String?, hasSave: Boolean,
-    onContinue: () -> Unit, onCreate: () -> Unit, onNewStory: () -> Unit,
+    onContinue: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -211,16 +206,6 @@ private fun HomeWelcome(
                 io.wenyou.textquest.ui.common.RawText(if (hasSave) "继续旅程" else "开始剧情")
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilledTonalButton(onClick = onCreate, colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = distributedAccent(1, MaterialTheme.colorScheme.secondaryContainer),
-                contentColor = if (LocalAccentPalette.current.isNotEmpty()) accentForeground(distributedAccent(1, MaterialTheme.colorScheme.secondaryContainer)) else MaterialTheme.colorScheme.onSecondaryContainer), modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
-                Text("AI 创建")
-            }
-            AppOutlinedButton(onClick = onNewStory, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) {
-                Text("手动创建")
-            }
-        }
     }
 }
 
@@ -230,7 +215,7 @@ private fun HomeWelcome(
 private fun HomeWelcomePreview() {
     WenYouTheme(mode = ThemeMode.LIGHT, dynamicColor = false) {
         androidx.compose.material3.Surface {
-            HomeWelcome("文游", "未完的故事", true, {}, {}, {}, Modifier.padding(16.dp))
+            HomeWelcome("文游", "未完的故事", true, {}, Modifier.padding(16.dp))
         }
     }
 }
@@ -240,7 +225,7 @@ private fun HomeWelcomePreview() {
 private fun HomeWelcomeDarkPreview() {
     WenYouTheme(mode = ThemeMode.DARK, dynamicColor = false) {
         androidx.compose.material3.Surface {
-            HomeWelcome("文游", null, false, {}, {}, {}, Modifier.padding(16.dp))
+            HomeWelcome("文游", null, false, {}, Modifier.padding(16.dp))
         }
     }
 }
@@ -289,9 +274,9 @@ private fun ContinueCard(card: HomeCard, accentIndex: Int, onClick: () -> Unit, 
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f).clickable(onClick = onClick)) {
-                io.wenyou.textquest.ui.common.RawText(card.slot.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                io.wenyou.textquest.ui.common.RawText(story?.title ?: "（剧情已删除）", style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                io.wenyou.textquest.ui.common.RawText(story?.title ?: card.slot.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (story == null) Text("（剧情已删除）", style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(4.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Pill(card.stepText)

@@ -34,11 +34,11 @@ import io.wenyou.textquest.ui.vm.CreationViewModel
 import io.wenyou.textquest.ui.vm.Vms
 
 @Composable
-fun CreationDialog(container: WenYouApp.AppContainer, nav: NavHostController, onDismiss: () -> Unit, initialKind: CreationKind = CreationKind.STORY) {
+fun CreationDialog(container: WenYouApp.AppContainer, nav: NavHostController, onDismiss: () -> Unit) {
     val vm: CreationViewModel = viewModel(factory = Vms.factory { CreationViewModel(container) })
     val ui by vm.ui.collectAsStateWithLifecycle()
     val focus = LocalFocusManager.current
-    LaunchedEffect(Unit) { if (ui.idea.isBlank() && ui.draft == null) vm.setKind(initialKind) }
+    LaunchedEffect(Unit) { if (ui.idea.isBlank() && ui.draft == null) vm.setKind(CreationKind.STORY) }
     val profiles by container.library.providers.collectAsStateWithLifecycle()
     val prefs by container.settings.state.collectAsStateWithLifecycle()
     val profile = profiles.firstOrNull { it.id == prefs.defaultProviderId } ?: profiles.firstOrNull()

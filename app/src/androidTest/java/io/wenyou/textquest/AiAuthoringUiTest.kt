@@ -152,9 +152,8 @@ class AiAuthoringUiTest {
                 compose.onNode(hasText("剧情") and hasClickAction()).performClick().assertIsSelected()
                 compose.onNodeWithText("新建剧情").assertDoesNotExist()
                 compose.onNode(hasText("主页") and hasClickAction()).performClick()
-                compose.onNodeWithText("手动创建").performClick()
-                compose.onNodeWithTag("create-story").assertIsDisplayed()
-                compose.onNode(hasText("主页") and hasClickAction()).performClick()
+                compose.onNodeWithText("手动创建").assertDoesNotExist()
+                compose.onNodeWithText("AI 创建").assertDoesNotExist()
             }
         } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
     }
@@ -165,7 +164,9 @@ class AiAuthoringUiTest {
             val container = container(ok)
             compose.runOnIdle { compose.activity.setContent { WenYouAppRoot(container) } }
             compose.onNodeWithContentDescription("剧情", useUnmergedTree = true).performClick()
-            compose.onNodeWithText("AI 创建").performClick()
+            compose.onNodeWithText("AI 创建").assertDoesNotExist()
+            compose.onNode(hasText("创建") and hasClickAction()).performClick()
+            compose.onNodeWithTag("create-ai").performScrollTo().performClick()
             compose.onNodeWithTag("creation-idea").performTextInput("雨城的侦探")
             compose.onNodeWithTag("creation-confirm").performClick()
             compose.waitUntil(10_000) { compose.onAllNodesWithText("保存并编辑").fetchSemanticsNodes().isNotEmpty() }
@@ -372,7 +373,7 @@ class AiAuthoringUiTest {
                         container.settings.setThemeMode(mode)
                     }
                     compose.onNodeWithText("开始剧情").assertIsDisplayed()
-                    compose.onNodeWithText("手动创建").assertIsDisplayed()
+                    compose.onNodeWithText("全部剧情").assertIsDisplayed()
                     screenshot("home-${style.name.lowercase()}-${mode.name.lowercase()}.png")
                 }
             }
@@ -397,9 +398,9 @@ class AiAuthoringUiTest {
                 container.settings.setThemeMode(ThemeMode.LIGHT)
             }
             screenshot("home-unified-preview.png")
-            compose.onNodeWithText("AI 创建").performClick()
+            compose.onNode(hasText("创建") and hasClickAction()).performClick()
             compose.onNodeWithText("AI 一句话创建").assertIsDisplayed()
-            compose.onNodeWithText("关闭").performClick()
+            compose.onNode(hasText("主页") and hasClickAction()).performClick()
             compose.onNodeWithContentDescription("剧情", useUnmergedTree = true).performClick()
             compose.onNodeWithText("悬疑", substring = true).assertExists()
             compose.onNodeWithText("1 位人物", substring = true).assertExists()

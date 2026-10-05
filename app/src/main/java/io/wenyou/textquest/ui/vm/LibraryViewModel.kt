@@ -133,8 +133,6 @@ class LibraryViewModel(container: WenYouApp.AppContainer) : ViewModel() {
         }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     /** 某部剧情的全部存档（用于剧情详情页「读取存档」）。 */
-    fun savesForStory(storyId: String): List<SaveSlot> =
-        library.saves.value.filter { it.state.storyId == storyId }.sortedByDescending { it.updatedAt }
 
     fun setModeFilter(f: StoryModeFilter) = _filters.update { it.copy(modeFilter = f) }
     fun setContentFilter(f: StoryContentFilter) = _filters.update { it.copy(contentFilter = f) }

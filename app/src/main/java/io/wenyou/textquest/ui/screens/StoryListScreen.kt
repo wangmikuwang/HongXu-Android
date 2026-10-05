@@ -80,7 +80,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import io.wenyou.textquest.data.ai.CreationKind
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.model.ContentClass
 import io.wenyou.textquest.data.model.NodeKind
@@ -106,6 +105,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val stories by vm.stories.collectAsStateWithLifecycle()
     val totalStories by vm.totalStories.collectAsStateWithLifecycle()
     val filters by vm.filters.collectAsStateWithLifecycle()
+    val allSaves by vm.saves.collectAsStateWithLifecycle()
     var pendingDelete by remember { mutableStateOf<Story?>(null) }
     var managesSaves by remember { mutableStateOf<Story?>(null) }
     // 分享：先选「分享码 or 二维码」，再进对应界面
@@ -113,7 +113,6 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     var shareCodeStory by remember { mutableStateOf<Story?>(null) }
     var shareQrStory by remember { mutableStateOf<Story?>(null) }
     // 导入：先选「粘贴分享码 or 扫码识别」
-    var creationOpen by remember { mutableStateOf(false) }
     var importPicker by remember { mutableStateOf(false) }
     var importText by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -135,14 +134,11 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         }
     }
 
-    if (creationOpen) CreationDialog(container, nav, { creationOpen = false }, initialKind = CreationKind.STORY)
-
     HubScaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("剧情库") },
                 actions = {
-                    AppTextButton(onClick = { creationOpen = true }) { Text("AI 创建") }
                     AppTextButton(onClick = { importPicker = true }) { Text("导入") }
                 }
             )
@@ -217,7 +213,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     managesSaves?.let { story ->
         SavesDialog(
             story = story,
-            saves = vm.savesForStory(story.id),
+            saves = allSaves.filter { it.state.storyId == story.id }.sortedByDescending { it.updatedAt },
             onLoad = { slot -> nav.navigate(R.play(story.id, slot.id)) },
             onDelete = { slot -> vm.deleteSave(slot.id) },
             onDismiss = { managesSaves = null }
@@ -631,10 +627,8 @@ private fun SavesDialog(
                     saves.forEach { slot ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f).clickable { onLoad(slot) }) {
-                                io.wenyou.textquest.ui.common.RawText(slot.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
                                 Text("${slot.state.history.size} 步 · ${LibraryViewModel.formatWhen(slot.updatedAt)}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    style = MaterialTheme.typography.bodyLarge)
                             }
                             IconButton(onClick = { onDelete(slot) }) {
                                 Icon(AppIcons.Delete, "删除", tint = MaterialTheme.colorScheme.error)
