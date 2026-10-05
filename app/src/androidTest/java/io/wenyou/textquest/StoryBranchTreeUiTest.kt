@@ -34,4 +34,25 @@ class StoryBranchTreeUiTest {
         compose.runOnIdle { assertEquals("right", selected) }
         compose.onNodeWithText("剧情分支图").assertDoesNotExist()
     }
+
+    @Test fun playMapMarksCurrentNodeAndIsReadOnly() {
+        val story = Story(id = "tree-play", title = "游玩分支图", nodes = linkedMapOf(
+            "start" to StoryNode(id = "start", title = "开场", choices = listOf(ChoiceData("左侧路线", "left"), ChoiceData("右侧路线", "right"))),
+            "left" to StoryNode(id = "left", title = "左侧结局", kind = NodeKind.ENDING),
+            "right" to StoryNode(id = "right", title = "右侧结局", kind = NodeKind.ENDING)))
+        val open = mutableStateOf(true)
+        compose.setContent {
+            WenYouTheme {
+                if (open.value) StoryBranchTreeDialog(story, onEdit = null, onDismiss = { open.value = false }, currentNodeId = "start")
+            }
+        }
+        compose.onNodeWithText("已标出当前位置", substring = true).assertIsDisplayed()
+        // The hint and the current node marker.
+        compose.onAllNodesWithText("当前位置", substring = true).assertCountEquals(2)
+        // Nodes are not editable while playing: tapping keeps the map open.
+        compose.onNodeWithText("右侧结局").performClick()
+        compose.onNodeWithText("剧情分支图").assertIsDisplayed()
+        compose.onNodeWithText("返回").performClick()
+        compose.onNodeWithText("剧情分支图").assertDoesNotExist()
+    }
 }

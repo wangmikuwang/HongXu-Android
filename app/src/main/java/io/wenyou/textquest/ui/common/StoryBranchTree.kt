@@ -5,6 +5,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import io.wenyou.textquest.ui.common.AppIcon as Icon
 import io.wenyou.textquest.ui.common.AppText as Text
@@ -84,10 +85,12 @@ internal fun visibleBranches(rows: List<BranchRow>, collapsed: Set<String>): Lis
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StoryBranchTreeDialog(story: Story, onEdit: (String) -> Unit, onDismiss: () -> Unit) {
+/** [onEdit] null opens a read-only map for play, highlighting and scrolling to [currentNodeId]. */
+fun StoryBranchTreeDialog(story: Story, onEdit: ((String) -> Unit)?, onDismiss: () -> Unit, currentNodeId: String? = null) {
     val rows = remember(story) { storyBranches(story) }
     var collapsed by remember(story.id) { mutableStateOf(emptySet<String>()) }
     val visible = remember(rows, collapsed) { visibleBranches(rows, collapsed) }
+    val listState = rememberLazyListState(visible.indexOfFirst { it.kind == BranchKind.NODE && it.nodeId == currentNodeId }.coerceAtLeast(0))
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Scaffold(modifier = Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), topBar = {
             CenterAlignedTopAppBar(title = { Text("剧情分支图") }, navigationIcon = {
@@ -96,13 +99,14 @@ fun StoryBranchTreeDialog(story: Story, onEdit: (String) -> Unit, onDismiss: () 
         }) { padding ->
             Column(Modifier.padding(padding).fillMaxSize()) {
                 io.wenyou.textquest.ui.common.RawText(story.title, Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.titleMedium)
-                Text("点击节点编辑；条件分支展示所有可能出口。左右滑动查看深层分支。",
+                Text(if (onEdit != null) "点击节点编辑；条件分支展示所有可能出口。左右滑动查看深层分支。"
+                    else "已标出当前位置；条件分支展示所有可能出口。左右滑动查看深层分支。",
                     Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall)
                 Row(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
-                    LazyColumn(modifier = Modifier.width((340 + (visible.maxOfOrNull { it.depth } ?: 0).coerceAtMost(12) * 20).dp),
+                    LazyColumn(state = listState, modifier = Modifier.width((340 + (visible.maxOfOrNull { it.depth } ?: 0).coerceAtMost(12) * 20).dp),
                         contentPadding = PaddingValues(12.dp)) {
                         itemsIndexed(visible) { _, row ->
-                            BranchNode(story, row, row.nodeId in collapsed,
+                            BranchNode(story, row, row.nodeId in collapsed, current = row.kind == BranchKind.NODE && row.nodeId == currentNodeId,
                                 onToggle = { row.nodeId?.let { collapsed = if (it in collapsed) collapsed - it else collapsed + it } },
                                 onEdit = onEdit)
                         }
@@ -114,7 +118,7 @@ fun StoryBranchTreeDialog(story: Story, onEdit: (String) -> Unit, onDismiss: () 
 }
 
 @Composable
-private fun BranchNode(story: Story, row: BranchRow, collapsed: Boolean, onToggle: () -> Unit, onEdit: (String) -> Unit) {
+private fun BranchNode(story: Story, row: BranchRow, collapsed: Boolean, current: Boolean, onToggle: () -> Unit, onEdit: ((String) -> Unit)?) {
     val node = story.nodes[row.nodeId]
     val colors = MaterialTheme.colorScheme
     val depth = row.depth.coerceAtMost(12)
@@ -135,18 +139,27 @@ private fun BranchNode(story: Story, row: BranchRow, collapsed: Boolean, onToggl
             drawLine(colors.outlineVariant, Offset(x, size.height / 2), Offset(depth * step, size.height / 2), 2.dp.toPx())
         }
     }.padding(start = (depth * 20).dp, top = 4.dp, bottom = 4.dp)) {
-        Card(onClick = { row.nodeId?.takeIf { it in story.nodes }?.let(onEdit) },
-            enabled = node != null,
-            colors = CardDefaults.cardColors(containerColor = if (row.kind == BranchKind.MISSING) colors.errorContainer else colors.surfaceContainerHigh),
-            modifier = Modifier.width(300.dp)) {
+        val cardColors = CardDefaults.cardColors(containerColor = when {
+            row.kind == BranchKind.MISSING -> colors.errorContainer
+            current -> colors.primaryContainer
+            else -> colors.surfaceContainerHigh
+        })
+        val content: @Composable ColumnScope.() -> Unit = {
             Column(Modifier.padding(12.dp)) {
                 io.wenyou.textquest.ui.common.RawText(row.label, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 io.wenyou.textquest.ui.common.RawText(node?.title?.ifBlank { row.nodeId.orEmpty() } ?: row.nodeId ?: "游玩时生成",
                     style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text("$marker${if (row.depth > 12) " · 第${row.depth}层" else ""}", style = MaterialTheme.typography.bodySmall,
-                    color = if (row.kind == BranchKind.MISSING) colors.error else colors.onSurfaceVariant)
+                Text("$marker${if (current) " · 当前位置" else ""}${if (row.depth > 12) " · 第${row.depth}层" else ""}", style = MaterialTheme.typography.bodySmall,
+                    color = when {
+                        row.kind == BranchKind.MISSING -> colors.error
+                        current -> colors.onPrimaryContainer
+                        else -> colors.onSurfaceVariant
+                    })
                 if (row.expandable) AppTextButton(onClick = onToggle) { io.wenyou.textquest.ui.common.RawText(if (collapsed) "展开分支" else "折叠分支") }
             }
         }
+        if (onEdit != null) Card(onClick = { row.nodeId?.takeIf { it in story.nodes }?.let(onEdit) },
+            enabled = node != null, colors = cardColors, modifier = Modifier.width(300.dp), content = content)
+        else Card(colors = cardColors, modifier = Modifier.width(300.dp), content = content)
     }
 }

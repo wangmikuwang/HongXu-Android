@@ -99,6 +99,7 @@ import io.wenyou.textquest.data.model.NodeKind
 import io.wenyou.textquest.ui.theme.avatarColor
 import io.wenyou.textquest.ui.vm.PlayStage
 import io.wenyou.textquest.ui.vm.PlayUi
+import io.wenyou.textquest.ui.common.StoryBranchTreeDialog
 import io.wenyou.textquest.ui.vm.PlayViewModel
 import io.wenyou.textquest.ui.vm.Vms
 
@@ -432,9 +433,14 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (ui.visibleChoices.isNotEmpty()) {
-                    Text("接下来……", style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.readableAccent(),
-                        modifier = Modifier.padding(horizontal = 16.dp))
+                    var treeOpen by rememberSaveable { mutableStateOf(false) }
+                    if (treeOpen) ui.story?.let { StoryBranchTreeDialog(it, onEdit = null, onDismiss = { treeOpen = false }, currentNodeId = ui.nodeId) }
+                    Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("接下来……", style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.readableAccent(),
+                            modifier = Modifier.weight(1f))
+                        AppTextButton(onClick = { treeOpen = true }) { Text("分支图") }
+                    }
                     ui.visibleChoices.forEachIndexed { i, choice ->
                         Button(
                             onClick = { vm.chooseAuthored(i) },
