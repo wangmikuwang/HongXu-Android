@@ -291,7 +291,7 @@ fun HubScaffold(
             controls = {
                 Box(Modifier.align(Alignment.BottomCenter)
                     .onSizeChanged { barHeight = with(density) { it.height.toDp() } }.navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)
-                    .fillMaxWidth().liquidGlass(pill = true)) { HubBottomBar(nav) }
+                    .fillMaxWidth().liquidGlass(pill = true, clipContent = false)) { HubBottomBar(nav) }
             }
         )
     } else {

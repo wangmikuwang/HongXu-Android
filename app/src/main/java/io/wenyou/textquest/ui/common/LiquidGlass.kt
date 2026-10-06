@@ -45,6 +45,10 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.unit.IntSize
@@ -115,9 +119,12 @@ fun GlassBackdrop(content: @Composable () -> Unit, controls: @Composable BoxScop
     }
 }
 
-/** Background sampling, blur and edge lensing are isolated from readable foreground text. */
+/**
+ * Background sampling, blur and edge lensing are isolated from readable foreground text.
+ * [clipContent] false keeps the glass in its shape but lets content (the dock lens) overhang it.
+ */
 @Composable
-fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
+fun Modifier.liquidGlass(pill: Boolean = false, clipContent: Boolean = true): Modifier {
     val material = io.wenyou.textquest.ui.theme.LocalAppearance.current.glassMaterial
     val blurDp = when (material) { "clear" -> 3f; "frosted" -> 12f; else -> 7f }
     val glassAlpha = when (material) { "clear" -> .12f; "frosted" -> .45f; else -> .20f }
@@ -145,7 +152,7 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
         }
     }
     val shape = if (pill) RoundedCornerShape(50) else RoundedCornerShape(30.dp)
-    return this.shadow(6.dp, shape, clip = false).clip(shape).onSizeChanged { bounds = it }.onGloballyPositioned { origin = it.positionInRoot() }
+    return this.shadow(6.dp, shape, clip = false).then(if (clipContent) Modifier.clip(shape) else Modifier).onSizeChanged { bounds = it }.onGloballyPositioned { origin = it.positionInRoot() }
         .drawWithCache {
             // Cap background samples on high-resolution displays; text and controls stay full resolution.
             val sampleScale = minOf(0.5f, 540f / size.width.coerceAtLeast(1f))
@@ -165,27 +172,30 @@ fun Modifier.liquidGlass(pill: Boolean = false): Modifier {
             val border = Brush.linearGradient(listOf(Color.White.copy(alpha = if (dark) 0.34f else 0.60f), Color.White.copy(alpha = 0.03f), Color.White.copy(alpha = 0.22f)))
             val radius = androidx.compose.ui.geometry.CornerRadius(corner)
             val stroke = Stroke(0.6.dp.toPx())
+            val outline = Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), radius)) }
             onDrawWithContent {
-                if (backdrop != null && backdrop.scrolling && Build.VERSION.SDK_INT >= 31) {
-                    val image = frozen
-                    if (image != null) drawImage(image, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
-                    else drawRect(tint.copy(alpha = 0.82f))
-                    drawRect(tint.copy(alpha = glassAlpha))
-                } else if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
-                    val offset = origin - backdrop.origin
-                    sample.record(size = sampleSize) {
-                        drawRect(tint)
-                        scale(sampleScale, sampleScale, pivot = Offset.Zero) {
-                            translate(-offset.x, -offset.y) { drawLayer(backdrop.layer) }
+                clipPath(outline) {
+                    if (backdrop != null && backdrop.scrolling && Build.VERSION.SDK_INT >= 31) {
+                        val image = frozen
+                        if (image != null) drawImage(image, dstSize = IntSize(size.width.toInt(), size.height.toInt()))
+                        else drawRect(tint.copy(alpha = 0.82f))
+                        drawRect(tint.copy(alpha = glassAlpha))
+                    } else if (backdrop != null && Build.VERSION.SDK_INT >= 31) {
+                        val offset = origin - backdrop.origin
+                        sample.record(size = sampleSize) {
+                            drawRect(tint)
+                            scale(sampleScale, sampleScale, pivot = Offset.Zero) {
+                                translate(-offset.x, -offset.y) { drawLayer(backdrop.layer) }
+                            }
                         }
+                        scale(1f / sampleScale, 1f / sampleScale, pivot = Offset.Zero) { drawLayer(sample) }
+                        drawRect(tint.copy(alpha = glassAlpha))
+                    } else {
+                        // ponytail: Android 8–11 retain readable tinted glass; GPU backdrop effects need Android 12+.
+                        drawRect(tint.copy(alpha = 0.94f))
                     }
-                    scale(1f / sampleScale, 1f / sampleScale, pivot = Offset.Zero) { drawLayer(sample) }
-                    drawRect(tint.copy(alpha = glassAlpha))
-                } else {
-                    // ponytail: Android 8–11 retain readable tinted glass; GPU backdrop effects need Android 12+.
-                    drawRect(tint.copy(alpha = 0.94f))
+                    drawRect(highlight)
                 }
-                drawRect(highlight)
                 drawRoundRect(border, cornerRadius = radius, style = stroke)
                 drawContent()
             }
