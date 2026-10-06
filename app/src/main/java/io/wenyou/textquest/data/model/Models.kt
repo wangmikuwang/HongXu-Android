@@ -347,7 +347,9 @@ data class AppBundle(
     val stories: List<Story> = emptyList(),
     val saves: List<SaveSlot> = emptyList(),
     val bottomRules: List<BottomRule> = emptyList(),
-    val achievements: List<AchievementRecord> = emptyList()
+    val achievements: List<AchievementRecord> = emptyList(),
+    /** Branch nodes reached per story; older backups simply omit it. */
+    val progress: List<StoryProgress> = emptyList()
 )
 
 @Serializable
@@ -357,6 +359,15 @@ data class AchievementRecord(
     val unlockedAt: Long = 0L,
     val milestones: Set<String> = emptySet()
 )
+
+/** Nodes of a branching story the player has reached in any journey. */
+@Serializable
+data class StoryProgress(val storyId: String, val visitedNodes: Set<String> = emptySet())
+
+/** Saves are named "<story> · N 步" until the player renames them. */
+fun autoSaveName(storyTitle: String, steps: Int) = "$storyTitle · $steps 步"
+fun isAutoSaveName(name: String) = name.isBlank() || AUTO_SAVE_NAME.matches(name)
+private val AUTO_SAVE_NAME = Regex(".* · \\d+ 步")
 
 /** 把任意 JSON 安全解析为 [JsonElement] 的辅助（用于导入校验）。 */
 fun parseLenient(text: String): JsonElement = AppJson.parseToJsonElement(text)

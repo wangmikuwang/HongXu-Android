@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.data.model.isAutoSaveName
 import io.wenyou.textquest.ui.common.AppIcons
 import io.wenyou.textquest.ui.theme.distributedAccent
 import io.wenyou.textquest.ui.theme.accentForeground
@@ -274,9 +275,11 @@ private fun ContinueCard(card: HomeCard, accentIndex: Int, onClick: () -> Unit, 
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f).clickable(onClick = onClick)) {
-                io.wenyou.textquest.ui.common.RawText(story?.title ?: card.slot.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (story == null) Text("（剧情已删除）", style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                val custom = card.slot.name.takeUnless(::isAutoSaveName)
+                io.wenyou.textquest.ui.common.RawText(custom ?: story?.title ?: card.slot.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                if (custom != null || story == null) io.wenyou.textquest.ui.common.RawText(story?.title ?: "（剧情已删除）",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Spacer(Modifier.height(4.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Pill(card.stepText)

@@ -10,6 +10,8 @@ import io.wenyou.textquest.data.model.SaveSlot
 import io.wenyou.textquest.data.model.Story
 import io.wenyou.textquest.data.model.SessionState
 import io.wenyou.textquest.data.model.AchievementRecord
+import io.wenyou.textquest.data.model.StoryMode
+import io.wenyou.textquest.data.model.StoryProgress
 import io.wenyou.textquest.data.engine.Achievements
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -52,6 +54,7 @@ class LocalLibrary internal constructor(private val dir: File) {
     private val savesFile = File(dir, "saves.json")
     private val bottomRulesFile = File(dir, "bottom_rules.json")
     private val achievementsFile = File(dir, "achievements.json")
+    private val progressFile = File(dir, "progress.json")
     // A finite achievement write belongs to the library, so leaving a play screen cannot cancel it.
     private val achievementScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -68,6 +71,9 @@ class LocalLibrary internal constructor(private val dir: File) {
     val saves: StateFlow<List<SaveSlot>> = _saves.asStateFlow()
     val bottomRules: StateFlow<List<BottomRule>> = _bottomRules.asStateFlow()
     val achievements: StateFlow<List<AchievementRecord>> = _achievements.asStateFlow()
+    private val _progress = MutableStateFlow(readList(progressFile, StoryProgress.serializer()))
+    /** Branch nodes reached per story, shown on the branch map. */
+    val progress: StateFlow<List<StoryProgress>> = _progress.asStateFlow()
 
     fun trackAchievements(story: Story, state: SessionState, onUnlocked: (List<String>) -> Unit) {
         achievementScope.launch {
@@ -82,6 +88,14 @@ class LocalLibrary internal constructor(private val dir: File) {
         if (next != previous) {
             persistList(achievementsFile, next, AchievementRecord.serializer())
             _achievements.value = next
+        }
+        // The same play-state hook records which branch nodes were reached.
+        val reached = state.currentNodeId.takeIf { story.mode == StoryMode.SCRIPT && state.storyId == story.id && it in story.nodes }
+        val old = _progress.value.firstOrNull { it.storyId == story.id }
+        if (reached != null && (old == null || reached !in old.visitedNodes)) {
+            val updated = replaceById(_progress.value, story.id, StoryProgress(story.id, old?.visitedNodes.orEmpty() + reached))
+            persistList(progressFile, updated, StoryProgress.serializer())
+            _progress.value = updated
         }
         next.filter { it.unlockedAt > 0L && previous.none { old -> old.id == it.id && old.unlockedAt > 0L } }.map { it.id }
     }
@@ -164,7 +178,8 @@ class LocalLibrary internal constructor(private val dir: File) {
         stories = _stories.value,
         saves = _saves.value,
         bottomRules = _bottomRules.value,
-        achievements = _achievements.value
+        achievements = _achievements.value,
+        progress = _progress.value
     ) }
 
     suspend fun importBundle(bundle: AppBundle): Int = write {
@@ -182,6 +197,13 @@ class LocalLibrary internal constructor(private val dir: File) {
         if (merged != _achievements.value) {
             persistList(achievementsFile, merged, AchievementRecord.serializer())
             _achievements.value = merged
+        }
+        // Like achievements, restoring an older backup must not forget explored branches.
+        val progress = (_progress.value + bundle.progress).groupBy { it.storyId }
+            .map { (id, records) -> StoryProgress(id, records.flatMapTo(mutableSetOf()) { it.visitedNodes }) }
+        if (progress != _progress.value) {
+            persistList(progressFile, progress, StoryProgress.serializer())
+            _progress.value = progress
         }
         bundle.providers.size + bundle.characters.size + bundle.stories.size + bundle.saves.size + bundle.bottomRules.size
     }
@@ -222,6 +244,7 @@ class LocalLibrary internal constructor(private val dir: File) {
                 is Story -> it.id == id
                 is SaveSlot -> it.id == id
                 is BottomRule -> it.id == id
+                is StoryProgress -> it.storyId == id
                 else -> false
             }
         }

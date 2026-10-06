@@ -43,12 +43,14 @@ class StoryBranchTreeUiTest {
         val open = mutableStateOf(true)
         compose.setContent {
             WenYouTheme {
-                if (open.value) StoryBranchTreeDialog(story, onEdit = null, onDismiss = { open.value = false }, currentNodeId = "start")
+                if (open.value) StoryBranchTreeDialog(story, onEdit = null, onDismiss = { open.value = false }, currentNodeId = "start", visited = setOf("start", "left"))
             }
         }
         compose.onNodeWithText("已标出当前位置", substring = true).assertIsDisplayed()
         // The hint and the current node marker.
         compose.onAllNodesWithText("当前位置", substring = true).assertCountEquals(2)
+        compose.onNodeWithTag("branch-progress").assertTextEquals("已到达 2 / 3 个节点 · 已解锁结局 1 / 2")
+        compose.onNodeWithText("结局 · 🏆 已解锁").assertIsDisplayed()
         // Nodes are not editable while playing: tapping keeps the map open.
         compose.onNodeWithText("右侧结局").performClick()
         compose.onNodeWithText("剧情分支图").assertIsDisplayed()

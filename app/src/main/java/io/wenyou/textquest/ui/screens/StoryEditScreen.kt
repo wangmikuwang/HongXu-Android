@@ -95,6 +95,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
     val story = ui.story
     var revisionOpen by remember { mutableStateOf(false) }
     var treeOpen by remember { mutableStateOf(false) }
+    val progress by container.library.progress.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     if (treeOpen && story != null) StoryBranchTreeDialog(story,
@@ -102,7 +103,8 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
             vm.select(id)
             treeOpen = false
             scope.launch { listState.animateScrollToItem((listState.layoutInfo.totalItemsCount - 3).coerceAtLeast(0)) }
-        }, onDismiss = { treeOpen = false })
+        }, onDismiss = { treeOpen = false },
+        visited = progress.firstOrNull { it.storyId == story.id }?.visitedNodes.orEmpty())
 
     if (revisionOpen && story != null) AiRevisionDialog(container,
         io.wenyou.textquest.data.model.AppBundle(stories = listOf(story),

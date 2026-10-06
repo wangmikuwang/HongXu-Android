@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.common
+import androidx.compose.material3.IconButton
 import io.wenyou.textquest.ui.theme.LocalAppearance
 import io.wenyou.textquest.ui.theme.LocalThemeStyle
 import io.wenyou.textquest.ui.theme.ThemeStyle
@@ -326,4 +327,18 @@ fun ColorDots(
             }
         }
     }
+}
+
+/** Rounded search box shared by settings and the story and character lists. */
+@Composable
+fun SearchField(query: String, onQueryChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier) {
+    OutlinedTextField(query, onQueryChange, modifier = modifier.fillMaxWidth(),
+        singleLine = true, shape = RoundedCornerShape(16.dp),
+        placeholder = { Text(placeholder) },
+        leadingIcon = { AppIcon(AppIcons.Search, "搜索") },
+        trailingIcon = if (query.isNotEmpty()) {{ IconButton(onClick = { onQueryChange("") }) { AppIcon(AppIcons.Close, "清除搜索") } }} else null,
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = Color.Transparent, focusedBorderColor = MaterialTheme.colorScheme.outline,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
 }

@@ -88,6 +88,13 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import io.wenyou.textquest.data.engine.Transcript
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.model.ApiProfile
 import io.wenyou.textquest.data.model.CharacterData
@@ -110,6 +117,8 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
         factory = Vms.factory { PlayViewModel(storyId, saveId, container) }
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
+    val progress by container.library.progress.collectAsStateWithLifecycle()
+    val visited = progress.firstOrNull { it.storyId == ui.story?.id }?.visitedNodes.orEmpty()
     if (ui.stage == PlayStage.ROLE_SELECT) RoleSelectionDialog(ui.characters,
         onStart = vm::selectPlayerCharacter, onCancel = { nav.navigateUp() })
     val snackbar = remember { SnackbarHostState() }
@@ -201,14 +210,14 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
             GlassBackdrop(content = historyContent, controls = {}, footer = {
                 Box(Modifier.padding(8.dp).fillMaxWidth().heightIn(max = panelHeight)
                     .testTag("play-actions").liquidGlass().verticalScroll(rememberScrollState())) {
-                    Column { UsagePanel(container.chatClient.usage, showLast = false); ActionPanel(vm, ui, nav) }
+                    Column { UsagePanel(container.chatClient.usage, showLast = false); ActionPanel(vm, ui, nav, visited) }
                 }
             })
         } else {
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f)) { historyContent() }
                 Box(Modifier.fillMaxWidth().heightIn(max = panelHeight).testTag("play-actions").verticalScroll(rememberScrollState())) {
-                    Column { UsagePanel(container.chatClient.usage, showLast = false); ActionPanel(vm, ui, nav) }
+                    Column { UsagePanel(container.chatClient.usage, showLast = false); ActionPanel(vm, ui, nav, visited) }
                 }
             }
         }
@@ -413,7 +422,7 @@ private fun StreamingCard() {
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
+private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController, visited: Set<String>) {
     when (ui.stage) {
         PlayStage.INIT, PlayStage.ROLE_SELECT -> Unit
         PlayStage.AI_WORKING -> {
@@ -434,7 +443,7 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController) {
             ) {
                 if (ui.visibleChoices.isNotEmpty()) {
                     var treeOpen by rememberSaveable { mutableStateOf(false) }
-                    if (treeOpen) ui.story?.let { StoryBranchTreeDialog(it, onEdit = null, onDismiss = { treeOpen = false }, currentNodeId = ui.nodeId) }
+                    if (treeOpen) ui.story?.let { StoryBranchTreeDialog(it, onEdit = null, onDismiss = { treeOpen = false }, currentNodeId = ui.nodeId, visited = visited) }
                     Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Text("接下来……", style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.readableAccent(),
@@ -589,8 +598,10 @@ private fun StoppedPanel(ui: PlayUi, vm: PlayViewModel, nav: NavHostController) 
                 }
             }
             Spacer(Modifier.height(4.dp))
-            AppTextButton(onClick = { vm.saveNow() }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Text("保留这份存档")
+            val export = rememberTranscriptExport(ui)
+            Row(Modifier.align(Alignment.CenterHorizontally)) {
+                AppTextButton(onClick = { vm.saveNow() }) { Text("保留这份存档") }
+                AppTextButton(onClick = export) { Text("导出对局文本") }
             }
         }
     }
@@ -599,6 +610,25 @@ private fun StoppedPanel(ui: PlayUi, vm: PlayViewModel, nav: NavHostController) 
 // ---------------------------------------------------------------------------
 // 角色状态抽屉
 // ---------------------------------------------------------------------------
+
+/** Saves the journey as a .txt document wherever the player chooses. */
+@Composable
+private fun rememberTranscriptExport(ui: PlayUi): () -> Unit {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        val story = ui.story
+        val session = ui.session
+        if (uri != null && story != null && session != null) scope.launch {
+            val text = Transcript.format(story.title, session, ui.characters, System.currentTimeMillis())
+            val saved = withContext(Dispatchers.IO) {
+                runCatching { context.contentResolver.openOutputStream(uri)!!.use { it.write(text.toByteArray()) } }.isSuccess
+            }
+            Toast.makeText(context, if (saved) "已导出对局文本" else "导出失败，请换个位置重试", Toast.LENGTH_SHORT).show()
+        }
+    }
+    return { ui.story?.let { launcher.launch(Transcript.fileName(it.title)) } }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -612,6 +642,8 @@ private fun CharacterStateDrawer(ui: PlayUi) {
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Text("剧情记忆与人物关系", style = MaterialTheme.typography.titleLarge)
+            val export = rememberTranscriptExport(ui)
+            AppOutlinedButton(onClick = export, enabled = !ui.session?.history.isNullOrEmpty()) { Text("导出对局文本") }
             Text("剧情记忆", style = MaterialTheme.typography.titleMedium)
             io.wenyou.textquest.ui.common.RawText(ui.session?.memory?.ifBlank { "AI 续写后会自动记录关键事件，随存档保存。" } ?: "暂无剧情记忆", style = MaterialTheme.typography.bodySmall)
             Text("人物关系与状态", style = MaterialTheme.typography.titleMedium)

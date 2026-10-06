@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.SearchField
 import io.wenyou.textquest.ui.common.AppIcons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,15 +58,7 @@ internal fun SettingsMenuContent(onOpen: (String) -> Unit, modifier: Modifier = 
     }
     LazyColumn(modifier.fillMaxSize().testTag("settings-menu"), contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)) {
         item {
-            OutlinedTextField(query, { query = it }, modifier = Modifier.fillMaxWidth().testTag("settings-search"),
-                singleLine = true, shape = RoundedCornerShape(16.dp),
-                placeholder = { AppText("搜索设置功能") },
-                leadingIcon = { Icon(AppIcons.Search, "搜索") },
-                trailingIcon = if (query.isNotEmpty()) {{ IconButton(onClick = { query = "" }) { Icon(AppIcons.Close, "清除搜索") } }} else null,
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.Transparent, focusedBorderColor = MaterialTheme.colorScheme.outline,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLow))
+            SearchField(query, { query = it }, "搜索设置功能", Modifier.testTag("settings-search"))
             Spacer(Modifier.height(18.dp))
         }
         items(visible, key = { it.id }) { section ->

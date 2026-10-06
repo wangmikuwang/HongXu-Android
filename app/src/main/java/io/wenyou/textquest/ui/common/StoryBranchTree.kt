@@ -12,6 +12,7 @@ import io.wenyou.textquest.ui.common.AppText as Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,8 +86,12 @@ internal fun visibleBranches(rows: List<BranchRow>, collapsed: Set<String>): Lis
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-/** [onEdit] null opens a read-only map for play, highlighting and scrolling to [currentNodeId]. */
-fun StoryBranchTreeDialog(story: Story, onEdit: ((String) -> Unit)?, onDismiss: () -> Unit, currentNodeId: String? = null) {
+/**
+ * [onEdit] null opens a read-only map for play, highlighting and scrolling to [currentNodeId].
+ * [visited] marks nodes the player has reached in any journey and unlocked endings.
+ */
+fun StoryBranchTreeDialog(story: Story, onEdit: ((String) -> Unit)?, onDismiss: () -> Unit, currentNodeId: String? = null,
+    visited: Set<String> = emptySet()) {
     val rows = remember(story) { storyBranches(story) }
     var collapsed by remember(story.id) { mutableStateOf(emptySet<String>()) }
     val visible = remember(rows, collapsed) { visibleBranches(rows, collapsed) }
@@ -102,11 +107,19 @@ fun StoryBranchTreeDialog(story: Story, onEdit: ((String) -> Unit)?, onDismiss: 
                 Text(if (onEdit != null) "点击节点编辑；条件分支展示所有可能出口。左右滑动查看深层分支。"
                     else "已标出当前位置；条件分支展示所有可能出口。左右滑动查看深层分支。",
                     Modifier.padding(horizontal = 16.dp, vertical = 8.dp), style = MaterialTheme.typography.bodySmall)
+                val reached = story.nodes.keys.count { it in visited }
+                if (reached > 0) {
+                    val endings = story.nodes.values.filter { it.kind == NodeKind.ENDING }
+                    Text("已到达 $reached / ${story.nodes.size} 个节点 · 已解锁结局 ${endings.count { it.id in visited }} / ${endings.size}",
+                        Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp).testTag("branch-progress"),
+                        style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                }
                 Row(Modifier.weight(1f).horizontalScroll(rememberScrollState())) {
                     LazyColumn(state = listState, modifier = Modifier.width((340 + (visible.maxOfOrNull { it.depth } ?: 0).coerceAtMost(12) * 20).dp),
                         contentPadding = PaddingValues(12.dp)) {
                         itemsIndexed(visible) { _, row ->
                             BranchNode(story, row, row.nodeId in collapsed, current = row.kind == BranchKind.NODE && row.nodeId == currentNodeId,
+                                reached = row.kind == BranchKind.NODE && row.nodeId in visited,
                                 onToggle = { row.nodeId?.let { collapsed = if (it in collapsed) collapsed - it else collapsed + it } },
                                 onEdit = onEdit)
                         }
@@ -118,7 +131,7 @@ fun StoryBranchTreeDialog(story: Story, onEdit: ((String) -> Unit)?, onDismiss: 
 }
 
 @Composable
-private fun BranchNode(story: Story, row: BranchRow, collapsed: Boolean, current: Boolean, onToggle: () -> Unit, onEdit: ((String) -> Unit)?) {
+private fun BranchNode(story: Story, row: BranchRow, collapsed: Boolean, current: Boolean, reached: Boolean, onToggle: () -> Unit, onEdit: ((String) -> Unit)?) {
     val node = story.nodes[row.nodeId]
     val colors = MaterialTheme.colorScheme
     val depth = row.depth.coerceAtMost(12)
@@ -149,7 +162,13 @@ private fun BranchNode(story: Story, row: BranchRow, collapsed: Boolean, current
                 io.wenyou.textquest.ui.common.RawText(row.label, style = MaterialTheme.typography.labelMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 io.wenyou.textquest.ui.common.RawText(node?.title?.ifBlank { row.nodeId.orEmpty() } ?: row.nodeId ?: "游玩时生成",
                     style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text("$marker${if (current) " · 当前位置" else ""}${if (row.depth > 12) " · 第${row.depth}层" else ""}", style = MaterialTheme.typography.bodySmall,
+                val progress = when {
+                    current -> " · 当前位置"
+                    reached && node?.kind == NodeKind.ENDING -> " · 🏆 已解锁"
+                    reached -> " · ✓ 已到达"
+                    else -> ""
+                }
+                Text("$marker$progress${if (row.depth > 12) " · 第${row.depth}层" else ""}", style = MaterialTheme.typography.bodySmall,
                     color = when {
                         row.kind == BranchKind.MISSING -> colors.error
                         current -> colors.onPrimaryContainer

@@ -1,4 +1,8 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.SearchField
+import io.wenyou.textquest.ui.common.AppField
+import io.wenyou.textquest.data.model.isAutoSaveName
+import androidx.compose.runtime.saveable.rememberSaveable
 import io.wenyou.textquest.ui.common.AppIcons
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
@@ -106,6 +110,10 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     val totalStories by vm.totalStories.collectAsStateWithLifecycle()
     val filters by vm.filters.collectAsStateWithLifecycle()
     val allSaves by vm.saves.collectAsStateWithLifecycle()
+    var query by rememberSaveable { mutableStateOf("") }
+    val shown = remember(stories, query) {
+        stories.filter { s -> query.isBlank() || listOf(s.title, s.subtitle, s.genre).any { it.contains(query.trim(), ignoreCase = true) } }
+    }
     var pendingDelete by remember { mutableStateOf<Story?>(null) }
     var managesSaves by remember { mutableStateOf<Story?>(null) }
     // 分享：先选「分享码 or 二维码」，再进对应界面
@@ -150,6 +158,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                item { SearchField(query, { query = it }, "搜索剧情名、简介或题材", Modifier.testTag("story-search")) }
                 item {
                     FilterChipRow(
                         options = StoryModeFilter.entries,
@@ -166,7 +175,12 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         onSelect = { vm.setContentFilter(it) }
                     )
                 }
-                if (stories.isEmpty()) {
+                if (stories.isNotEmpty() && shown.isEmpty()) {
+                    item {
+                        FilterEmptyState(title = "没有找到「${query.trim()}」", body = "换个关键词试试，或清除搜索。",
+                            showReset = true, onReset = { query = "" })
+                    }
+                } else if (stories.isEmpty()) {
                     item {
                         FilterEmptyState(
                             title = if (totalStories > 0) "该分类下暂无剧情" else "还没有任何剧情",
@@ -179,7 +193,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
                         )
                     }
                 } else {
-                    items(stories, key = { it.id }) { story ->
+                    items(shown, key = { it.id }) { story ->
                         StoryCard(story,
                             onEdit = { nav.navigate(R.storyEdit(story.id)) },
                             onPlay = { nav.navigate(R.play(story.id)) },
@@ -216,6 +230,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             saves = allSaves.filter { it.state.storyId == story.id }.sortedByDescending { it.updatedAt },
             onLoad = { slot -> nav.navigate(R.play(story.id, slot.id)) },
             onDelete = { slot -> vm.deleteSave(slot.id) },
+            onRename = { slot, name -> vm.renameSave(slot, name, story.title) },
             onDismiss = { managesSaves = null }
         )
     }
@@ -612,8 +627,20 @@ private fun SavesDialog(
     saves: List<SaveSlot>,
     onLoad: (SaveSlot) -> Unit,
     onDelete: (SaveSlot) -> Unit,
+    onRename: (SaveSlot, String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    var renaming by remember { mutableStateOf<SaveSlot?>(null) }
+    renaming?.let { slot ->
+        var name by remember(slot.id) { mutableStateOf(slot.name.takeUnless(::isAutoSaveName).orEmpty()) }
+        AlertDialog(
+            onDismissRequest = { renaming = null },
+            title = { Text("重命名存档") },
+            text = { AppField(name, { name = it }, "存档名", singleLine = true, supporting = "留空则使用自动名称") },
+            confirmButton = { AppTextButton(onClick = { onRename(slot, name); renaming = null }) { Text("保存") } },
+            dismissButton = { AppTextButton(onClick = { renaming = null }) { Text("取消") } }
+        )
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("存档 · ${story.title}") },
@@ -627,8 +654,16 @@ private fun SavesDialog(
                     saves.forEach { slot ->
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f).clickable { onLoad(slot) }) {
-                                Text("${slot.state.history.size} 步 · ${LibraryViewModel.formatWhen(slot.updatedAt)}",
-                                    style = MaterialTheme.typography.bodyLarge)
+                                val steps = "${slot.state.history.size} 步 · ${LibraryViewModel.formatWhen(slot.updatedAt)}"
+                                if (isAutoSaveName(slot.name)) Text(steps, style = MaterialTheme.typography.bodyLarge)
+                                else {
+                                    io.wenyou.textquest.ui.common.RawText(slot.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                                    Text(steps, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                            IconButton(onClick = { renaming = slot }) {
+                                Icon(AppIcons.Edit, "重命名存档", tint = MaterialTheme.colorScheme.readableAccent())
                             }
                             IconButton(onClick = { onDelete(slot) }) {
                                 Icon(AppIcons.Delete, "删除", tint = MaterialTheme.colorScheme.error)

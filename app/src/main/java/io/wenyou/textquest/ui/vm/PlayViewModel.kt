@@ -1,5 +1,8 @@
 package io.wenyou.textquest.ui.vm
 
+import io.wenyou.textquest.data.model.autoSaveName
+import io.wenyou.textquest.data.model.isAutoSaveName
+
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.wenyou.textquest.WenYouApp
@@ -521,7 +524,8 @@ class PlayViewModel internal constructor(
         val story = ui.story ?: return
         launchLibraryWrite {
             val now = System.currentTimeMillis()
-            val name = ui.saveName.ifBlank { "${story.title} · ${s.history.size} 步" }
+            // Auto names track the current step count; names the player chose are kept.
+            val name = ui.saveName.takeUnless(::isAutoSaveName) ?: autoSaveName(story.title, s.history.size)
             val existing = ui.activeSaveId
             val id = existing ?: UUID.randomUUID().toString()
             val createdAt = existing?.let { library.saves.value.firstOrNull { x -> x.id == it }?.createdAt } ?: now
