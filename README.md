@@ -1,213 +1,142 @@
-# 虹叙（HongXu）
+<div align="center">
 
-![虹叙应用图标](docs/launcher-icon-preview.png)
+<img src="docs/launcher-icon-preview.png" width="132" alt="虹叙应用图标">
 
-运行于 Android 的文字冒险游戏平台：支持完全离线的分支剧情，也支持接入第三方大模型 API 获得 AI 场景生成与 AI 导演自由模式。技术栈为 Kotlin、Jetpack Compose、Material 3；所有数据以 JSON 保存在应用私有目录。
+# 虹叙 · HongXu
 
-## 本次更新
+**让你的故事继续。**
 
-5.7.0：液态玻璃底栏在按住或拖动时，选中胶囊会膨胀为透明玻璃透镜，放大并折射下方图标，边缘带高光与色散，经过的标签即时变为选中色；松手后弹回最近的标签。Android 12 及以下保留原有玻璃胶囊。
+多元人物与情感故事的 Android 文字冒险与 AI 叙事工坊——离线游玩分支剧本，或接入大模型，让 AI 导演与角色陪你即兴共创。
 
-5.6.0：分支图标出已到达的节点与已解锁结局，并显示「已到达 x / y 个节点 · 已解锁结局 a / b」；探索记录随整包备份导出与合并恢复。剧情记忆抽屉和结局面板可「导出对局文本」，按顺序保存旁白、角色台词与玩家选择，不含 AI 思考过程。剧情库与角色库新增搜索。剧情「读取存档」可重命名存档，留空恢复自动名称，自动名称的步数随重新存档更新。
+[![最新版本](https://img.shields.io/github/v/release/wangmikuwang/WenYou-TextQuest?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC&color=ff2d8f)](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest)
+![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
+![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
+![本地优先](https://img.shields.io/badge/%E6%95%B0%E6%8D%AE-%E4%BB%85%E5%AD%98%E6%9C%AC%E6%9C%BA-2ea44f)
 
-5.5.0：游玩分支剧本时，选项上方「分支图」可只读查看整部剧情分支，并定位、高亮当前位置。
+### [⬇️ 下载最新版](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest)
 
-5.4.9：首页「正在续写」不再与存档列表重复；存档卡片与读取存档列表只显示一次剧情名；创建统一从底栏中央「创建」进入；删除存档后列表即时刷新。
+[功能](#-亮点) · [快速开始](#-快速开始) · [玩法](#-三种玩法) · [开发者](#%EF%B8%8F-开发者) · [更新日志](CHANGELOG.md) · [致谢](#-致谢)
 
-5.4.8：安装包改为经过代码与资源压缩优化的正式构建，体积减小约四分之一，可直接覆盖升级；AI 生成时思考过程合并刷新，长对局更流畅。
+</div>
 
-5.4.7：剧情卡片增加两行故事介绍，读取已有世界观摘要，缺少时回退到一句话简介或开场。精简胶囊标签，仅保留玩法及必要内容标记；题材、场景和人物数改为次要文字，保留原筛选和操作。
+<br>
 
-5.4.6：底栏在剧情与角色之间新增「创建」，统一新建剧情、角色与AI一句话创作。首页手动入口进入同一页面；移除资料库右下角重复的新建按钮，保留导入、编辑和保存流程。
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/home.png" width="200" alt="首页"><br><sub>首页 · 一键续写</sub></td>
+    <td align="center"><img src="docs/screenshots/play.png" width="200" alt="AI 导演对局"><br><sub>AI 导演 · 旁白与角色分栏</sub></td>
+    <td align="center"><img src="docs/screenshots/choices.png" width="200" alt="分支剧本"><br><sub>分支剧本 · 选择推动剧情</sub></td>
+    <td align="center"><img src="docs/screenshots/branch-map.png" width="200" alt="分支图"><br><sub>分支图 · 探索进度</sub></td>
+  </tr>
+</table>
 
-5.4.5：外观与主题 → 字体与密度增加「字体加粗」开关，即时加粗界面及剧情文字，支持默认与导入字体。关闭后恢复之前的字重；开关保存在本地。
+<p align="center">
+  <img src="docs/screenshots/glass-lens.png" width="540" alt="液态玻璃透镜底栏"><br>
+  <sub>🫧 按住或拖动底栏：选中胶囊化作玻璃透镜，放大并折射下方图标</sub>
+</p>
 
-5.4.4：常用操作、返回和底栏统一为Ionicons圆润线框图标，默认字体改为离线霞鹜文楷，保留个人字体导入。液态玻璃减轻遮白与阴影，细化边缘反光。保留原有布局、按钮触控区域和底栏动画，来源与许可见third_party。
+## ✨ 亮点
 
-5.4.3：导航和返回图标去掉方块底图，保持完整字形；彩色图标选项只改变内容图标前景，保留按钮对比度。统一底栏界面标签语言，精简导航和资料库重复状态，列表与编辑页在后台暂停界面订阅，退出服务编辑时及时取消模型列表请求。设置分类、生成和编辑流程及既有页面布局保留。
+| | |
+| --- | --- |
+| 🎭 **两种故事，一个应用** | 作者预编排的**分支剧本**完全离线可玩；**AI 导演**模式里，模型同时扮演主持人与角色，和你即兴共创。 |
+| 🧑‍🤝‍🧑 **会记事的角色** | 人设卡、0–100 状态值、人物关系与剧情记忆随存档保存；开局可选择扮演哪位角色。 |
+| ✍️ **一句话创作** | 一句创意生成完整剧情与人物，再用「一句话修改」微调，预览后才写入。 |
+| 🗺️ **分支图与探索进度** | 游玩中随时查看剧情走向，标出当前位置、已到达节点和已解锁结局。 |
+| 🫧 **液态玻璃界面** | 实时模糊与边缘折射的玻璃材质，按住底栏会浮起一枚会放大的透镜；也可切回 Material You。 |
+| 🌈 **多元人物与情感故事** | 内置异性恋、同性恋、双性恋、泛性恋与无性恋角色及配套剧情；LGBT 与 18+ 内容各有独立开关，只影响显示、不删数据。 |
+| 📦 **分享与导出** | 剧情和角色可生成分享码或多页二维码；对局可导出成小说文本；整包备份随时迁移。 |
+| 🔒 **本地优先** | 所有数据只存在你的手机里；AI 请求直连你自己配置的服务商，密钥不上传。 |
 
-5.4.0：新增独立「外观与主题」页面。玻璃底栏采用整项选中胶囊、线框图标和拖动选择；新增界面预设、屏幕帧率、图标与弹窗样式、色彩风格/标准、高级配色、字体导入、字号/界面缩放、开屏壁纸、桌面图标和界面标签语言选项。其他页面布局保留。
+## 🚀 快速开始
 
-5.3.12：保留页面布局与导航尺寸，液态玻璃采用更轻的选中底色、细边缘和柔和阴影；分组标题、次要按钮、输入框与字体层次更统一，正文、推荐回复及键盘避让保持清晰。
+1. **安装**：到 [Releases](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest) 下载 `HongXu-v版本号.apk`。需要 Android 8.0 及以上；首次安装请允许本应用「安装未知应用」。之后应用会自动检查更新，在应用内下载并校验。
+2. **开玩**：打开即可游玩内置剧情。标着「分支剧本」的故事完全离线，不需要任何配置。
+3. **接入 AI（可选）**：设置 → AI 服务与生成 → 管理 AI 服务，添加服务商的地址、密钥和模型，先「测试连接」再保存。之后就能玩 AI 导演、AI 场景，以及一句话创作。
 
-5.3.11：推荐回复后保留完整旁白与角色台词；兼容推荐项格式差异，缺失推荐项或不完整结果最多自动重试一次，失败时恢复上一轮选项，避免重复记录玩家行动。
+支持 OpenAI 兼容协议（DeepSeek、Kimi、GLM、Qwen、豆包、OpenRouter、硅基流动、小米 MiMo、Ollama 等），以及 Anthropic 与 Gemini 原生协议。
 
-5.3.10：修复窄屏底部胶囊裁切；列表末尾为新建按钮留出空间，避免挡住游玩与编辑操作；液态玻璃对话页的输入面板与消息区分开占位，并保留键盘避让。费用详情通过统计入口查看。
+## 🎮 三种玩法
 
-5.3.9：剧情与人物卡片为长名称保留更多空间，操作按钮排列更紧凑，标签支持换行，设置页间距统一。已解锁的骄傲主题按旗帜原色轮换应用于首页、导航与标签，并为各色搭配清晰的文字颜色。
+| 模式 | 怎么玩 | 需要 AI 吗 | 适合 |
+| --- | --- | --- | --- |
+| 分支剧本 | 作者预编排节点与选项，引擎按条件、效果、掷骰推进 | 不需要，完全离线 | 多线叙事、多结局 |
+| AI 场景节点 | 分支骨架中插入 AI 节点，模型生成正文与动态选项，可接回主线 | 需要 | 框架稳定、局部自由发挥 |
+| AI 导演 | 整局自由对话推进，模型同时扮演角色与主持人 | 需要 | 开放式探索叙事 |
 
-5.3.8：剧情编辑页的登场角色改为横向自动换行，缩小标签间距；长名字最多显示两行，保留完整名字与原有角色选择逻辑。
+## 📖 功能详解
 
-5.3.7：DeepSeek 官方接口的已收录现行模型可自动使用官方价格快照（2026-10-03），区分缓存命中、未命中和峰谷时段；跨时段或未知节假日显示费用范围，手动单价优先。价格和用量不完整时保持未知，思考用量不重复加入输出费用。
+### 游玩
 
-小米 15 Pro 的 2K 玻璃背景采样设定上限，前景文字保持清晰；生成进度限制刷新频率，界面计时在后台暂停。小米/Redmi 设置增加电池与后台系统入口，系统权限与省电策略由用户决定。
+- **对局界面**：AI 思考过程（可折叠）、旁白、角色台词分开显示，按发生顺序排列；AI 导演会给出走向灵感，点一下即可采用，也能自由输入。
+- **选择身份**：开局或重开时可扮演剧情里的某位角色，或用自由身份；身份随存档保存。
+- **剧情记忆与人物关系**：对局右上角的人物按钮查看 AI 累计记下的关键事件、好感与信任，以及人物之间的关系变化。
+- **分支图**：分支剧本的选项上方点「分支图」，只读查看整部剧情，自动定位当前位置；「已到达 x / y 个节点 · 已解锁结局 a / b」帮你查漏补缺。探索记录随整包备份一起导出与合并。
+- **存档**：随时存档、首页续玩；在剧情的「读取存档」中可重命名，留空恢复自动名称。
+- **导出对局文本**：在剧情记忆侧栏或结局面板导出 .txt，按顺序保存旁白、角色台词与你的选择，不含 AI 思考过程。
+- **成就馆**：7 项成长成就（初次启程、世界探索者、命运抉择、灵感火花、共创故事、旅途终章、结局收藏家）；反复读档不会刷进度，备份恢复也不会清空已解锁成就。
 
-开始剧情与重新开始时，可选择剧情关联角色或自由身份；确认前不会推进剧情、请求 AI 或保存对局。角色身份随存档保留，读取旧存档仍然兼容。
+### 创作
 
-墨紫与暖纸色的默认主题、文楷标题，首页突出当前剧情与续玩入口，优化操作层次、浅深色对比和液态玻璃导航留白。AI 创建与修改仅返回思考或不完整 JSON 时给出明确错误；指定 DeepSeek 模型可自动补全一次正文。
+- **手动编辑**：底栏中央「创建」新建剧情或角色。剧情由叙述、AI 场景、结局三类节点组成，支持进入效果、选项显示条件、选择效果、数值变量、场景标记、掷骰和 `${变量}` 文本插值；编辑页的「分支图」可点节点直接跳到对应位置。
+- **角色卡**：名字、Emoji、性格、说话风格、背景与台词示范构成人设，注入 AI 提示；可设定 0–100 的状态值与标记。
+- **底层基调**：独立、可复用的「不可动摇规则」，每个角色可多选；AI 先遵守底层基调，再按人设扮演。
+- **一句话创作与修改**：一句创意生成剧情与人物的完整表单（导演要求、变量、节点分支、人设与规则）。创建页、剧情编辑页、人物编辑页都能「一句话修改」，先预览再应用，未要求修改的内容保持原样。
 
-骄傲主题保留旗帜原色，优化中性背景上的文字可读性、旗帜选中标记及大字体布局。
+### 内容与分级
 
-## 首页、设置与标签优化（5.2.0）
+内置异性恋、男/女同性恋、双性恋、泛性恋与无性恋角色及配套剧情，成人向（18+）内容覆盖同样的取向。剧情与角色都可标记 **LGBT** 与 **18+**：同时标记的作品在两个筛选下都会出现，都未标记则归为「全年龄」。内容开关只影响列表显示，不会删除本地数据。
 
-首页突出开始剧情、续玩与 AI 创建，提供清晰的剧情库入口；设置按外观、AI 与生成、内容、备份、角色规则和诊断分组，精简说明。剧情与人物使用一致的圆角标签：选中项用主题强调色，数量与题材使用中性底色，内容分类保留独立强调色。剧情卡显示题材、场景数与人物数，人物卡显示参演剧情数。浅色、深色与液态玻璃沿用主题配色；旗帜主题仍使用旗帜原色。
+### 外观
 
-验证：39 项单元测试、Android 14 的创作/编辑/筛选/主题及系统捕获测试、Lint 与独立 APK 构建通过。版本 5.2.0，版本代码 94。
+- **两种界面风格**：Material You（支持动态取色）与液态玻璃，均支持跟随系统、浅色与深色。
+- **液态玻璃**：浮动导航与对局操作区实时采样背后内容，带高斯模糊、边缘折射、高光与阴影；文字和图标单独绘制，保持清晰。按住或拖动底栏，选中胶囊会膨胀成放大、折射的玻璃透镜（Android 13 及以上），松手弹回。Android 12 使用模糊，Android 8–11 回退为可读的着色材质。
+- **外观与主题**：界面预设、屏幕帧率、图标与弹窗样式、色彩风格、高级配色、字号与界面缩放、字体加粗、开屏壁纸、桌面图标和界面标签语言。
+- **字体**：默认使用离线内置的[霞鹜文楷](https://github.com/lxgw/LxgwWenKai)，也可导入自己的字体。
+- **系统长截图**：Android 12 及以上支持滚动截图，浮层不会遮挡正文。
 
-## 一句话创作与修改（5.2.0）
+### 分享与数据
 
-一句话创建可生成剧情与人物完整表单内容，包括导演要求、初始变量与标记、场景节点和分支、人物附加人设、底层基调与规则、初始外观及状态。人物与节点引用由应用校验并关联。
+- **分享码与二维码**：剧情和角色可生成压缩分享码，或二维码（内容大时自动拆成多页轮播）；支持粘贴、相机扫码和相册多选导入，只补不覆盖。
+- **整包备份**：设置 → 存储与备份，导出或导入全部剧情、角色、存档、服务配置、成就与探索记录。
 
-创建草稿页、剧情编辑页和人物编辑页均提供「一句话修改」。编辑页先生成预览，再应用到表单，最后由用户保存；失败或取消保留原稿。未要求修改的字段与实体标识保持不变，创作请求不包含服务配置、密钥或存档。
+### AI 服务
 
-AI 思考、旁白和角色对白继续分别显示。DeepSeek 指定支持模型仅返回思考时，自动以关闭思考的请求补全一次正文；仍无正文则报告失败，避免将思考作为角色台词。额外请求计入生成用量统计。
+- **多协议流式输出**：统一 SSE 流式接收，提供连接测试与模型列表拉取。
+- **用量与费用**：记录本机最近 100 次请求的实际 tokens、耗时与状态；可填写模型单价，DeepSeek 官方接口支持官方价格快照与峰谷时段。未知用量不按零计，账单以服务商为准。
+- **生成实时通知**：可选的生成进度通知，显示阶段与真实耗时，不含剧情内容；已完成小米超级岛代码适配（需平台授权后生效）。
 
-## 系统长截图适配（5.2.0）
+### 更新
 
-支持 Android 12 及以上的系统滚动截图。液态玻璃导航和对局浮层在捕获期间保持占位但不绘入截图；对局新消息在此期间不自动跳转，截图结束由系统恢复滚动位置。普通列表、网格与纵向滚动页面使用 Compose 原生捕获。横向剧情树仍按当前可见宽度捕获。
+- 启动和返回前台时自动检查官方正式发布，在应用内下载，下载后核对 SHA-256、大小、包名、签名与版本，再交给系统安装界面确认。
+- 仓库中的 `update-policy.json` 声明最低支持版本，低于该版本时只显示升级页。更新请求只访问公开的 GitHub 接口。
 
-Android 14 模拟器验证：两种外观均能发现设置页滚动区域；系统回调连续抓取超过一屏的正文，浮层不遮挡，结束后恢复原位置和浮层。独立测试、Lint 和安装包构建通过。版本 5.2.0，版本代码 94。
+### 彩蛋
 
-平台依据：[Android ScrollCaptureCallback](https://developer.android.com/reference/android/view/ScrollCaptureCallback)、[Compose 官方版本说明](https://developer.android.com/jetpack/androidx/releases/compose-ui)。
-
-## 自动更新与升级门禁（5.0.0）
-
-启动应用时自动检查官方最新正式发布；返回前台且距上次检查至少五分钟时再次检查。发现新版本会提示更新，设置页仍可主动检查。点击「下载并升级」后显示真实下载进度，由系统下载管理器持续下载，回到应用可继续查看进度并安装。
-
-完成下载后核对 SHA-256、文件大小、本应用包名、签名与版本，再通过仅开放更新缓存目录的 FileProvider 交给系统安装界面。首次安装更新需允许本应用安装软件，并在系统确认页确认；不支持静默安装。参考 [Android FileProvider](https://developer.android.com/reference/androidx/core/content/FileProvider) 和 [系统安装确认](https://developer.android.com/reference/android/content/pm/PackageInstaller#STATUS_PENDING_USER_ACTION)。升级沿用原包名与签名，保留本地资料。
-
-本仓库 `update-policy.json` 声明最低支持版本，初始为 `minimumVersionCode: 90`、`minimumVersion: "5.0.0"`。从 5.0.0 开始，低于已知最低版本时只显示升级页，不能进入剧情或设置；已取得的策略缓存到本机，断网仍执行。尚未联网获取新策略的设备无法知道后来提高的门槛。提高门槛前必须先发布可用、签名一致的正式安装包，再修改本仓库策略。
-
-已安装的 4.x 客户端没有这一门禁，不能通过新发行版追溯禁止启动；需先手动升级到 5.0.0。新发行版仅上传 HongXu 命名的安装包。公开更新请求不使用 AI 服务密钥，不上传用户剧情、存档或配置。
-
-验证：34 项单元测试、Android Lint、独立 APK 构建，以及 Android 14 的旗帜绘图、原色按钮、二级页面、独立开关、持久化和旧设置兼容检查通过。版本 5.1.0，版本代码 92。
-
-## 彩虹角标（5.0.1）
-
-彩虹缩为人物右下方留白处的小圆角角标，使用骄傲旗帜的红、橙、黄、绿、蓝、紫六色渐变。保留原方形构图，人物区域逐像素保持不变；上图为原生绘制的方形图标原图。安卓桌面的实际外轮廓由启动器决定。
-
-验证：Android Lint、独立 APK 构建、Android 14 六色色值及人物完整保留检查通过。版本 5.0.1，版本代码 91；自动更新与最低支持版本 5.0.0 保持不变。
-
-## 品牌名称更新（4.3.1）
-
-验证：32 项单元测试、Android Lint、独立 APK 构建，以及 Android 14 设备上的桌面名称、主页、设置、彩蛋和真实更新下载检查通过。
-
-应用名称统一为「虹叙」，覆盖桌面、主页、设置、下载通知、备份和二维码导出目录。保留原应用身份与本地资料，安装新版可直接升级。官方更新同时兼容原安装包命名。
-
-## 骄傲原色主题与旗帜介绍（5.1.0）
-
-旗帜墙提供 20 款旗帜及中文介绍，骄傲主题可自由开关，LGBT 内容使用独立开关。关闭主题恢复原外观，重新开启恢复上次选择。已开启的外观选项和内容偏好会随应用更新保留，本地剧情、存档与服务配置保持不变。
-
-所有强调底色直接使用当前旗帜原色，覆盖主、次、第三强调色和选中底色，包含黑白条纹；不使用壁纸取色、色调生成、协调取色或旗帜色加深/变浅。按钮及选中底色上的文字另选黑或白，使文字保持可读；背景继续使用当前外观的中性底色。文字操作与提示图标在原色对比不足时使用中性文字色，旗帜与实心按钮仍保留原色。旗帜墙用描边与勾选标记显示当前选择，并随屏幕宽度及字体大小调整列数。配色支持浅色、深色及液态玻璃，选择旗帜主题后隐藏动态取色开关。
-
-每面旗帜下方都有完整的中文身份及旗帜含义介绍，区分性取向、浪漫取向、性别身份和身体性征。旗帜存在不同版本；没有一致逐色解释时不编造统一含义，身份由本人定义。资料参考 [Stonewall 术语指南](https://www.stonewall.org.uk/resources/list-lgbtq-terms)、[大学旗帜指南](https://connect.uwstout.edu/qube/pride-flags/)、[AVEN 无性恋旗](https://wiki.asexuality.org/w/index.php?title=Asexual_flag)、[AUREA 无浪漫光谱与旗帜](https://www.aromanticism.org/en/faq)、[InterAction 旗帜创作者说明](https://interaction.org.au/resource/an-intersex-flag/)、[Gilbert Baker 基金会](https://gilbertbaker.com/rainbow-flag-color-meanings/) 及 [流动性取向旗的解释差异](https://t4tspace.com/flags/abrosexual/)。
-
-验证：34 项单元测试、Android Lint、独立 APK 构建，以及 Android 14 的旧解锁迁移失效、十次版本号入口、左右上下排序、错序复位、逐旗解锁、同版重启保留、新版失效、原旗帜绘图与内容偏好保持测试通过。版本 5.1.0，版本代码 92。
-
-## 检查更新与下载（4.2.0）
-
-验证：30 项单元测试、Android Lint、独立 APK 构建，以及 Pixel 7 / Android 14 的真实更新检查、版本说明布局、真实官方 APK 下载、去重及任务清除后重试测试通过。
-
-设置页「应用更新」可主动检查官方最新发布，显示新版版本号、更新说明和 APK 大小，再点击「下载新版 APK」。只接受本应用官方仓库的正式发布及对应安装包；版本按数字比较，不会提示降级，不接受草稿或预发布。检查失败时可重试或打开发布页面。
-
-下载交给系统管理，退出应用后仍可继续；重复点击同一安装包会复用已有任务，失败或任务已清除时可重新下载。「查看下载」或通知栏可查看进度，完成后点击 APK 按 Android 提示安装。Android 10 及以上保存到公共下载目录；Android 8/9 保存到应用下载目录，无需申请广泛存储权限。
-
-更新仅访问公开 GitHub 接口，不调用 AI、不上传剧情、存档或 AI 服务密钥。完整更新说明可在发布页面查看。
-
-## 功能
-
-- 节点式分支引擎：节点分为叙述（`NARRATION`）、AI 生成场景（`AI`）、结局（`ENDING`）三类。支持节点进入效果、选项显示条件与选择效果、数值变量、场景标记、掷骰，以及 `${变量}` 文本插值，实现在 `data/engine/GameEngine.kt`。
-- 角色卡：以名字、Emoji、性格、说话风格、背景、台词示范等字段构成角色人设，编辑后注入 AI 系统提示；对局中可维护角色的 0..100 状态值与标记，定义见 `data/model/CharacterMetrics.kt`。
-- 底层基调（不可动摇规则）：独立、可复用实体，可新建多条；每个角色可多选要执行的底层基调。AI 注入时先执行底层基调、再按人设扮演，冲突时以此层为准，见 `data/model/Models.kt` 的 `BottomRule` 与 `AiDirector.personaCard`。
-- 多品牌 AI 接入：OpenAI 兼容协议覆盖 DeepSeek、Kimi、GLM、Qwen、豆包、OpenRouter、硅基流动、小米 MiMo、Ollama 等服务；Anthropic 与 Gemini 分别走 Messages API 与 `streamGenerateContent` 原生协议。统一为 SSE 流式输出，提供连接测试与模型列表拉取。
-- AI 正文清洗：生成结果统一剥除 markdown（加粗/列表/标题/斜体/引用/代码块）、剔除导演式思考泄漏行，思考内容独立展示不混入角色回复。DeepSeek 推理模型（`deepseek-reasoner`）自动免 `temperature`、放宽超时与 `max_tokens`，并兼容 `reasoning_content`/`reasoning` 思考字段。
-- 分享与导入：剧情与角色可生成分享码（WY2 deflate 压缩文本）或二维码（单张优先，过大自动拆成多片 QR Book 轮播）；支持粘贴分享码、相机扫码、相册一次多选整套二维码导入，按 id 只补不覆盖并提示重复内容。
-- 对局存档：支持随时存档、主页续玩，以及整包 JSON 导出 / 导入。
-
-## 探索彩蛋（4.1.0）
-
-验证：独立 APK 构建、Android Lint 与 Pixel 7 / Android 14 的三处彩蛋触发、关闭、计数复位及设置/成就不变检查通过。
-
-设置页与成就馆藏有三个小惊喜，仅在本机显示，不调用 AI、不修改存档或成就。标题支持无障碍点击与长按操作；彩蛋可随时关闭。原有版本号入口保持独立。
+设置页与成就馆藏着三个小惊喜，只在本机显示，不改动存档和成就。
 
 <details>
 <summary>查看彩蛋线索（剧透）</summary>
 
-- 设置页「虹叙」连续点五次（每次间隔不超过两秒）：幕后导演。
+- 设置 → 系统与关于，连续点五次标题「虹叙」：幕后导演。
 - 长按同一标题：第四面墙。
-- 成就馆长按标题（或连续点五次）：好奇心万岁隐藏奖杯。这是趣味彩蛋，不计入七项成长成就。
+- 成就馆长按标题（或连续点五次）：好奇心万岁隐藏奖杯，不计入七项成就。
 
 </details>
 
-## 成就系统（4.0.0）
+## 🔒 隐私
 
-验证：28 项单元测试、Android Lint、独立 APK 构建与 Pixel 7 / Android 14 的主页入口、离线选择到结局、持久化及列表设备测试通过。
+- 剧情、角色、存档、服务配置与 AI 密钥只保存在应用私有目录，不上传到任何服务器。
+- AI 请求由手机直接发给你配置的服务商；应用更新只访问公开的 GitHub 接口，不携带任何个人数据。
+- 分享码和二维码只包含你选中的剧情或角色，不含密钥、存档或服务配置。
 
-主页「成就馆」或对局顶部奖杯按钮查看 7 项成长成就、进度和解锁日期：初次启程、世界探索者、命运抉择、灵感火花、共创故事、旅途终章、结局收藏家。剧情和结局按 ID 去重；选择和 AI 续写目标按单局最高进度判断，不会因反复读档累加。
+## 🛠️ 开发者
 
-成功解锁后在对局提示，后台原子保存；离开页面仍完成已发起的成就写入。重开、删除剧情或存档不撤销成就，整包备份携带成就并与本机记录合并，旧备份不会清空已解锁项目。剧情/人物分享码不携带成就。
+<details>
+<summary><b>架构总览</b></summary>
 
-选择/自由输入统计随存档保留且不受日志截断影响；只有成功完成的 AI 场景和导演续写计入 AI 轮次，失败、取消、重试请求本身不计入。旧存档继续兼容，选择可从保留的日志补计，AI 轮次从升级后的成功续写开始累计。缺失节点、自动跳转循环和 AI 导演的普通停留不会误判为结局。
-
-## AI 一句话创建
-
-底栏「创建」中的「AI 一句话创建」使用当前默认 AI 服务，支持「剧情＋人物」和「仅人物」。输入一句创意，先预览生成结果，再保存并打开现有编辑器继续修改。
-
-剧情生成 AI 导演模式的标题、简介、世界观、开场和关联人物；人物包含性格、背景、说话习惯及台词示例。应用生成独立 ID 并绑定人物，新增内容不覆盖已有资料；保存失败后可重试同一草稿。支持取消生成，异常保留输入供重试；缺失字段、重复名字、过长内容及关闭成人内容时的不兼容结果会被拒绝。
-
-## 剧情分支树（3.9.0）
-
-验证：24 项单元测试、Android Lint、独立 APK 构建与 Pixel 7 / Android 14 折叠、展开、节点选择设备测试通过。已检查内置分支剧情的实际连线及跳转编辑。
-
-剧情库 → 编辑剧情 → 顶部「分支图」。按起点展开作者配置的选项、条件出口、自动跳转及 AI 回到主线连接；分支可折叠或全部展开，点击节点返回对应编辑区域，使用当前未保存的编辑内容实时生成图。
-
-游玩分支剧本时，选项上方「接下来……」右侧的「分支图」可查看同一张分支图：只读，不进入编辑；自动定位并高亮当前位置。AI 导演模式没有固定分支，不显示此入口。（5.5.0）
-
-循环和汇合使用引用标记，不重复展开；起点未连接的节点单独展示，目标不存在时显示警告。条件分支展示可能出口，不判断当前存档是否满足条件；自动出口只在无可用选项时显示。AI 导演及 AI 场景的临时选项标为动态生成，不能预先列出。图支持上下滚动和左右移动，超过 12 层保留层数标记。
-
-## 生成实时通知（3.8.0）
-
-验证：23 项单元测试、Android Lint、独立 APK 构建及 Pixel 7 / Android 14 通知生命周期设备测试通过。使用已有 DeepSeek 配置实际生成成功，普通完成通知可见。实际小米超级岛及 Android 16 系统提升效果尚未实机验证。
-
-设置 → 生成实时通知，可开启用户主动发起的 AI 请求进度提示。原生通知显示当前阶段、真实耗时和并行请求数，点击回到应用；通知不含剧情、思考正文、服务密钥或提示词。生成期间启用短时 dataSync 前台服务；请求结束、取消、关闭开关或禁用通知通道后退出，不自动重启任务。完成/失败使用普通通知，15 秒后清除；取消不留下完成提示。进程被强制停止后任务不会恢复。
-
-Android 16 使用原生 ProgressStyle 未知进度样式；Android 16 QPR2 通过官方 extras 请求实时更新，是否提升由系统及用户设置决定。旧设备显示普通持续进度通知，不推测完成百分比。
-
-小米 OS2/OS3 按 `notification_focus_protocol` 添加 `miui.focus.param` 及图标 Bundle，使用官方文本模板，未授权时保留普通通知。本应用需要申请包名、签名及 `ai_generation` 场景权限；该场景标识是待审核配置，平台若核准其他标识需同步替换。当前只完成代码适配，不代表已获超级岛资格。参考 [小米开发指南](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2131)、[接入流程](https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2132)、[Android 实时更新](https://developer.android.com/develop/ui/views/notifications/live-update)。
-
-## 玻璃通透度调整（3.9.2）
-
-减少深浅色表面遮罩和白色高光，模糊半径从 12dp 调整为 6dp，使背后内容更清晰地透出；保留实时采样、边缘折射和独立绘制的文字图标。Android 8–11 仍使用原有可读着色回退。设备检查覆盖浅色/深色背景透出、模糊、背景实时更新及动态取色开关隐藏与恢复。
-
-## 液态玻璃优化（3.9.1）
-
-选择液态玻璃时隐藏整个动态取色设置，切回 Material You 后恢复显示并保留原有偏好。设置页首次显示直接使用保存的主题，避免默认风格闪现和布局跳动。
-
-玻璃的模糊、折射滤镜与高光画笔按尺寸缓存；边缘折射直接计算圆角矩形法线，减少重复距离计算。文字、图标、边框及玻璃背景保持原始分辨率，背景继续实时更新。
-
-验证：24 项单元测试、Android Lint、独立构建及 Pixel 7 / Android 14 的玻璃实时更新、主题切换设备测试。滚动和页面切换各测量两轮，模拟器仍有明显掉帧，尚未测得稳定的帧耗时改善，需继续在真机排查。
-
-## 外观与排版
-
-设置 → 外观 → 界面风格可切换 Material You 与液态玻璃，两者都支持跟随系统、浅色及深色。液态玻璃延续蓝色强调、分组背景和阅读字阶，在浮动导航及对局操作区实时采样背后内容，加入高斯模糊、边缘折射、高光与阴影；文字和图标独立绘制保持清晰；动态壁纸取色仅适用于 Material You。主题选择保存于本机，旧版 Apple 风格自动使用液态玻璃。Android 13+ 支持折射，Android 12 使用模糊，Android 8–11 回退为可读的着色材质。
-
-颜色、字体、圆角集中在 `ui/theme/`，公共卡片与输入组件复用主题；设置页直接观察资料库，不再复制服务列表状态。选色面板与设置操作自动换行，结局按钮纵向排列，对局操作区可滚动并避让键盘，系统栏随主题切换。
-
-设计参考：[Apple HIG](https://developer.apple.com/design/human-interface-guidelines)、[compose-cupertino](https://github.com/alexzhirkevich/compose-cupertino)。使用现有 Compose 控件和 Android 字体，无新增 UI 依赖。玻璃渲染使用 Compose GraphicsLayer 与 Android RenderEffect / AGSL，参考 [Apple 材质指南](https://developer.apple.com/design/human-interface-guidelines/materials)，渲染代码为本项目实现。
-
-验证：19 项回归测试、玻璃背景采样与动态更新设备测试、Android Lint 与构建通过；Pixel 7 / Android 14 虚拟机检查主题切换与重启保持、200% 字号、选色面板、结局和键盘输入。
-
-## 玩法模式
-
-| 模式 | 玩法 | 是否依赖 AI | 适用场景 |
-| --- | --- | --- | --- |
-| 分支剧本（`SCRIPT`） | 作者预编排节点与选项，引擎按条件、效果、掷骰推进 | 否，完全离线 | 结构可控的多线叙事、多结局 |
-| AI 场景节点 | 分支骨架中插入 `AI` 节点，由模型生成正文与动态选项，可通过主线出口接回作者节点 | 是 | 框架稳定、局部自由发挥 |
-| AI 导演（`AI_DIRECTOR`） | 整局自由对话推进，模型同时扮演角色与主持人，维护世界观与人设一致性 | 是 | 开放结局的探索式叙事 |
-
-## 架构总览
-
-应用按“UI → ViewModel → 容器服务 → 引擎 / 网络 / 持久化”分层。`WenYouApp.AppContainer` 为手写依赖注入入口，不引入 Hilt：
+应用按「UI → ViewModel → 容器服务 → 引擎 / 网络 / 持久化」分层，`WenYouApp.AppContainer` 为手写依赖注入入口，不引入 Hilt：
 
 ```mermaid
 flowchart TB
@@ -225,7 +154,7 @@ flowchart TB
     end
 
     subgraph EXT["外部"]
-        F[JSON 文件 · saves/stories/characters/providers/bottom_rules]
+        F[JSON 文件]
         API[第三方 LLM API]
     end
 
@@ -244,25 +173,27 @@ flowchart TB
 ```mermaid
 stateDiagram-v2
     [*] --> INIT
-    INIT --> AUTHORED : 分支剧本载入 / 读档
-    INIT --> DM_INPUT : AI 导演载入
+    INIT --> ROLE_SELECT : 新开局 / 重开
+    ROLE_SELECT --> AUTHORED : 选定身份（分支剧本）
+    ROLE_SELECT --> DM_INPUT : 选定身份（AI 导演）
+    INIT --> AUTHORED : 读档
+    INIT --> DM_INPUT : 读档（AI 导演）
     INIT --> STOPPED : 剧情或节点缺失
 
-    AUTHORED --> AI_WORKING : 选择进入 AI 节点 / 继续生成
+    AUTHORED --> AI_WORKING : 进入 AI 节点 / 继续生成
     AUTHORED --> STOPPED : 抵达结局 / 无后续分支
-    AUTHORED --> AUTHORED : 选项指回本节点，不重复正文
-
     DM_INPUT --> AI_WORKING : 玩家输入 / 采用灵感
-    AI_WORKING --> AUTHORED : 场景生成完成（返回动态选项）
+    AI_WORKING --> AUTHORED : 场景生成完成
     AI_WORKING --> DM_INPUT : 导演回复完成
     AI_WORKING --> STOPPED : 生成失败
 ```
 
-对局页「重开本局」会丢弃当前会话并重新执行开局流程：分支剧本回到起始节点（若起始节点为 AI 节点则直接进入 `AI_WORKING`），AI 导演剧本回到 `DM_INPUT`。
+</details>
 
-## AI 生成链路
+<details>
+<summary><b>AI 生成链路与协议适配</b></summary>
 
-每次生成先拼提示词（人设卡、最近剧情、变量与角色状态快照、底层基调），再以 SSE 逐帧接收文本增量驱动打字机，结束后把完整输出解析为结构化结果并做正文清洗（剥 markdown、剔思考泄漏）：
+每次生成先拼提示词（人设卡、最近剧情、变量与角色状态快照、底层基调），以 SSE 逐帧接收增量，结束后解析为结构化结果并清洗正文（剥离 markdown、剔除思考泄漏）：
 
 ```mermaid
 sequenceDiagram
@@ -270,32 +201,26 @@ sequenceDiagram
     participant D as AiDirector
     participant C as ChatClient
     participant A as LLM API
-    participant U as UI 状态
 
     P->>D: generateScene / directorTurn
     D->>C: streamText(system, user)
     C->>A: POST（stream=true）
     loop SSE data 帧
-        A-->>C: 文本增量
-        C-->>P: onDelta
-        P-->>U: 打字机追加显示
+        A-->>C: 文本 / 思考增量
+        C-->>P: 思考进度（合并刷新）
     end
     C-->>D: 完整文本
     D->>D: parseScene → 提取 JSON
-    D-->>P: AiScene(text, choices)
+    D-->>P: AiScene(entries, choices, state)
 ```
 
-### 协议适配
-
-三类 `ProviderKind` 的端点与解析路径如下，实现集中在 `data/llm/ChatClient.kt`：
-
-| 协议 | 聊天端点 | 增量字段 | 模型列表端点 |
+| 协议 | 聊天端点 | 增量字段 | 模型列表 |
 | --- | --- | --- | --- |
-| OpenAI 兼容 | `POST {base}/chat/completions` | `choices[0].delta.content`，推理模型回退 `reasoning_content` / `reasoning` | `GET {base}/models`，取 `data[].id` |
-| Anthropic | `POST {base}/v1/messages` | `content_block_delta` 的 `delta.text` | `GET {base}/v1/models`，取 `data[].id` |
-| Gemini | `POST {base}/models/{model}:streamGenerateContent?alt=sse` | `candidates[0].content.parts[].text` | `GET {base}/models?pageSize=1000`，取 `models[].name`（去 `models/` 前缀） |
+| OpenAI 兼容 | `POST {base}/chat/completions` | `choices[0].delta.content`，推理模型另取 `reasoning_content` / `reasoning` | `GET {base}/models` |
+| Anthropic | `POST {base}/v1/messages` | `content_block_delta` 的 `delta.text` | `GET {base}/v1/models` |
+| Gemini | `POST {base}/models/{model}:streamGenerateContent?alt=sse` | `candidates[0].content.parts[].text` | `GET {base}/models` |
 
-模型输出约定为单个 JSON 对象，由 `AiDirector.parseScene` 解析。思考过程独立折叠，旁白与角色内对话按发生顺序分别展示：
+模型输出约定为单个 JSON 对象，由 `AiDirector.parseScene` 解析；思考过程单独折叠，不会被当作台词：
 
 ```json
 {
@@ -311,109 +236,97 @@ sequenceDiagram
 }
 ```
 
-`[to:节点id]` 标记仅用于 AI 场景节点接回作者分支。兼容旧版 `text` 正文格式与存档；旧存档中已混写的正文保留原文。服务返回的思考字段不再回退为旁白。
+`[to:节点id]` 仅用于 AI 场景节点接回作者分支。实现集中在 `data/llm/ChatClient.kt` 与 `data/ai/AiDirector.kt`。
 
-## 版本
+</details>
 
-虹叙 内置异性恋、男/女同性恋、双性恋、泛性恋与无性恋角色及配套剧情。成人向（18+）内容覆盖同样的取向：异性向在 `wenyou-adult-straight-presets.json`，男同、女同、双性恋、泛性恋与无性恋各一组在 `wenyou-adult-diverse-presets.json`。设置页提供内容开关。
+<details>
+<summary><b>数据文件</b></summary>
 
-构建配置见 `app/build.gradle.kts`。内容开关只影响列表过滤，不删除本地数据；过滤逻辑位于 `ui/vm/LibraryViewModel.kt`。成人向的性取向预设受「显示 LGBT」与「成人内容」两个开关共同约束（见 `WenYouApp.onCreate`）。
+运行时数据以 JSON 存于应用私有目录，字段对手工编辑友好；每次写入先写临时文件再原子替换：
 
-### 内容分级
+| 文件 | 内容 |
+| --- | --- |
+| `providers.json` | AI 服务档案（地址、密钥、模型、单价） |
+| `characters.json` | 角色卡（含底层基调引用） |
+| `stories.json` | 剧情节点图与会话设置 |
+| `saves.json` | 存档（日志、变量与角色状态快照） |
+| `bottom_rules.json` | 底层基调 |
+| `achievements.json` | 成就进度 |
+| `progress.json` | 分支剧本的探索记录 |
+| `usage.json` | 最近 100 次 AI 请求的用量与费用 |
 
-剧情与角色都可标记内容分类（LGBT / 18+），在各自编辑器中以开关设置：
+内置预设位于 `app/src/<flavor>/assets/presets/`，启动时按 id 合并进资料库，只补不覆盖；已合并的文件会被记录，用户删除的内置内容不会被写回。
 
-- 标记影响剧情库/角色库的分类筛选，并受内容开关约束；
-- 分类采用「按标签归属匹配」——同时标记 LGBT 与 18+ 的作品在两个筛选下都会出现，卡片也会同时显示两个标签；
-- 两项都未标记则归为「全年龄」。
+</details>
 
-## 数据与预设
+<details>
+<summary><b>构建与测试</b></summary>
 
-运行时数据分五个 JSON 文件存于应用私有目录，字段均对手工编辑友好：
-
-| 文件 | 内容 | 维护入口 |
-| --- | --- | --- |
-| `providers.json` | AI 服务档案（品牌、baseUrl、Key、模型） | 「AI 服务」页 |
-| `characters.json` | 角色卡（含底层基调多选 `bottomRuleIds`） | 「角色」页 |
-| `stories.json` | 剧情节点图与会话设置 | 「剧情」编辑器 |
-| `saves.json` | 存档（含日志与角色状态快照） | 对局内 / 主页 |
-| `bottom_rules.json` | 底层基调（不可动摇规则）实体 | 设置 → 底层基调 |
-
-内置题材预设以 `assets/presets/*.json` 提供，启动时检查合并状态：尚未合并过的包按 id 并入资料库，规则为只补不覆盖；已合并的文件记录在 `SettingsStore` 的 `preset_files_applied_v2` 中，避免重复导入。打包以 `app/src/alpha/assets/presets/` 下的文件为准；`presets/` 目录只保留历史生成脚本及其旧输出，与打包内容并不一致。
-
-## 构建
-
-编译环境要求：`compileSdk 35`、`minSdk 26`、`targetSdk 34`、JDK 17。仓库自带 Gradle wrapper（8.9），可直接用 Android Studio（Ladybug 或更新）打开运行。
-
-命令行构建示例：
+环境：JDK 17、`compileSdk 36`、`minSdk 26`、`targetSdk 34`，仓库自带 Gradle Wrapper 8.9，可直接用 Android Studio 打开。
 
 ```bash
-./gradlew :app:assembleDebug
+./gradlew :app:assembleDebug        # 调试包
+./gradlew :app:assembleRelease      # 正式包（R8 压缩与资源裁剪）
+./gradlew :app:test :app:lint       # 单元测试与静态检查
+./gradlew :app:connectedCheck       # 设备上的界面测试（需模拟器或真机）
 ```
 
-构建输出默认位于 Gradle 用户目录的 `caches/wnq-build/HongXu`，以避开 OneDrive 文件锁；可用环境变量 `WENYOU_BUILD_DIR` 指定其它位置。
+构建输出默认放在 Gradle 用户目录的 `caches/wnq-build/HongXu`，以避开同步盘文件锁；可用环境变量 `WENYOU_BUILD_DIR` 指定位置。网络相关测试使用本地拦截响应，不需要 API Key。
 
-回归与静态检查（18 项 JVM 回归测试）：
+版本号按 `x.yy.zz` 维护在 `version.properties`：
 
-```bash
-./gradlew :app:test :app:lint
-```
+- 修复 bug：`./gradlew bumpVersion`，`zz` +1（满 100 进位）
+- 新功能或重大变化：`-Pbump=minor`，`yy` +1 且 `zz` 归零（满 10 进位）
+- 重大架构变化：`-Pbump=major`，`xx` +1 且其余归零
 
-测试覆盖资料库并发写入与失败保护、分支存读档、节点循环、角色条件、掷骰边界、AI 正文/思考与状态解析、分享码完整性和解压大小限制，以及内置预设包的完整性与自洽。网络测试使用本地拦截响应，不需要 API Key。接管审核记录见 [AUDIT.md](AUDIT.md)。
+`versionCode` 每次递增；发布前先升版本。
 
-版本号按 `x.yy.zz` 规则维护在 `version.properties`；执行 `./gradlew bumpVersion` 递增：
+</details>
 
-- `bumpVersion`（默认 / `-Pbump=patch`）：仅 bug 修复，`zz` +1（范围 0–99，满 100 进位到 `yy`）。
-- `-Pbump=minor`：新功能或重大变化，`yy` +1 且 `zz` 归零（`yy` 范围 0–9，满 10 进位到 `xx`）。
-- `-Pbump=major`：重大架构变化或巨大功能增加，`xx` +1 且 `yy=zz=0`。
-
-`versionCode` 在每次 `bumpVersion` 时单调递增。正式打包前应先执行该任务。
-
-## 目录结构
+<details>
+<summary><b>目录结构</b></summary>
 
 ```text
 app/src/main/java/io/wenyou/textquest/
-├── CrashLog.kt        崩溃日志多路径落盘（内部 / 外部 / SAF Documents）
-├── data/model/        持久化模型，JSON 序列化字段对手工编辑友好
-├── data/engine/       分支引擎：条件、效果、掷骰、模板插值，纯逻辑无 IO
-├── data/ai/           AI 场景与导演的提示词组装、模型 JSON 输出解析与正文清洗
-├── data/llm/          多协议流式客户端与品牌预设目录
-├── data/repo/         本地 JSON 资料库与 SharedPreferences 设置
+├── CrashLog.kt        崩溃日志多路径落盘
+├── data/model/        持久化模型
+├── data/engine/       分支引擎、成就、对局文本导出（纯逻辑无 IO）
+├── data/ai/           提示词组装、模型输出解析与正文清洗
+├── data/llm/          多协议流式客户端、品牌预设、用量统计
+├── data/repo/         本地 JSON 资料库与设置
 ├── data/sample/       首次启动植入的示例角色与剧情
-└── ui/                Compose 页面、ViewModel、主题
+└── ui/                Compose 页面、ViewModel、主题与液态玻璃
+third_party/           随包组件的来源与许可
 ```
 
-## 贡献者
+</details>
+
+<details>
+<summary><b>设计取舍与已知限制</b></summary>
+
+- 不引入 Hilt 与 Room：依赖注入手写，持久化直接读写 JSON。单文件写入是原子的，但整包导入跨多个文件，中途失败时请重新导入完整备份。
+- 分享码解压后上限 8 MiB，超限请改用整包备份。
+- AI 上下文取最近若干条日志，超出部分截断；剧情记忆是有限长度的 AI 摘要，不保证保留所有细节。
+- 流式生成结束前不写入对局日志，存档始终是一致状态。
+- 正文清洗只作用于 AI 生成内容，作者手写的节点文本保持原样。
+
+</details>
+
+## 🙏 致谢
+
+这个项目从一个想法开始，一路有 AI 伙伴并肩：**DeepSeek 的 Harness**、**OpenAI 的 Codex** 与 **Anthropic 的 Claude**，帮助把想法一点点变成现实。感谢的话写在[这条置顶 issue](https://github.com/wangmikuwang/WenYou-TextQuest/issues/1) 里。
 
 - [wangmikuwang](https://github.com/wangmikuwang)：项目发起、整体架构与产品设计。
 - Little Code Sauce（AI 编程搭档）：功能实现、代码审核与优化、构建与发布流程。
 
-## 设计决策与已知限制
+随包使用或参考的开源项目：
 
-- 未引入 Hilt 与 Room：依赖注入在 `WenYouApp` 中手动完成，持久化直接读写 JSON 文件。资料库内部统一串行写入，先写临时文件再原子替换，成功后才更新对应内存列表；失败会显示错误。多文件整包导入仍不具备跨文件事务，部分文件写入成功后失败时应重新导入完整备份。
-- 分享码兼容 WY1/WY2；解压后的 JSON 上限为 8 MiB，截断或超限负载会拒绝导入。超过分享上限的内容请使用设置中的整包 JSON 导出。
-- AI 上下文取最近 `historyWindow` 条日志，超出部分自动截断，以避免提示词超长。
-- 流式生成结束前不写入对局日志，因此生成过程中无法保存“半句”内容；整段结束后存档即为一致状态。
-- AI 生成正文统一清洗（剥 markdown、剔思考泄漏），仅作用于 AI 生成，作者手写节点文本保留原样。
-- 底层基调支持独立实体与角色内嵌单条两种来源，均注入人设最底；角色删除某条引用或删除规则时自动摘除关联，避免悬空 id。
-- 用户已删除的内置内容不会在后续启动时被自动写回。
+| 项目 | 用途 | 许可 |
+| --- | --- | --- |
+| [Ionicons](https://github.com/ionic-team/ionicons) | 圆润线框图标（子集） | MIT |
+| [霞鹜文楷 LXGW WenKai](https://github.com/lxgw/LxgwWenKai) | 默认字体 | SIL OFL 1.1 |
+| [Material Color Utilities](https://github.com/material-foundation/material-color-utilities) | 动态配色算法 | Apache-2.0 |
+| [LiquidGlassKMP](https://github.com/philipplackner/LiquidGlassKMP) | 液态玻璃的分层设计参考（未使用其代码） | — |
 
-## 剧情记忆与人物关系
-
-对局右上角人物按钮可查看累计剧情记忆、对玩家的好感和信任、人物之间的关系及变化原因。AI 场景与 AI 导演每轮更新已发生事件的摘要，并在后续续写中带入记忆和当前关系；这些信息随存档保存，兼容旧存档。模型未返回记忆时保留原记录，不额外调用摘要服务。记忆是有限长度的 AI 摘要，不能保证保留所有细节。
-
-## 生成进度、用量与费用
-
-生成过程中显示等待、思考或生成阶段、实际耗时与接收字符数，不显示虚假的完成百分比。AI 服务页、对局和一句话创建可查看本机最近 100 次请求，记录实际服务返回的输入/输出及缓存 tokens、耗时和完成/失败/取消状态，并在本机保存。未知用量和取消/失败请求的费用不按零计。编辑服务时可填写当前模型每百万 tokens 的输入、输出、缓存读取和写入单价及 CNY/USD 等币种；DeepSeek 官方 HTTPS 接口支持 deepseek-flash、deepseek-v4-pro 及官方列出的 Flash 别名；全部单价留空时使用 2026-10-03 官方 CNY/USD 价格快照，按北京时间峰谷及已公布的 2026 节假日区分价格。跨时段或未来节假日不确定时显示估算范围；代理和未收录模型不推测价格。填写任一价格后优先使用手动单价。费用在请求结束时保存，不追溯重算；缺少必需用量或单价时显示未知，不同币种分别汇总。换模型时请核对价格，账单以服务商为准。
-
-价格参考：[DeepSeek 官方人民币价格](https://api-docs.deepseek.com/zh-cn/quick_start/pricing/)、[美元价格](https://api-docs.deepseek.com/quick_start/pricing/)。
-
-协议参考：[DeepSeek 流式用量](https://api-docs.deepseek.com/api/create-chat-completion/)、[Anthropic 流式用量](https://platform.claude.com/docs/en/build-with-claude/streaming)、[Gemini usageMetadata](https://ai.google.dev/api/generate-content#UsageMetadata)。
-
-设置首页采用搜索与分类入口，外观、AI生成、内容偏好、角色规则、备份和系统关于分别进入二级页面。原有设置及备份内容保留。
-
-AI 服务已并入「设置 → AI 服务与生成 → 管理 AI 服务」，底部导航保留主页、剧情、角色、设置四项。服务编辑、默认服务及用量费用功能保留。
-
-页面进入与返回使用统一的水平过渡，底部主页面采用短渐变。玻璃胶囊在切换页面时连续移动，拖动松手和按钮按压使用弹簧反馈；动画数值在绘制层读取，避免逐帧重新排版，遵循系统动画时长设置。
-
-默认字体采用 [霞鹜文楷](https://github.com/lxgw/LxgwWenKai)，字体与 OFL 许可随包提供，可离线使用并继续导入个人字体。液态玻璃参考 [LiquidGlassKMP](https://github.com/philipplackner/LiquidGlassKMP) 的内容与控制层分离设计，在 Android 使用独立的背景模糊与边缘折射实现。
+来源与许可原文见 [`third_party/`](third_party/)。
