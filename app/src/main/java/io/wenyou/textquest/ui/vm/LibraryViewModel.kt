@@ -59,6 +59,7 @@ data class LibraryUi(
 class LibraryViewModel(container: WenYouApp.AppContainer) : ViewModel() {
 
     private val library: LocalLibrary = container.library
+    private val shareInbox = container.shareInbox
     private val settings: SettingsStore = container.settings
 
     private val _filters = MutableStateFlow(LibraryUi())
@@ -157,14 +158,15 @@ class LibraryViewModel(container: WenYouApp.AppContainer) : ViewModel() {
         val story = library.stories.value.firstOrNull { it.id == storyId } ?: return ""
         val chars = library.characters.value.filter { it.id in story.characterIds }
         val rules = _rulesFor(chars)
-        return ShareCode.encode(AppBundle(characters = chars, stories = listOf(story), bottomRules = rules))
+        // Codes shared from this device are not offered back for import when copied.
+        return ShareCode.encode(AppBundle(characters = chars, stories = listOf(story), bottomRules = rules)).also { if (it.isNotBlank()) shareInbox.markHandled(it) }
     }
 
     /** 生成单个角色的分享码（角色不存在返回空串；附带其用到的底层基调）。 */
     fun shareCodeForCharacter(characterId: String): String {
         val c = library.characters.value.firstOrNull { it.id == characterId } ?: return ""
         val rules = _rulesFor(listOf(c))
-        return ShareCode.encode(AppBundle(characters = listOf(c), bottomRules = rules))
+        return ShareCode.encode(AppBundle(characters = listOf(c), bottomRules = rules)).also { if (it.isNotBlank()) shareInbox.markHandled(it) }
     }
 
     /** 取若干角色引用到的、且当前存在的底层基调（按 id 去重）。 */
@@ -176,32 +178,6 @@ class LibraryViewModel(container: WenYouApp.AppContainer) : ViewModel() {
     }
 
     /** 从分享码导入：只补不覆盖，结果通过 onResult 回调（主线程执行）。 */
-    fun importShareCode(code: String, onResult: (String) -> Unit) {
-        val bundle = ShareCode.decode(code)
-        if (bundle == null) {
-            onResult("分享码无效，请检查是否完整")
-            return
-        }
-        if (bundle.stories.isEmpty() && bundle.characters.isEmpty()) {
-            onResult("分享码中没有可导入的内容")
-            return
-        }
-        viewModelScope.launch {
-            try {
-                val result = library.importShared(bundle)
-                onResult(
-                    if (result.added == 0) "内容已存在，没有重复导入"
-                    else "导入成功：新增 ${result.added} 条内容" +
-                        if (result.existing > 0) "，跳过 ${result.existing} 条已有内容" else ""
-                )
-            } catch (e: CancellationException) {
-                throw e
-            } catch (t: Exception) {
-                onResult("导入失败：${t.message}")
-            }
-        }
-    }
-
     fun setShowLgbt(on: Boolean) = settings.setShowLgbt(on)
     fun showLgbt(): Boolean = settings.state.value.showLgbt
 

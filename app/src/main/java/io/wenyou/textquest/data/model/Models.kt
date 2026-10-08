@@ -349,7 +349,9 @@ data class AppBundle(
     val bottomRules: List<BottomRule> = emptyList(),
     val achievements: List<AchievementRecord> = emptyList(),
     /** Branch nodes reached per story; older backups simply omit it. */
-    val progress: List<StoryProgress> = emptyList()
+    val progress: List<StoryProgress> = emptyList(),
+    /** Which app wrote this share or backup; empty for content written before origins existed. */
+    val origin: String = ""
 )
 
 @Serializable

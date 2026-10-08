@@ -179,7 +179,8 @@ class LocalLibrary internal constructor(private val dir: File) {
         saves = _saves.value,
         bottomRules = _bottomRules.value,
         achievements = _achievements.value,
-        progress = _progress.value
+        progress = _progress.value,
+        origin = io.wenyou.textquest.BuildConfig.SHARE_ORIGIN
     ) }
 
     suspend fun importBundle(bundle: AppBundle): Int = write {

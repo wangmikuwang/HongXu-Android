@@ -28,6 +28,7 @@ class WenYouApp : Application() {
         val settings = SettingsStore(context)
         val chatClient = suppliedClient ?: ChatClient(usage = io.wenyou.textquest.data.llm.UsageTracker(File(context.filesDir, "usage.json")))
         val director = AiDirector(chatClient)
+        val shareInbox = io.wenyou.textquest.data.repo.ShareInbox(context)
     }
 
     lateinit var container: AppContainer

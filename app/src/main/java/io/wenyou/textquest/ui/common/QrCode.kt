@@ -17,6 +17,13 @@ import com.google.zxing.MultiFormatReader
 import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
+import com.google.zxing.multi.qrcode.QRCodeMultiReader
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Typeface
+import android.text.StaticLayout
+import android.text.TextPaint
+import android.text.TextUtils
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
 import io.wenyou.textquest.BuildConfig
@@ -67,17 +74,61 @@ object QrCode {
         }
     }
 
-    /** 识别一张或一套分片二维码图片，并返回完整分享码。 */
+    /** 识别一张或一套分片二维码图片（含一张图里有多个码的分享海报），并返回完整分享码。 */
     fun decodeShareImages(context: Context, uris: List<Uri>): String? {
-        val texts = uris.mapNotNull { uri ->
+        val texts = uris.flatMap { uri ->
             runCatching {
                 context.contentResolver.openInputStream(uri)?.use { input ->
-                    val bitmap = BitmapFactory.decodeStream(input) ?: return@use null
-                    try { decode(bitmap)?.trim() } finally { bitmap.recycle() }
+                    val bitmap = BitmapFactory.decodeStream(input) ?: return@use emptyList()
+                    try { decodeAll(bitmap) } finally { bitmap.recycle() }
                 }
-            }.getOrNull()
+            }.getOrNull().orEmpty()
         }
         return ShareCode.assembleQrTexts(texts)
+    }
+
+    /** Every QR code in one image; falls back to the single-code reader. Text is never trimmed (Base45 may end in a space). */
+    private fun decodeAll(bitmap: Bitmap): List<String> {
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        val image = BinaryBitmap(HybridBinarizer(RGBLuminanceSource(bitmap.width, bitmap.height, pixels)))
+        val hints: Map<DecodeHintType, Any> = mapOf(DecodeHintType.CHARACTER_SET to "UTF-8", DecodeHintType.TRY_HARDER to true)
+        val found = runCatching { QRCodeMultiReader().decodeMultiple(image, hints).map { it.text } }.getOrNull().orEmpty()
+        return found.ifEmpty { listOfNotNull(decode(bitmap)) }
+    }
+
+    /** One shareable image: the title, then every page of the QR book in a numbered grid that album import reads at once. */
+    fun poster(title: String, appName: String, pages: List<String>): Bitmap? {
+        if (pages.isEmpty()) return null
+        val cols = when { pages.size == 1 -> 1; pages.size <= 4 -> 2; else -> 3 }
+        val rows = (pages.size + cols - 1) / cols
+        val cell = 440; val gap = 40; val pad = 56; val label = 52
+        val gridWidth = cols * cell + (cols - 1) * gap
+        val width = maxOf(gridWidth + pad * 2, 760)
+        val textPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF625E6C.toInt(); textSize = 30f }
+        val hint = StaticLayout.Builder.obtain(
+            "共 ${pages.size} 张 · 保存这张图，在「$appName」中选择「导入 → 相册识别」即可一次导入", 0,
+            "共 ${pages.size} 张 · 保存这张图，在「$appName」中选择「导入 → 相册识别」即可一次导入".length, textPaint, width - pad * 2
+        ).build()
+        val header = pad + 64 + 16 + hint.height + 40
+        val height = header + rows * (cell + label) + (rows - 1) * gap + pad
+        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        canvas.drawColor(android.graphics.Color.WHITE)
+        val titlePaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF1D1B22.toInt(); textSize = 56f; typeface = Typeface.DEFAULT_BOLD }
+        canvas.drawText(TextUtils.ellipsize(title, titlePaint, (width - pad * 2).toFloat(), TextUtils.TruncateAt.END).toString(), pad.toFloat(), (pad + 56).toFloat(), titlePaint)
+        canvas.save(); canvas.translate(pad.toFloat(), (pad + 64 + 16).toFloat()); hint.draw(canvas); canvas.restore()
+        val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = 0xFF625E6C.toInt(); textSize = 28f; textAlign = Paint.Align.CENTER }
+        val left = (width - gridWidth) / 2
+        pages.forEachIndexed { i, page ->
+            val qr = encode(page, cell) ?: return null
+            val x = left + (i % cols) * (cell + gap)
+            val y = header + (i / cols) * (cell + label + gap)
+            canvas.drawBitmap(qr, x.toFloat(), y.toFloat(), null)
+            qr.recycle()
+            if (pages.size > 1) canvas.drawText("第 ${i + 1} 张", (x + cell / 2).toFloat(), (y + cell + 38).toFloat(), labelPaint)
+        }
+        return bmp
     }
 
     /**

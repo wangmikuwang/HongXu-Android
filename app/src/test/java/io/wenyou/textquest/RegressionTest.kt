@@ -211,7 +211,7 @@ data: [DONE]
 
     @Test fun shareCodesRejectTruncatedAndOversizedPayloads() {
         val bundle = AppBundle(characters = listOf(CharacterData("c", "角色")))
-        assertEquals(bundle, ShareCode.decode(ShareCode.encode(bundle)))
+        assertEquals(bundle.copy(origin = BuildConfig.SHARE_ORIGIN), ShareCode.decode(ShareCode.encode(bundle)))
         val legacy = Base64.getUrlEncoder().withoutPadding().encodeToString(
             AppJson.encodeToString(AppBundle.serializer(), bundle).toByteArray(Charsets.UTF_8))
         assertEquals(bundle, ShareCode.decode("WY1:$legacy"))

@@ -444,6 +444,10 @@ class SettingsViewModel(container: WenYouApp.AppContainer) : ViewModel() {
 
     fun importString(text: String) {
         try {
+            if (io.wenyou.textquest.data.repo.ShareCode.foreignJson(text)) {
+                _message.value = "这份备份不是由本应用导出的，无法导入"
+                return
+            }
             val bundle = AppJson.decodeFromString(AppBundle.serializer(), text)
             launchLibraryWrite {
                 val n = library.importBundle(bundle)

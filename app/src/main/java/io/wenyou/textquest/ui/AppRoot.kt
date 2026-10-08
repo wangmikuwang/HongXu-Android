@@ -136,6 +136,13 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                     confirmButton = { AppTextButton(onClick = container.library::clearWriteError) { Text("知道了") } }
                 )
             }
+            // The real app looks for a copied share code whenever its window regains focus; tests skip this.
+            if (showStartup) {
+                val focused = androidx.compose.ui.platform.LocalWindowInfo.current.isWindowFocused
+                val context = androidx.compose.ui.platform.LocalContext.current
+                LaunchedEffect(focused) { if (focused) io.wenyou.textquest.ui.common.checkClipboardForShare(context, container.shareInbox) }
+            }
+            io.wenyou.textquest.ui.common.SharedImportHost(container)
             val nav = rememberNavController()
             val entry by nav.currentBackStackEntryAsState()
             var dockIndex by remember { mutableStateOf(0) }

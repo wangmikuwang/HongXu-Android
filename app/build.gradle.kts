@@ -38,6 +38,10 @@ android {
         targetSdk = 34
         versionCode = appVersionCode
         versionName = appVersionName
+        // Share codes record which app wrote them; the link page opens this app through its own scheme.
+        buildConfigField("String", "SHARE_ORIGIN", "\"hx\"")
+        buildConfigField("String", "SHARE_SCHEME", "\"hongxu\"")
+        manifestPlaceholders["shareScheme"] = "hongxu"
         buildConfigField("String", "APP_FILE_PREFIX", "\"HongXu\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

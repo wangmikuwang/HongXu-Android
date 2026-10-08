@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.ShareActions
 import io.wenyou.textquest.ui.common.SearchField
 import io.wenyou.textquest.ui.common.AppField
 import io.wenyou.textquest.data.model.isAutoSaveName
@@ -78,6 +79,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
@@ -131,12 +133,8 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         if (uris.isNotEmpty()) {
             scope.launch {
                 val text = withContext(Dispatchers.IO) { QrCode.decodeShareImages(context, uris) }
-                if (text.isNullOrBlank()) {
-                    android.widget.Toast.makeText(context, "未识别到完整分享码，请选择同一套的全部二维码", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    vm.importShareCode(text) { msg ->
-                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
-                    }
+                if (text.isNullOrBlank() || !container.shareInbox.offer(text)) {
+                    android.widget.Toast.makeText(context, "未识别到完整分享码，请选择分享海报或同一套的全部二维码", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -238,6 +236,8 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     sharePicker?.let { story ->
         SharePickDialog(
             title = story.title,
+            onLink = { shareOut(context, vm.shareCodeFor(story.id)) { ShareActions.sendLink(context, "剧情", story.title, it) }; sharePicker = null },
+            onFile = { shareOut(context, vm.shareCodeFor(story.id)) { ShareActions.sendFile(context, story.title, it) }; sharePicker = null },
             onCode = { shareCodeStory = story; sharePicker = null },
             onQr = { shareQrStory = story; sharePicker = null },
             onDismiss = { sharePicker = null }
@@ -272,7 +272,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     if (importText) {
         ImportTextDialog(
             onDismiss = { importText = false },
-            onImport = { code, cb -> vm.importShareCode(code, cb) }
+            onImport = { code, cb -> if (container.shareInbox.offer(code)) importText = false else cb("没有找到有效的分享码，请检查是否完整") }
         )
     }
 
@@ -280,8 +280,8 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
         QrScannerDialog(
             onResult = { text ->
                 scanning = false
-                vm.importShareCode(text) { msg ->
-                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                if (!container.shareInbox.offer(text)) {
+                    android.widget.Toast.makeText(context, "没有识别到有效的分享码", android.widget.Toast.LENGTH_SHORT).show()
                 }
             },
             onDismiss = { scanning = false }
@@ -289,21 +289,41 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
     }
 }
 
-/** 分享方式选择：分享码（文本） or 二维码。 */
+/** Runs a share action, or explains why content too large for a share code cannot be shared this way. */
+internal fun shareOut(context: android.content.Context, code: String, action: (String) -> Unit) {
+    if (code.isBlank()) android.widget.Toast.makeText(context, "内容超过分享上限，请使用设置中的整包导出", android.widget.Toast.LENGTH_SHORT).show()
+    else action(code)
+}
+
+/** 分享方式：链接、文件、分享码文字或二维码；对方用任一方式都能一步导入。 */
 @Composable
-fun SharePickDialog(title: String, onCode: () -> Unit, onQr: () -> Unit, onDismiss: () -> Unit) {
+fun SharePickDialog(title: String, onLink: () -> Unit, onFile: () -> Unit, onCode: () -> Unit, onQr: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("分享「$title」") },
-        text = { Text("选择分享方式：给对方「分享码」文本，或生成「二维码」让对方直接扫码。") },
-        confirmButton = {
-            Row {
-                AppTextButton(onClick = onCode) { Text("分享码") }
-                AppTextButton(onClick = onQr) { Text("二维码") }
-                AppTextButton(onClick = onDismiss) { Text("取消") }
+        text = {
+            Column {
+                ShareOption("🔗", "发送链接", "对方点开链接即可导入（推荐）", onLink)
+                ShareOption("📄", "发送文件", "对方点开文件，选择用本应用打开", onFile)
+                ShareOption("🔤", "复制分享码", "对方复制后打开应用，会自动识别", onCode)
+                ShareOption("🔳", "二维码", "面对面扫码，或保存成一张分享海报", onQr)
             }
-        }
+        },
+        confirmButton = { AppTextButton(onClick = onDismiss) { Text("取消") } }
     )
+}
+
+@Composable
+private fun ShareOption(icon: String, title: String, body: String, onClick: () -> Unit) {
+    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clip(RoundedCornerShape(14.dp)).clickable(onClick = onClick).padding(horizontal = 8.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        io.wenyou.textquest.ui.common.RawText(icon, fontSize = 22.sp)
+        Spacer(Modifier.width(14.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(body, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 /** 分享码（文本）弹窗：复制或系统分享。 */
@@ -327,7 +347,7 @@ fun ShareTextDialog(title: String, code: String, onDismiss: () -> Unit) {
         text = {
             Column {
                 Text(
-                    "把下面的分享码发给朋友，对方在「导入码 → 粘贴分享码」即可导入。",
+                    "把下面的分享码发给朋友：对方复制后打开应用会自动识别，也可在「导入 → 粘贴」导入。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -401,82 +421,57 @@ private fun ConnectingIndicator(label: String, modifier: Modifier = Modifier) {
     }
 }
 
-/** 二维码弹窗：单张大图优先；单张放不下时自动拆成多张低密度分片；支持保存到本地。 */
+/** 二维码弹窗：内容按页编码（字母数字模式，单页也带页头），多页自动轮播；可保存为一张包含全部页的分享海报。 */
 @Composable
 fun ShareQrDialog(title: String, code: String, onDismiss: () -> Unit) {
-    if (code.isBlank()) {
+    val pages = remember(code) { ShareCode.qrPages(code) }
+    if (pages.isEmpty()) {
         ShareTextDialog(title, code, onDismiss)
         return
     }
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
+    val appName = androidx.compose.ui.res.stringResource(io.wenyou.textquest.R.string.app_name)
     var copied by remember { mutableStateOf(false) }
-    val single = remember(code) { QrCode.encode(code, 800) }
-    val chunks = remember(code) { if (single == null) ShareCode.qrChunks(code) else emptyList() }
-    val isMulti = chunks.size > 1
+    var idx by remember(pages) { mutableStateOf(0) }
+    if (pages.size > 1) LaunchedEffect(pages.size) {
+        while (true) {
+            delay(3000)
+            idx = (idx + 1) % pages.size
+        }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("二维码 · $title") },
         text = {
             Column {
-                ConnectingIndicator(if (isMulti) "内容较大，已拆成 ${chunks.size} 张" else "对方扫码即可连接")
+                ConnectingIndicator(if (pages.size > 1) "共 ${pages.size} 张，自动轮播" else "对方扫码即可导入")
                 Spacer(Modifier.height(10.dp))
-                if (!isMulti && single != null) {
-                    QrCard(single, 300, Modifier.align(Alignment.CenterHorizontally))
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "用手机相机对准上方二维码，或回到「导入码 → 相机扫码 / 相册识别」。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                } else if (isMulti) {
-                    Text(
-                        "内容较大，已拆成 ${chunks.size} 张。屏幕会自动轮播，让对方相机持续对着即可自动拼接。",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    var idx by remember(chunks) { mutableStateOf(0) }
-                    LaunchedEffect(chunks.size) {
-                        while (true) {
-                            delay(4000)
-                            idx = (idx + 1) % chunks.size
-                        }
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    if (pages.size > 1) IconButton(onClick = { idx = (idx - 1 + pages.size) % pages.size }) {
+                        Icon(AppIcons.KeyboardArrowLeft, "上一张", tint = MaterialTheme.colorScheme.readableAccent())
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        IconButton(onClick = { idx = (idx - 1 + chunks.size) % chunks.size }) {
-                            Icon(AppIcons.KeyboardArrowLeft, "上一张", tint = MaterialTheme.colorScheme.readableAccent())
-                        }
-                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
-                            val qr = remember(chunks[idx]) { QrCode.encode(chunks[idx], 620) }
-                            Text(
-                                "第 ${idx + 1}/${chunks.size} 张",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            if (qr != null) QrCard(qr, 260, Modifier.align(Alignment.CenterHorizontally).padding(top = 6.dp))
-                        }
-                        IconButton(onClick = { idx = (idx + 1) % chunks.size }) {
-                            Icon(AppIcons.KeyboardArrowRight, "下一张", tint = MaterialTheme.colorScheme.readableAccent())
-                        }
+                    Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                        val qr = remember(pages[idx]) { QrCode.encode(pages[idx], 640) }
+                        if (pages.size > 1) Text("第 ${idx + 1}/${pages.size} 张", style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        if (qr != null) QrCard(qr, 260, Modifier.padding(top = 6.dp))
                     }
-                } else {
-                    Text("该内容较大，二维码放不下，可改用「分享码」文本。",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Center)
+                    if (pages.size > 1) IconButton(onClick = { idx = (idx + 1) % pages.size }) {
+                        Icon(AppIcons.KeyboardArrowRight, "下一张", tint = MaterialTheme.colorScheme.readableAccent())
+                    }
                 }
-                Spacer(Modifier.height(6.dp))
-                io.wenyou.textquest.ui.common.RawText(
-                    if (copied) "已复制分享码文本" else "也可点「复制文本」手动粘贴。",
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    if (pages.size > 1) "对方在「导入 → 相机扫码」持续对准屏幕即可自动拼接；不在身边就「保存海报」，对方用「相册识别」选这一张图导入。"
+                    else "对方在「导入 → 相机扫码」对准即可；也可以「保存海报」发给对方，用「相册识别」导入。",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                if (copied) {
+                    Spacer(Modifier.height(4.dp))
+                    io.wenyou.textquest.ui.common.RawText("已复制分享码文字", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                }
             }
         },
         confirmButton = {
@@ -485,30 +480,13 @@ fun ShareQrDialog(title: String, code: String, onDismiss: () -> Unit) {
                     clipboard.setText(AnnotatedString(code))
                     copied = true
                 }) { Text("复制") }
-                if (isMulti) {
-                    AppTextButton(onClick = {
-                        // 多片码无法存成单图，逐张编码保存到相册，便于离线获取整套码
-                        var saved = 0
-                        chunks.forEachIndexed { i, ch ->
-                            val qr = QrCode.encode(ch, 620)
-                            if (qr != null) {
-                                val loc = QrCode.saveToGallery(context, qr, "${title}_第${i + 1}张")
-                                if (loc != null) saved++
-                                qr.recycle()
-                            }
-                        }
-                        android.widget.Toast.makeText(context,
-                            if (saved > 0) "已保存 $saved 张二维码到相册" else "保存失败",
-                            android.widget.Toast.LENGTH_SHORT).show()
-                    }) { Text("逐张保存") }
-                } else if (single != null) {
-                    AppTextButton(onClick = {
-                        val loc = QrCode.saveToGallery(context, single, title)
-                        android.widget.Toast.makeText(context,
-                            if (loc != null) "已保存到 $loc" else "保存失败",
-                            android.widget.Toast.LENGTH_SHORT).show()
-                    }) { Text("保存") }
-                }
+                AppTextButton(onClick = {
+                    val poster = QrCode.poster(title, appName, pages)
+                    val location = poster?.let { QrCode.saveToGallery(context, it, "${title}_分享海报") }
+                    poster?.recycle()
+                    android.widget.Toast.makeText(context, if (location != null) "分享海报已保存到 $location" else "保存失败",
+                        android.widget.Toast.LENGTH_SHORT).show()
+                }) { Text("保存海报") }
                 AppTextButton(onClick = onDismiss) { Text("关闭") }
             }
         }
@@ -520,13 +498,13 @@ fun ShareQrDialog(title: String, code: String, onDismiss: () -> Unit) {
 fun ImportPickDialog(onText: () -> Unit, onScan: () -> Unit, onAlbum: () -> Unit, onDismiss: () -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("导入分享码") },
-        text = { Text("选择导入方式：粘贴分享码、相机扫码，或从相册选择一张/整套二维码图片。") },
+        title = { Text("导入分享") },
+        text = { Text("粘贴别人发来的消息、链接或分享码，用相机扫码，或从相册选择分享海报 / 二维码图片。导入前会先预览。") },
         confirmButton = {
             Row {
-                AppTextButton(onClick = onText) { Text("粘贴分享码") }
+                AppTextButton(onClick = onText) { Text("粘贴") }
                 AppTextButton(onClick = onScan) { Text("相机扫码") }
-                AppTextButton(onClick = onAlbum) { Text("相册多选") }
+                AppTextButton(onClick = onAlbum) { Text("相册识别") }
                 AppTextButton(onClick = onDismiss) { Text("取消") }
             }
         }
@@ -544,7 +522,7 @@ fun ImportTextDialog(onDismiss: () -> Unit, onImport: (String, (String) -> Unit)
         text = {
             Column {
                 Text(
-                    "粘贴对方发来的分享码（WY1:/WY2: 开头均可，新版为压缩码）。剧情与角色按 id 补入，不覆盖已有内容。",
+                    "粘贴对方发来的整段消息、链接或分享码都可以。导入前会先预览，已有内容不会被覆盖。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -710,7 +688,7 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                         DropdownMenuItem(text = { Text("读取存档") }, onClick = { menuOpen = false; onSaves() })
-                        DropdownMenuItem(text = { Text("生成分享码") }, onClick = { menuOpen = false; onShare() })
+                        DropdownMenuItem(text = { Text("分享") }, onClick = { menuOpen = false; onShare() })
                         DropdownMenuItem(text = { Text("删除", color = MaterialTheme.colorScheme.error) },
                             onClick = { menuOpen = false; onDelete() })
                     }

@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.ShareActions
 import io.wenyou.textquest.ui.common.SearchField
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.testTag
@@ -97,12 +98,8 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
         if (uris.isNotEmpty()) {
             scope.launch {
                 val text = withContext(Dispatchers.IO) { QrCode.decodeShareImages(context, uris) }
-                if (text.isNullOrBlank()) {
-                    android.widget.Toast.makeText(context, "未识别到完整分享码，请选择同一套的全部二维码", android.widget.Toast.LENGTH_SHORT).show()
-                } else {
-                    vm.importShareCode(text) { msg ->
-                        android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
-                    }
+                if (text.isNullOrBlank() || !container.shareInbox.offer(text)) {
+                    android.widget.Toast.makeText(context, "未识别到完整分享码，请选择分享海报或同一套的全部二维码", android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -179,6 +176,8 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
     sharePicker?.let { c ->
         SharePickDialog(
             title = c.name,
+            onLink = { shareOut(context, vm.shareCodeForCharacter(c.id)) { ShareActions.sendLink(context, "角色", c.name, it) }; sharePicker = null },
+            onFile = { shareOut(context, vm.shareCodeForCharacter(c.id)) { ShareActions.sendFile(context, c.name, it) }; sharePicker = null },
             onCode = { shareCodeChar = c; sharePicker = null },
             onQr = { shareQrChar = c; sharePicker = null },
             onDismiss = { sharePicker = null }
@@ -210,15 +209,15 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
     if (importText) {
         ImportTextDialog(
             onDismiss = { importText = false },
-            onImport = { code, cb -> vm.importShareCode(code, cb) }
+            onImport = { code, cb -> if (container.shareInbox.offer(code)) importText = false else cb("没有找到有效的分享码，请检查是否完整") }
         )
     }
     if (scanning) {
         QrScannerDialog(
             onResult = { text ->
                 scanning = false
-                vm.importShareCode(text) { msg ->
-                    android.widget.Toast.makeText(context, msg, android.widget.Toast.LENGTH_SHORT).show()
+                if (!container.shareInbox.offer(text)) {
+                    android.widget.Toast.makeText(context, "没有识别到有效的分享码", android.widget.Toast.LENGTH_SHORT).show()
                 }
             },
             onDismiss = { scanning = false }
