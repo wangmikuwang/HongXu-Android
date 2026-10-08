@@ -8,6 +8,18 @@ import io.wenyou.textquest.colorutilities.dynamiccolor.DynamicScheme
 import io.wenyou.textquest.colorutilities.hct.Hct
 import io.wenyou.textquest.colorutilities.scheme.*
 
+/** One-tap palettes: a seed color plus a palette style, both still adjustable afterwards. */
+internal data class ColorPreset(val name: String, val seed: String, val style: String)
+
+internal val ColorPresets = listOf(
+    ColorPreset("樱花", "#F48FB1", "vibrant"), ColorPreset("蜜桃", "#FF8A65", "vibrant"), ColorPreset("珊瑚", "#FF6F61", "fidelity"),
+    ColorPreset("玫瑰", "#C2185B", "fidelity"), ColorPreset("琥珀", "#FFB300", "vibrant"), ColorPreset("晚霞", "#F4511E", "fidelity"),
+    ColorPreset("抹茶", "#7CB342", "tonal"), ColorPreset("森林", "#2E7D32", "fidelity"), ColorPreset("极光", "#00BFA5", "vibrant"),
+    ColorPreset("海盐", "#29B6F6", "vibrant"), ColorPreset("深海", "#1565C0", "fidelity"), ColorPreset("薰衣草", "#9575CD", "vibrant"),
+    ColorPreset("暮紫", "#6A1B9A", "fidelity"), ColorPreset("糖果", "#EC407A", "fruit"), ColorPreset("奶茶", "#A1887F", "tonal"),
+    ColorPreset("墨夜", "#455A64", "neutral"), ColorPreset("石墨", "#616161", "mono")
+)
+
 internal fun customColors(base: ColorScheme, prefs: AppearancePrefs, dark: Boolean): ColorScheme {
     val source = Hct.fromInt(hexArgb(prefs.seed))
     val spec = if (prefs.colorSpec == "2025") SpecVersion.SPEC_2025 else SpecVersion.SPEC_2021

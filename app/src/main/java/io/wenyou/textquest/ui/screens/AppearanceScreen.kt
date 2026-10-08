@@ -7,10 +7,12 @@ import android.graphics.Color as AndroidColor
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import io.wenyou.textquest.ui.common.AppIcon as Icon
@@ -19,6 +21,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -118,6 +121,25 @@ fun AppearanceContent(prefs: AppearancePrefs, style: ThemeStyle, mode: ThemeMode
                 val source = if (prefs.colorSource == "brand" && dynamic && !prefs.glassEnabled && style != ThemeStyle.APPLE) "wallpaper" else prefs.colorSource
                 Choice("主题颜色来源", sources, source.takeIf { selected -> sources.any { it.second == selected } } ?: "brand",
                     { value -> setDynamic(value == "wallpaper"); update { it.copy(colorSource = value) } })
+                Text("配色预设", fontWeight = FontWeight.SemiBold)
+                val dark = MaterialTheme.colorScheme.background.luminance() < .5f
+                val current = MaterialTheme.colorScheme
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ColorPresets.forEach { preset ->
+                        val colors = remember(preset, dark, prefs.colorSpec) { customColors(current, prefs.copy(seed = preset.seed, paletteStyle = preset.style), dark) }
+                        val selected = prefs.colorSource == "custom" && prefs.seed == preset.seed && prefs.paletteStyle == preset.style
+                        Surface(Modifier.width(76.dp).clickable { setDynamic(false); update { it.copy(seed = preset.seed, paletteStyle = preset.style, colorSource = "custom") } },
+                            shape = RoundedCornerShape(16.dp), color = colors.surfaceContainerHigh,
+                            border = if (selected) BorderStroke(2.dp, colors.primary) else null) {
+                            Column(Modifier.padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                                    listOf(colors.primary, colors.secondary, colors.tertiary).forEach { Box(Modifier.size(16.dp).background(it, CircleShape)) }
+                                }
+                                Text(preset.name, color = colors.onSurface, style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+                    }
+                }
                 Preference("自定义主题颜色", prefs.seed, { colorTarget = "seed" })
                 Toggle("高级配色", prefs.advancedColors, { value -> update { it.copy(advancedColors = value) } })
                 if (prefs.advancedColors) {
