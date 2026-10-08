@@ -13,8 +13,10 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![本地优先](https://img.shields.io/badge/%E6%95%B0%E6%8D%AE-%E4%BB%85%E5%AD%98%E6%9C%AC%E6%9C%BA-2ea44f)
+[![GPL-3.0](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-GPL--3.0-blue)](LICENSE)
+[![F-Droid 仓库](https://img.shields.io/badge/F--Droid-%E8%87%AA%E5%BB%BA%E4%BB%93%E5%BA%93-1976d2?logo=fdroid&logoColor=white)](https://wangmikuwang.github.io/fdroid/)
 
-### [⬇️ 下载最新版](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest)
+### [⬇️ 下载最新版](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest) · [📦 通过 F-Droid 安装](https://wangmikuwang.github.io/fdroid/)
 
 [功能](#-亮点) · [快速开始](#-快速开始) · [玩法](#-三种玩法) · [开发者](#%EF%B8%8F-开发者) · [更新日志](CHANGELOG.md) · [致谢](#-致谢)
 
@@ -49,7 +51,9 @@
 
 ## 🚀 快速开始
 
-1. **安装**：到 [Releases](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest) 下载 `HongXu-v版本号.apk`。需要 Android 8.0 及以上；首次安装请允许本应用「安装未知应用」。之后应用会自动检查更新，在应用内下载并校验。
+1. **安装**（Android 8.0 及以上，二选一）：
+   - **直接下载**：到 [Releases](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest) 下载 `HongXu-v版本号.apk`，首次安装请允许本应用「安装未知应用」。之后应用会自动检查更新，在应用内下载并校验。
+   - **F-Droid**：在 F-Droid 客户端「设置 → 仓库」中添加 `https://wangmikuwang.github.io/fdroid/repo`，或在手机上打开[仓库页面](https://wangmikuwang.github.io/fdroid/)一键添加。仓库指纹：`885F92BA3C2DDD5EE6F095BB3E6796A194E4EE88F558FB95FCB4C18388A5B9E6`。两种方式的安装包签名相同，可以互相覆盖升级。
 2. **开玩**：打开即可游玩内置剧情。标着「分支剧本」的故事完全离线，不需要任何配置。
 3. **接入 AI（可选）**：设置 → AI 服务与生成 → 管理 AI 服务，添加服务商的地址、密钥和模型，先「测试连接」再保存。之后就能玩 AI 导演、AI 场景，以及一句话创作。
 
@@ -325,6 +329,11 @@ third_party/           随包组件的来源与许可
 | [Ionicons](https://github.com/ionic-team/ionicons) | 圆润线框图标（子集） | MIT |
 | [霞鹜文楷 LXGW WenKai](https://github.com/lxgw/LxgwWenKai) | 默认字体 | SIL OFL 1.1 |
 | [Material Color Utilities](https://github.com/material-foundation/material-color-utilities) | 动态配色算法 | Apache-2.0 |
+| [ZXing](https://github.com/zxing/zxing) | 二维码生成与识别 | Apache-2.0 |
 | [LiquidGlassKMP](https://github.com/philipplackner/LiquidGlassKMP) | 液态玻璃的分层设计参考（未使用其代码） | — |
 
 来源与许可原文见 [`third_party/`](third_party/)。
+
+## 📜 许可证
+
+虹叙以 [GNU 通用公共许可证 v3.0](LICENSE)（GPL-3.0-only）开源：你可以自由使用、学习、修改和再分发，分发修改版时也须以同样的许可证公开源代码。随包的第三方组件保留各自的许可证。

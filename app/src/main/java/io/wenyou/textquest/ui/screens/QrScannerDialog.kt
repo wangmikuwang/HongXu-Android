@@ -43,19 +43,17 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.wenyou.textquest.data.repo.ShareCode
-import com.google.mlkit.vision.barcode.BarcodeScanning
-import com.google.mlkit.vision.barcode.BarcodeScannerOptions
-import com.google.mlkit.vision.barcode.common.Barcode
-import com.google.mlkit.vision.common.InputImage
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
+import io.wenyou.textquest.ui.common.QrCode
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
-/** 全屏相机扫码：正方形识别框，ML Kit 识别（对高密度二维码更稳），识别到即回调文本。 */
+/** 全屏相机扫码：正方形识别框，ZXing 逐帧识别（约 720p 分析分辨率，兼顾高密度二维码），识别到即回调文本。 */
 @Composable
-@androidx.annotation.OptIn(androidx.camera.core.ExperimentalGetImage::class)
 fun QrScannerDialog(onResult: (String) -> Unit, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -74,11 +72,6 @@ fun QrScannerDialog(onResult: (String) -> Unit, onDismiss: () -> Unit) {
     val collected = remember { ConcurrentHashMap<Int, String>() }
     val pendingTotal = remember { AtomicInteger(0) }
     val pendingBook = remember { AtomicReference<String?>(null) }
-    val scanner = remember {
-        BarcodeScanning.getClient(
-            BarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_QR_CODE).build()
-        )
-    }
     val mainExecutor = remember { ContextCompat.getMainExecutor(context) }
     val analyzerExecutor = remember { Executors.newSingleThreadExecutor() }
 
@@ -176,22 +169,20 @@ fun QrScannerDialog(onResult: (String) -> Unit, onDismiss: () -> Unit) {
                         }
                         val analysis = ImageAnalysis.Builder()
                             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                            .setResolutionSelector(ResolutionSelector.Builder().setResolutionStrategy(
+                                ResolutionStrategy(android.util.Size(1280, 720), ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER)
+                            ).build())
                             .build()
                         analysis.setAnalyzer(analyzerExecutor) { image ->
                             try {
-                                val media = image.image
-                                if (media != null) {
-                                    val input = InputImage.fromMediaImage(media, image.imageInfo.rotationDegrees)
-                                    scanner.process(input)
-                                        .addOnSuccessListener { barcodes ->
-                                            val text = barcodes.firstOrNull { !it.rawValue.isNullOrBlank() }?.rawValue
-                                            if (text != null) handleDetected(text)
-                                        }
-                                        .addOnCompleteListener { image.close() }
-                                } else {
-                                    image.close()
-                                }
+                                // The Y plane alone is enough for QR codes; its rows may be padded beyond the image width.
+                                val luma = image.planes[0]
+                                val bytes = ByteArray(luma.buffer.remaining()).also { luma.buffer.get(it) }
+                                QrCode.decodeYuv(bytes, luma.rowStride, image.width, image.height)
+                                    ?.takeIf { it.isNotBlank() }?.let(::handleDetected)
                             } catch (_: Throwable) {
+                                // A frame that cannot be read is skipped; the next one is analysed.
+                            } finally {
                                 image.close()
                             }
                         }
@@ -216,7 +207,6 @@ fun QrScannerDialog(onResult: (String) -> Unit, onDismiss: () -> Unit) {
                 runCatching { future.get().unbindAll() }
             }, ContextCompat.getMainExecutor(context))
             analyzerExecutor.shutdown()
-            scanner.close()
         }
     }
 }

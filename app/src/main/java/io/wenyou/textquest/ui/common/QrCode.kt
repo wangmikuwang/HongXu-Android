@@ -80,14 +80,15 @@ object QrCode {
         return ShareCode.assembleQrTexts(texts)
     }
 
-    /** 从相机 NV21/YUV420 的 Y 平面识别二维码（支持旋转）。 */
-    fun decodeYuv(data: ByteArray, dataWidth: Int, dataHeight: Int, rotationDegrees: Int): String? {
+    /**
+     * 从相机 YUV 的 Y 平面识别二维码：[rowStride] 可大于图像宽度（行尾填充被裁掉）。
+     * 二维码定位与方向无关，传感器旋转无需处理（该亮度源也不支持旋转）。
+     */
+    fun decodeYuv(data: ByteArray, rowStride: Int, width: Int, height: Int): String? {
         return try {
-            var source: LuminanceSource = PlanarYUVLuminanceSource(
-                data, dataWidth, dataHeight, 0, 0, dataWidth, dataHeight, false
+            val source: LuminanceSource = PlanarYUVLuminanceSource(
+                data, rowStride, height, 0, 0, width, height, false
             )
-            val quarters = (((rotationDegrees % 360) / 90) + 4) % 4
-            repeat(quarters) { source = source.rotateCounterClockwise() }
             val bmp = BinaryBitmap(HybridBinarizer(source))
             val hints: Map<DecodeHintType, Any> = mapOf(
                 DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
