@@ -181,6 +181,9 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                     var usageOpen by remember { mutableStateOf(false) }
                     var paceOpen by remember { mutableStateOf(false) }
                     if (paceOpen) PaceDialog(ui, vm) { paceOpen = false }
+                    val dev by container.devMode.state.collectAsStateWithLifecycle()
+                    var directorOpen by remember { mutableStateOf(false) }
+                    if (directorOpen) DirectorChatDialog(ui, vm) { directorOpen = false }
                     if (usageOpen) io.wenyou.textquest.ui.common.UsageDialog(container.chatClient.usage) { usageOpen = false }
                     Box {
                         IconButton(onClick = { moreOpen = true }) { Icon(AppIcons.MoreVert, "更多") }
@@ -191,6 +194,8 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                             if (ui.aiMode) DropdownMenuItem(text = { Text("总结并开启新篇章") },
                                 enabled = ui.session != null && ui.stage != PlayStage.AI_WORKING && ui.stage != PlayStage.ROLE_SELECT,
                                 onClick = { moreOpen = false; vm.draftChapter() })
+                            if (dev.directorChatOn) DropdownMenuItem(text = { Text("与导演对话") }, enabled = ui.session != null,
+                                onClick = { moreOpen = false; directorOpen = true })
                             DropdownMenuItem(text = { Text("🏆 成就馆") }, onClick = { moreOpen = false; achievementsOpen = true })
                             DropdownMenuItem(text = { Text("切换 AI 服务") }, enabled = ui.providers.isNotEmpty(),
                                 onClick = { moreOpen = false; showProvider = true })
@@ -607,6 +612,49 @@ private fun PaceDialog(ui: PlayUi, vm: PlayViewModel, onDismiss: () -> Unit) {
             }
         }
     }, confirmButton = { AppTextButton(onClick = onDismiss) { Text("关闭") } })
+}
+
+/** Developer mode: talk to the director outside the story; requests become memos that later turns follow. */
+@Composable
+private fun DirectorChatDialog(ui: PlayUi, vm: PlayViewModel, onDismiss: () -> Unit) {
+    var text by rememberSaveable { mutableStateOf("") }
+    val notes = ui.session?.directorNotes.orEmpty()
+    AlertDialog(onDismissRequest = onDismiss, title = { Text("与导演对话") }, text = {
+        Column(Modifier.heightIn(max = 520.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("跳出剧情直接和导演交流：问问构思与伏笔，或提出后续剧情的要求。要求会记为导演备忘，之后每一轮都会参考。",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            ui.directorChat.forEach { m ->
+                Surface(shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth(),
+                    color = if (m.fromPlayer) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                        Text(if (m.fromPlayer) "你" else "导演", style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        SelectionContainer { io.wenyou.textquest.ui.common.RawText(m.text, style = MaterialTheme.typography.bodyMedium) }
+                        if (m.note.isNotBlank()) io.wenyou.textquest.ui.common.RawText("已记为备忘：${m.note}",
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.readableAccent())
+                    }
+                }
+            }
+            if (ui.directorChatBusy) Row(verticalAlignment = Alignment.CenterVertically) {
+                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)); Text("导演正在回复……")
+            }
+            if (ui.directorChatError.isNotBlank()) io.wenyou.textquest.ui.common.RawText(ui.directorChatError,
+                color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            OutlinedTextField(text, { text = it.take(1000) }, modifier = Modifier.fillMaxWidth().testTag("director-chat-input"),
+                placeholder = { Text("例如：接下来让陆晚先发现线索") }, maxLines = 4)
+            if (notes.isNotEmpty()) {
+                Text("导演备忘（随存档保存）", style = MaterialTheme.typography.titleSmall)
+                notes.forEachIndexed { i, note ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        io.wenyou.textquest.ui.common.RawText("· $note", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                        AppTextButton(onClick = { vm.removeDirectorNote(i) }) { Text("删除") }
+                    }
+                }
+            }
+        }
+    }, confirmButton = {
+        Button(enabled = text.isNotBlank() && !ui.directorChatBusy, onClick = { vm.sendDirectorChat(text); text = "" }) { Text("发送") }
+    }, dismissButton = { AppTextButton(onClick = onDismiss) { Text("关闭") } })
 }
 
 /** Review, edit or export the recap, then continue the story in a fresh conversation built on it. */

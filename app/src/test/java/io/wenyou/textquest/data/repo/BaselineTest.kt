@@ -45,6 +45,7 @@ class BaselineTest {
                 captured(rules, kind) { c, p -> AiDirector(c).directorTurn(p, story, listOf(actor), SessionState("s"), "继续") },
                 captured(rules, kind) { c, p -> AiDirector(c).summarize(p, story, listOf(actor), SessionState("s")) },
                 captured(rules, kind) { c, p -> AiDirector(c).testProfile(p) },
+                captured(rules, kind) { c, p -> AiDirector(c).directorChat(p, story, listOf(actor), SessionState("s"), emptyList(), "接下来怎么安排？") },
             )
             for (body in bodies) {
                 val text = AppJson.parseToJsonElement(body).toString()

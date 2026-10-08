@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.ai.AiChoice
 import io.wenyou.textquest.data.ai.AiDirector
+import io.wenyou.textquest.data.ai.DirectorMessage
 import io.wenyou.textquest.data.ai.AiScene
 import io.wenyou.textquest.data.ai.withContinuity
 import io.wenyou.textquest.data.ai.StateChange
@@ -63,7 +64,10 @@ data class PlayUi(
     val providers: List<ApiProfile> = emptyList(),
     val selectedProviderId: String? = null,
     val achievementMessages: List<String> = emptyList(),
-    val chapter: ChapterDraft? = null
+    val chapter: ChapterDraft? = null,
+    val directorChat: List<DirectorMessage> = emptyList(),
+    val directorChatBusy: Boolean = false,
+    val directorChatError: String = ""
 )
 
 /**
@@ -565,6 +569,35 @@ class PlayViewModel internal constructor(
 
     fun dismissChapter() = _ui.update { it.copy(chapter = null) }
 
+    /** Developer mode: an out-of-story question or request to the director; requests become memos in the save. */
+    fun sendDirectorChat(text: String) {
+        val message = text.trim()
+        val ui = _ui.value
+        val story = ui.story ?: return
+        val s = session ?: return
+        if (message.isEmpty() || ui.directorChatBusy) return
+        val profile = provider()
+        if (profile == null) {
+            _ui.update { it.copy(directorChatError = "需要先接入一家 AI 服务。", providerMissing = true) }
+            return
+        }
+        val history = ui.directorChat
+        _ui.update { it.copy(directorChat = history + DirectorMessage(true, message), directorChatBusy = true, directorChatError = "") }
+        viewModelScope.launch {
+            val result = runCatching { director.directorChat(profile, story, ui.characters, s, history, message) }
+            result.onSuccess { reply ->
+                if (reply.note.isNotBlank()) session = session?.let { it.copy(directorNotes = (it.directorNotes + reply.note).takeLast(MAX_DIRECTOR_NOTES)) }
+            }
+            _ui.update { cur -> result.fold(
+                { cur.copy(directorChat = cur.directorChat + it, directorChatBusy = false) },
+                { cur.copy(directorChatBusy = false, directorChatError = AiDirector.errorMessage(it)) }) }
+        }
+    }
+
+    fun removeDirectorNote(index: Int) {
+        session = session?.let { s -> s.copy(directorNotes = s.directorNotes.filterIndexed { i, _ -> i != index }) }
+    }
+
     /**
      * Keeps the finished chapter in its save, then continues in a new save that starts from [summary]:
      * character states, flags and variables carry over, the long history does not.
@@ -647,4 +680,8 @@ class PlayViewModel internal constructor(
 
     private fun toChoiceData(choice: AiChoice) = ChoiceData(choice.text, choice.next)
     private fun toAiChoice(choice: ChoiceData) = AiChoice(choice.text, choice.next)
+
+    private companion object {
+        const val MAX_DIRECTOR_NOTES = 10
+    }
 }

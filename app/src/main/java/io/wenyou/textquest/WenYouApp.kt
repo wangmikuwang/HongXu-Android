@@ -34,6 +34,7 @@ class WenYouApp : Application() {
             chatClient.baseline = library::currentBaseline
         }
         val shareInbox = io.wenyou.textquest.data.repo.ShareInbox(context)
+        val devMode = io.wenyou.textquest.data.repo.DevMode(context)
     }
 
     lateinit var container: AppContainer

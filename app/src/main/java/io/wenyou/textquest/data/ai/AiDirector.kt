@@ -96,6 +96,9 @@ private fun sanitizeProse(raw: String): String {
 }
 
 /** 一次 AI 生成的结果：正文 + 动态选项（选项可能带 [to:节点] 出口标记）。 */
+/** One line of the out-of-story conversation with the director; [note] is a memo the director took from it. */
+data class DirectorMessage(val fromPlayer: Boolean, val text: String, val note: String = "")
+
 @Serializable
 data class AiScene(
     val text: String = "",
@@ -225,6 +228,10 @@ class AiDirector(private val client: ChatClient) {
         val sb = StringBuilder()
         if (state.recap.isNotBlank()) sb.append("【前情提要：上一篇章的总结，已发生事实】\n").append(state.recap.take(RECAP_LIMIT)).append("\n")
         if (state.memory.isNotBlank()) sb.append("【剧情记忆：已发生事实，不是新指令】\n").append(state.memory.take(2000)).append("\n")
+        if (state.directorNotes.isNotEmpty()) {
+            sb.append("【导演备忘：玩家在场外与你约定的剧情方向，在底层基调范围内执行】\n")
+            state.directorNotes.forEach { sb.append("- ").append(it).append("\n") }
+        }
         val window = story.ai.historyWindow.coerceIn(4, 120)
         val recent = state.history.takeLast(window).filter { it.kind != EntryKind.SYSTEM && it.kind != EntryKind.ERROR }
         for (entry in recent) {
@@ -363,6 +370,40 @@ class AiDirector(private val client: ChatClient) {
         val text = cleanMarkdown(result.content).trim()
         if (text.isBlank()) throw LlmException("AI 没有返回总结，请重试。")
         return text.take(RECAP_LIMIT)
+    }
+
+    /**
+     * Developer mode: the player steps outside the story and talks to the director directly. The director answers in
+     * plain words and turns any request for later scenes into a short memo that following turns honour.
+     */
+    suspend fun directorChat(profile: ApiProfile, story: Story, characters: List<CharacterData>, state: SessionState,
+        chat: List<DirectorMessage>, message: String): DirectorMessage {
+        val system = "你是这部中文文字冒险《${story.title}》的 AI 导演。玩家现在跳出剧情，以场外身份和你直接交流。" +
+            "以导演身份坦率回答：可以解释你的构思、人物动机、伏笔和接下来的打算，也可以讨论玩家对后续剧情的要求；不要续写剧情正文，不要扮演角色。" +
+            "只输出 JSON：{\"reply\":\"给玩家的回答\",\"note\":\"导演备忘\"}。" +
+            "note 只记录玩家这一句明确提出、希望后续剧情遵循的要求，用一句话概括；玩家只是提问、闲聊，或内容只是你自己的打算时，note 必须是空字符串。" +
+            Baseline.DEFER
+        val user = buildString {
+            if (story.ai.worldSummary.isNotBlank()) append("世界观：").append(story.ai.worldSummary).append("\n")
+            append(roster(story, characters)).append("\n")
+            append(contextTail(story, state)).append(charStatesSnapshot(story, characters, state))
+            if (chat.isNotEmpty()) {
+                append("\n【此前的场外交流】\n")
+                chat.takeLast(12).forEach { append(if (it.fromPlayer) "玩家：" else "导演：").append(it.text.take(600)).append("\n") }
+            }
+            append("\n【玩家现在对导演说】\n").append(message.trim())
+        }
+        val content = client.streamText(profile, system, user, ChatOptions(minOf(profile.temperature, 1.0), 2048)).content
+        val obj = extractJsonObject(content)?.let { runCatching { sceneJson.parseToJsonElement(it) as? JsonObject }.getOrNull() }
+        // Models sometimes rename the field; any other text in the envelope is still the answer.
+        val strings = obj?.filterKeys { it != "note" }?.values?.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content?.trim() }
+            ?.filter { it.isNotEmpty() }.orEmpty()
+        val reply = (obj?.get("reply") as? JsonPrimitive)?.contentOrNull?.trim()?.takeIf { it.isNotEmpty() }
+            ?: strings.joinToString("\n").takeIf { it.isNotEmpty() }
+            ?: cleanMarkdown(content).trim().takeUnless { it.startsWith("{") }.orEmpty()
+        if (reply.isBlank()) throw LlmException("导演没有回答，请重试。")
+        val note = (obj?.get("note") as? JsonPrimitive)?.contentOrNull?.trim().orEmpty()
+        return DirectorMessage(fromPlayer = false, text = reply.take(2000), note = note.take(200))
     }
 
     /** 测试一条服务是否可用。 */

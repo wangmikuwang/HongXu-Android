@@ -309,7 +309,9 @@ data class SessionState(
     /** How quickly AI turns move the story: [ScenePace] name. */
     val pace: String = "NORMAL",
     /** Recap carried from the previous chapter; kept apart from [memory], which the AI rewrites every turn. */
-    val recap: String = ""
+    val recap: String = "",
+    /** Memos from talking to the director outside the story (developer mode); later turns follow them. */
+    val directorNotes: List<String> = emptyList()
 )
 
 enum class ScenePace(val label: String, val hint: String, val instruction: String) {
