@@ -82,11 +82,16 @@ private fun creationWire(root: JsonObject): JsonObject {
         }
         return JsonObject(global)
     }
+    // Flags carry no value, but models often add "value": true or null to flag effects and conditions.
+    fun MutableMap<String, JsonElement>.dropFlagValue() {
+        if ("flag" in (get("type") as? JsonPrimitive)?.content.orEmpty() && (get("value") as? JsonPrimitive)?.doubleOrNull == null) remove("value")
+    }
     fun action(value: JsonElement): JsonElement {
         val obj = value.jsonObject
         return JsonObject(obj.toMutableMap().apply {
             if (obj["type"]?.jsonPrimitive?.content == "variable") put("type", JsonPrimitive("add_var"))
             if ("name" !in obj && obj["target"] is JsonPrimitive) put("name", obj.getValue("target"))
+            dropFlagValue()
         })
     }
     fun actions(value: JsonElement) = JsonArray(value.jsonArray.map(::action))
@@ -96,6 +101,9 @@ private fun creationWire(root: JsonObject): JsonObject {
             put("choices", JsonArray(choices.jsonArray.map { choice ->
                 JsonObject(choice.jsonObject.toMutableMap().apply {
                     get("effects")?.takeUnless { it is JsonNull }?.let { put("effects", actions(it)) }
+                    get("conditions")?.takeUnless { it is JsonNull }?.let { conditions ->
+                        put("conditions", JsonArray(conditions.jsonArray.map { JsonObject(it.jsonObject.toMutableMap().apply { dropFlagValue() }) }))
+                    }
                 })
             }))
         }
@@ -143,7 +151,7 @@ class AiCreator(private val client: ChatClient) {
             nodes 用节点名作键，每个节点包括 kind(narration/ai/ending)、title、speakerId(人物名字或空旁白)、text、prompt、choices([{text,next,conditions,effects,hint}])、onEnter、endTarget。节点跳转使用真实节点名或 @self；条件/效果中的 charId 使用人物名字或空全局。默认 mode=ai_dm，nodes 只生成 1 个完整开场节点，后续由导演在游玩时续写；仅用户明确要求分支剧本时用 script，最多生成 8 个连贯节点含结局。保持每个节点简短，不展开多章或穷举所有分支。
             每个人物还必须补齐 colorIndex(0-11)、orientation(straight/gay/lesbian/bi/pan/asexual/unknown)、extraPrompt、bottomPrompt、bottomRules([{name,content}])、initial:{metrics:{affection,trust,mood,energy,health,fatigue,arousal},flags:[],description:"初始穿着与外观"}。状态数值 0-100。填充符合人设的内容，无适用条件或效果时用空列表。initialFlags 和 initial.flags 必须用字符串数组，例如 ["metInCafe"]，不要写 {"metInCafe":true}；false 标记不要放入数组。规则应具体贴合人物而非无关指令。
             条件格式必须为 {"type":"var","name":"trust","op":"gte","value":30,"charId":"人物名"}；type 只能是 flag_true/flag_false/var，op 只能是 eq/ne/gt/gte/lt/lte。
-            效果格式必须为 {"type":"add_var","name":"affection","value":5,"charId":"人物名"}；type 只能是 set_flag/clear_flag/set_var/add_var/random_var/roll，随机效果还包括 from/to。变量增减用 add_var、变量赋值用 set_var；禁止 type:"variable" 或 target 字段。旁白 speakerId 用空字符串。
+            效果格式必须为 {"type":"add_var","name":"affection","value":5,"charId":"人物名"}；set_flag/clear_flag 只写 type、name、charId，不写 value；type 只能是 set_flag/clear_flag/set_var/add_var/random_var/roll，随机效果还包括 from/to。变量增减用 add_var、变量赋值用 set_var；禁止 type:"variable" 或 target 字段。旁白 speakerId 用空字符串。
             人物名必须互不相同，创建 1–4 位重要人物，设定彼此一致。不要输出实体 UUID、服务配置或 API Key；节点名允许用于故事内部跳转。
             ${if (kind == CreationKind.STORY) "必须生成 story 与关联人物；worldSummary 300 字以内，opening 200 字以内，每个人设简明完整。" else "只创建用户描述的人物；story 必须为 null，人设包括性格、背景、说话习惯及示例台词。"}
             正确标注 lgbt 与 adult。${if (adultContent) "成人题材仅限成年人、自愿关系。" else "保持全年龄、非露骨，不生成成人题材。"}
@@ -223,7 +231,8 @@ class AiCreator(private val client: ChatClient) {
         val deepseek = runCatching { java.net.URI(profile.baseUrl).host?.lowercase() == "api.deepseek.com" }.getOrDefault(false)
         val nonThinking = deepseek && profile.kind == ProviderKind.OPENAI_COMPAT && profile.model in setOf("deepseek-flash", "deepseek-v4-pro")
         // Authoring needs a complete structured result rather than a separate thinking transcript.
-        val options = ChatOptions(profile.temperature, 8192, thinking = if (nonThinking) false else null)
+        // Above 1.0 models break long JSON (unterminated strings, stray tokens); creative profiles often run hotter.
+        val options = ChatOptions(minOf(profile.temperature, 1.0), 8192, thinking = if (nonThinking) false else null)
         var result = client.streamText(profile, system, user, options)
         if (extractJsonObject(result.content) == null && result.reasoning.isNotBlank() && deepseek &&
             profile.kind == ProviderKind.OPENAI_COMPAT && profile.model in setOf("deepseek-flash", "deepseek-v4-pro")) {

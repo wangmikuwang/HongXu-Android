@@ -42,6 +42,19 @@ class AiAuthoringTest {
         catch (e: IllegalStateException) { assertTrue(e.message!!.contains("创作格式")) }
     }
 
+    @Test fun flagEffectsAndConditionsIgnoreBooleanOrNullValues() {
+        // Seen from DeepSeek: {"type":"set_flag","name":"metInCafe","value":true} rejected whole creations.
+        val raw = full.replace("\"effects\":[{\"charId\":\"阿雨\",\"type\":\"add_var\",\"name\":\"trust\",\"value\":1}]",
+            "\"conditions\":[{\"type\":\"flag_true\",\"name\":\"rain\",\"value\":null}],\"effects\":[{\"type\":\"set_flag\",\"name\":\"met\",\"value\":true,\"charId\":\"\"}]")
+        val choice = creator.parse(raw, CreationKind.STORY).stories.single().nodes.getValue("start").choices.single()
+        assertEquals(EffectType.SET_FLAG, choice.effects.single().type)
+        assertEquals("met", choice.effects.single().name)
+        assertEquals("rain", choice.conditions.single().name)
+        // A variable action still needs a real number.
+        try { creator.parse(full.replace("\"value\":1}", "\"value\":true}"), CreationKind.STORY); fail("Non-numeric variable value must fail") }
+        catch (e: IllegalStateException) { assertTrue(e.message!!.contains("创作格式")) }
+    }
+
     @Test fun malformedFlagsAndUnknownActionTypesCannotSilentlyChangeTheStory() {
         for (raw in listOf(
             full.replace("\"initialFlags\":[\"rain\"]", "\"initialFlags\":{\"rain\":\"maybe\"}"),
