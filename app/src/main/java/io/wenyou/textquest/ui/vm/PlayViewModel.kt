@@ -19,6 +19,7 @@ import io.wenyou.textquest.data.model.CharacterState
 import io.wenyou.textquest.data.model.ChoiceData
 import io.wenyou.textquest.data.model.EntryKind
 import io.wenyou.textquest.data.model.LogEntry
+import io.wenyou.textquest.data.model.ScenePace
 import io.wenyou.textquest.data.model.NodeKind
 import io.wenyou.textquest.data.model.SaveSlot
 import io.wenyou.textquest.data.model.SessionState
@@ -37,6 +38,9 @@ import kotlinx.coroutines.launch
 import java.util.UUID
 
 enum class PlayStage { INIT, ROLE_SELECT, AUTHORED, DM_INPUT, AI_WORKING, STOPPED }
+
+/** A recap being prepared for the next chapter; the player can edit it before starting. */
+data class ChapterDraft(val summary: String = "", val busy: Boolean = true, val error: String = "")
 
 data class PlayUi(
     val story: Story? = null,
@@ -58,7 +62,8 @@ data class PlayUi(
     val saveName: String = "",
     val providers: List<ApiProfile> = emptyList(),
     val selectedProviderId: String? = null,
-    val achievementMessages: List<String> = emptyList()
+    val achievementMessages: List<String> = emptyList(),
+    val chapter: ChapterDraft? = null
 )
 
 /**
@@ -344,7 +349,6 @@ class PlayViewModel internal constructor(
                 val reasoning = ReasoningStream()
                 val scene = director.generateScene(profile, story, node, ui.characters, s,
                     adult = story.adult,
-                    bottomRules = library.bottomRules.value,
                     onReasoning = reasoning::append,
                     onDelta = { reasoning.flush() })
                 if (job.isActive && aiJob === job) {
@@ -493,7 +497,6 @@ class PlayViewModel internal constructor(
                 val reasoning = ReasoningStream()
                 val scene = director.directorTurn(profile, story, ui.characters, s, trimmed,
                     adult = story.adult,
-                    bottomRules = library.bottomRules.value,
                     onReasoning = reasoning::append,
                     onDelta = { reasoning.flush() })
                 if (job.isActive && aiJob === job) {
@@ -532,6 +535,64 @@ class PlayViewModel internal constructor(
             val createdAt = existing?.let { library.saves.value.firstOrNull { x -> x.id == it }?.createdAt } ?: now
             library.upsertSave(SaveSlot(id, name, createdAt, now, s))
             _ui.update { it.copy(activeSaveId = id, saveName = name, lastMessage = "已存档「$name」") }
+        }
+    }
+
+    fun setPace(pace: ScenePace) {
+        session = session?.copy(pace = pace.name)
+    }
+
+    /** Asks the AI for a recap of the journey so far; shown for review before a new chapter starts. */
+    fun draftChapter() {
+        val ui = _ui.value
+        val story = ui.story ?: return
+        val s = session ?: return
+        val profile = provider()
+        if (profile == null) {
+            _ui.update { it.copy(chapter = ChapterDraft(busy = false, error = "需要先接入一家 AI 服务才能生成总结。"), providerMissing = true) }
+            return
+        }
+        _ui.update { it.copy(chapter = ChapterDraft()) }
+        viewModelScope.launch {
+            val result = runCatching { director.summarize(profile, story, ui.characters, s) }
+            _ui.update { cur ->
+                val draft = cur.chapter ?: return@update cur
+                cur.copy(chapter = result.fold({ draft.copy(summary = it, busy = false, error = "") },
+                    { draft.copy(busy = false, error = AiDirector.errorMessage(it)) }))
+            }
+        }
+    }
+
+    fun dismissChapter() = _ui.update { it.copy(chapter = null) }
+
+    /**
+     * Keeps the finished chapter in its save, then continues in a new save that starts from [summary]:
+     * character states, flags and variables carry over, the long history does not.
+     */
+    fun startChapter(summary: String) {
+        val recap = summary.trim().take(AiDirector.RECAP_LIMIT)
+        val old = session ?: return
+        val ui = _ui.value
+        val story = ui.story ?: return
+        if (recap.isBlank() || !ui.aiMode) return
+        aiJob?.cancel()
+        aiJob = null
+        val now = System.currentTimeMillis()
+        val next = old.copy(history = listOf(LogEntry(EntryKind.NARRATION, text = "【前情提要】\n$recap", ts = now)),
+            memory = "", recap = recap, pendingAiChoices = emptyList(), aiAwaitingChoice = false, updatedAt = now)
+        val oldId = ui.activeSaveId ?: UUID.randomUUID().toString()
+        val oldName = ui.saveName.takeUnless(::isAutoSaveName) ?: autoSaveName(story.title, old.history.size)
+        val oldCreated = library.saves.value.firstOrNull { it.id == oldId }?.createdAt ?: now
+        val newId = UUID.randomUUID().toString()
+        val newName = "${story.title} · 新篇章"
+        session = next
+        _ui.update { it.copy(chapter = null, activeSaveId = newId, saveName = newName, pendingAiChoices = emptyList(),
+            stage = PlayStage.DM_INPUT, stoppedTitle = "", stoppedMessage = "") }
+        // One coroutine so the finished chapter is written before the new one.
+        launchLibraryWrite {
+            library.upsertSave(SaveSlot(oldId, oldName, oldCreated, now, old))
+            library.upsertSave(SaveSlot(newId, newName, now, now, next))
+            _ui.update { it.copy(lastMessage = "已开启新篇章；上一篇章已存档为「$oldName」") }
         }
     }
 

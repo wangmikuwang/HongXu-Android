@@ -270,21 +270,8 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
             }
 
             if (category == "rules") {
-                item { SectionHeader("角色规则") }
-                item {
-                    TonalCard {
-                        Text("底层基调", style = MaterialTheme.typography.labelLarge)
-                        Spacer(Modifier.height(6.dp))
-                        Text("角色优先遵守这些规则。在人物编辑中选择要应用的规则。",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Spacer(Modifier.height(10.dp))
-                        FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Button(onClick = { nav.navigate(R.bottomRuleEdit("new")) }) { Text("新建底层基调") }
-                            AppOutlinedButton(onClick = { nav.navigate(R.BOTTOM_RULES) }) { Text("管理底层基调") }
-                        }
-                    }
-                }
+                item { SectionHeader("AI 安全") }
+                item { BaselineCard(container) }
 
             }
 

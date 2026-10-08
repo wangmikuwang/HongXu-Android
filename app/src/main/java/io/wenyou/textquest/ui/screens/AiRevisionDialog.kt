@@ -84,8 +84,7 @@ internal fun CreationPreview(bundle: AppBundle) {
         io.wenyou.textquest.ui.common.RawText(c.tagline); Text("性取向：${c.orientation.label}")
         Text("性格：${c.personality}"); Text("背景：${c.background}")
         Text("说话方式：${c.speechStyle}"); Text("台词：${c.exampleDialogue}"); Text("招呼：${c.greeting}")
-        Text("附加人设：${c.extraPrompt}"); Text("底层基调：${c.bottomPrompt}")
-        bundle.bottomRules.filter { it.id in c.bottomRuleIds }.forEach { Text("${it.name}：${it.content}") }
+        Text("附加人设：${c.extraPrompt}")
         Text("初始外观：${c.initial.description}")
         io.wenyou.textquest.ui.common.RawText(c.initial.metrics.entries.joinToString(" · ") { "${CharacterMetrics.label(it.key)} ${it.value}" })
         Text("初始标记：${c.initial.flags.joinToString()}")

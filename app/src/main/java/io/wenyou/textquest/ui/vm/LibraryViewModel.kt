@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.wenyou.textquest.WenYouApp
 import io.wenyou.textquest.data.model.AppBundle
-import io.wenyou.textquest.data.model.BottomRule
 import io.wenyou.textquest.data.model.CharacterData
 import io.wenyou.textquest.data.model.SaveSlot
 import io.wenyou.textquest.data.model.SexualOrientation
@@ -152,29 +151,19 @@ class LibraryViewModel(container: WenYouApp.AppContainer) : ViewModel() {
 
     /** 生成一部剧情的分享码（含其引用的角色及其用到的底层基调；剧情不存在返回空串）。
      *
-     *  注意：仅打包「当前仍存在」且被剧情引用的角色，以及这些角色引用到的底层基调，
-     *  避免对方导入后出现空角色或悬空的底层基调 id。 */
+     *  注意：仅打包「当前仍存在」且被剧情引用的角色，
+     *  避免对方导入后出现空角色。 */
     fun shareCodeFor(storyId: String): String {
         val story = library.stories.value.firstOrNull { it.id == storyId } ?: return ""
         val chars = library.characters.value.filter { it.id in story.characterIds }
-        val rules = _rulesFor(chars)
         // Codes shared from this device are not offered back for import when copied.
-        return ShareCode.encode(AppBundle(characters = chars, stories = listOf(story), bottomRules = rules)).also { if (it.isNotBlank()) shareInbox.markHandled(it) }
+        return ShareCode.encode(AppBundle(characters = chars, stories = listOf(story))).also { if (it.isNotBlank()) shareInbox.markHandled(it) }
     }
 
-    /** 生成单个角色的分享码（角色不存在返回空串；附带其用到的底层基调）。 */
+    /** 生成单个角色的分享码（角色不存在返回空串）。 */
     fun shareCodeForCharacter(characterId: String): String {
         val c = library.characters.value.firstOrNull { it.id == characterId } ?: return ""
-        val rules = _rulesFor(listOf(c))
-        return ShareCode.encode(AppBundle(characters = listOf(c), bottomRules = rules)).also { if (it.isNotBlank()) shareInbox.markHandled(it) }
-    }
-
-    /** 取若干角色引用到的、且当前存在的底层基调（按 id 去重）。 */
-    private fun _rulesFor(chars: List<CharacterData>): List<BottomRule> {
-        val ruleIds = chars.flatMap { it.bottomRuleIds }.toSet()
-        if (ruleIds.isEmpty()) return emptyList()
-        val byId = library.bottomRules.value.associateBy { it.id }
-        return ruleIds.mapNotNull { byId[it] }
+        return ShareCode.encode(AppBundle(characters = listOf(c))).also { if (it.isNotBlank()) shareInbox.markHandled(it) }
     }
 
     /** 从分享码导入：只补不覆盖，结果通过 onResult 回调（主线程执行）。 */

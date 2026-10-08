@@ -53,7 +53,10 @@ class AiAuthoringUiTest {
     private fun client() = OkHttpClient.Builder().addInterceptor { chain ->
         val buffer = okio.Buffer(); chain.request().body!!.writeTo(buffer)
         val body = AppJson.parseToJsonElement(buffer.readUtf8()).jsonObject
-        val user = body.getValue("messages").jsonArray.last().jsonObject.getValue("content").jsonPrimitive.content
+        val sent = body.getValue("messages").jsonArray.last().jsonObject.getValue("content").jsonPrimitive.content
+        // Every request ends with the baseline restated; the mock reads only what the feature wrote.
+        assertTrue(sent.contains("【底层基调｜再次确认】"))
+        val user = sent.substringBefore("\n\n【底层基调｜再次确认】")
         val content = if (user.contains("原稿：")) {
             val original = AppJson.decodeFromString(AppBundle.serializer(), user.substringAfter("原稿："))
             assertTrue(original.providers.isEmpty()); assertTrue(original.saves.isEmpty())
@@ -194,7 +197,6 @@ class AiAuthoringUiTest {
             assertEquals(1.0, effect.value, 0.0)
             assertEquals("尊重选择", story.ai.directorExtra)
             assertEquals(container.library.characters.value.single().id, story.characterIds.single())
-            assertEquals(container.library.bottomRules.value.single().id, container.library.characters.value.single().bottomRuleIds.single())
         } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
     }
 
@@ -454,7 +456,7 @@ class AiAuthoringUiTest {
                 compose.onNodeWithText("默认服务").assertDoesNotExist()
                 compose.onNodeWithContentDescription("返回").performClick()
                 compose.onNodeWithTag("settings-rules").performClick()
-                compose.onNodeWithText("管理底层基调").assertIsDisplayed()
+                compose.onNodeWithTag("baseline-field").assertIsDisplayed()
                 compose.onNodeWithContentDescription("返回").performClick()
                 compose.onNodeWithTag("settings-appearance").performClick()
                 compose.onNodeWithText("界面风格").assertIsDisplayed()

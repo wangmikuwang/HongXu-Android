@@ -80,6 +80,12 @@ data class ChatResult(val content: String, val reasoning: String)
 /** 一个响应帧可以同时包含正文和思考。 */
 private data class Delta(val content: String = "", val reasoning: String = "")
 class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = UsageTracker()) {
+    /**
+     * The player's baseline (底层基调). Every request is built in [streamText], which always wraps it around the
+     * prompt, so no feature can send AI text without it.
+     */
+    @Volatile var baseline: () -> String = { io.wenyou.textquest.data.repo.Baseline.DEFAULT }
+
 
     private val client = ok
 
@@ -103,7 +109,8 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
         // 推理模型（如 deepseek-reasoner）思考耗时更长，放宽超时
         val timeoutMs = if (profile.model.contains("reasoner", ignoreCase = true)) 150_000L else 90_000L
         try {
-            call = buildCall(profile, system, user, options)
+            val (guardedSystem, guardedUser) = io.wenyou.textquest.data.repo.Baseline.guard(baseline(), system, user)
+            call = buildCall(profile, guardedSystem, guardedUser, options)
             val requestCall = call
             val result = withTimeout(timeoutMs) {
                 suspendCancellableCoroutine<ChatResult> { cont ->

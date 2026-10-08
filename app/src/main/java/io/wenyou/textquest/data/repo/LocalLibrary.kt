@@ -4,7 +4,6 @@ import android.content.Context
 import io.wenyou.textquest.data.model.ApiProfile
 import io.wenyou.textquest.data.model.AppBundle
 import io.wenyou.textquest.data.model.AppJson
-import io.wenyou.textquest.data.model.BottomRule
 import io.wenyou.textquest.data.model.CharacterData
 import io.wenyou.textquest.data.model.SaveSlot
 import io.wenyou.textquest.data.model.Story
@@ -52,24 +51,27 @@ class LocalLibrary internal constructor(private val dir: File) {
     private val charactersFile = File(dir, "characters.json")
     private val storiesFile = File(dir, "stories.json")
     private val savesFile = File(dir, "saves.json")
-    private val bottomRulesFile = File(dir, "bottom_rules.json")
+    private val baselineFile = File(dir, "baseline.txt")
     private val achievementsFile = File(dir, "achievements.json")
     private val progressFile = File(dir, "progress.json")
     // A finite achievement write belongs to the library, so leaving a play screen cannot cancel it.
     private val achievementScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // Runs before the lists below are read so folded-in legacy rules land in the files they load.
+    private val _baseline = MutableStateFlow(Baseline.migrate(dir, baselineFile))
     private val _providers = MutableStateFlow(readList(providersFile, ApiProfile.serializer()))
     private val _characters = MutableStateFlow(readList(charactersFile, CharacterData.serializer()))
     private val _stories = MutableStateFlow(readList(storiesFile, Story.serializer()))
     private val _saves = MutableStateFlow(readList(savesFile, SaveSlot.serializer()))
-    private val _bottomRules = MutableStateFlow(readList(bottomRulesFile, BottomRule.serializer()))
     private val _achievements = MutableStateFlow(Achievements.merge(emptyList(), readList(achievementsFile, AchievementRecord.serializer()), System.currentTimeMillis()))
 
     val providers: StateFlow<List<ApiProfile>> = _providers.asStateFlow()
     val characters: StateFlow<List<CharacterData>> = _characters.asStateFlow()
     val stories: StateFlow<List<Story>> = _stories.asStateFlow()
     val saves: StateFlow<List<SaveSlot>> = _saves.asStateFlow()
-    val bottomRules: StateFlow<List<BottomRule>> = _bottomRules.asStateFlow()
+    /** The one baseline every AI request carries; see [Baseline]. */
+    val baseline: StateFlow<String> = _baseline.asStateFlow()
+    fun currentBaseline(): String = _baseline.value.ifBlank { Baseline.DEFAULT }
     val achievements: StateFlow<List<AchievementRecord>> = _achievements.asStateFlow()
     private val _progress = MutableStateFlow(readList(progressFile, StoryProgress.serializer()))
     /** Branch nodes reached per story, shown on the branch map. */
@@ -151,22 +153,11 @@ class LocalLibrary internal constructor(private val dir: File) {
         }
     }
 
-    suspend fun upsertBottomRule(r: BottomRule) = write {
-        _bottomRules.value = replaceById(_bottomRules.value, r.id, r).also {
-            persistList(bottomRulesFile, it, BottomRule.serializer())
-        }
-    }
-
-    suspend fun deleteBottomRule(id: String) = write {
-        _bottomRules.value = _bottomRules.value.filterNot { it.id == id }.also {
-            persistList(bottomRulesFile, it, BottomRule.serializer())
-        }
-        // 同时从所有角色上摘除对该规则的引用，避免留下悬空 id
-        if (_characters.value.any { r -> id in r.bottomRuleIds }) {
-            _characters.value = _characters.value.map { c ->
-                if (id in c.bottomRuleIds) c.copy(bottomRuleIds = c.bottomRuleIds - id) else c
-            }.also { persistList(charactersFile, it, CharacterData.serializer()) }
-        }
+    /** Blank restores the default, so AI generation is never left without a baseline. */
+    suspend fun setBaseline(text: String) = write {
+        val value = text.trim().take(Baseline.MAX_LENGTH).ifBlank { Baseline.DEFAULT }
+        atomicWrite(baselineFile) { value }
+        _baseline.value = value
     }
 
     // ---------------- 批量/导入导出 ----------------
@@ -177,7 +168,7 @@ class LocalLibrary internal constructor(private val dir: File) {
         characters = _characters.value,
         stories = _stories.value,
         saves = _saves.value,
-        bottomRules = _bottomRules.value,
+        baseline = _baseline.value,
         achievements = _achievements.value,
         progress = _progress.value,
         origin = io.wenyou.textquest.BuildConfig.SHARE_ORIGIN
@@ -192,8 +183,12 @@ class LocalLibrary internal constructor(private val dir: File) {
         _stories.value = bundle.stories
         persistList(savesFile, bundle.saves, SaveSlot.serializer())
         _saves.value = bundle.saves
-        persistList(bottomRulesFile, bundle.bottomRules, BottomRule.serializer())
-        _bottomRules.value = bundle.bottomRules
+        // Only the player's own backups carry a baseline; shared content never reaches here.
+        if (bundle.baseline.isNotBlank()) {
+            val value = bundle.baseline.trim().take(Baseline.MAX_LENGTH)
+            atomicWrite(baselineFile) { value }
+            _baseline.value = value
+        }
         val merged = Achievements.merge(_achievements.value, bundle.achievements, System.currentTimeMillis())
         if (merged != _achievements.value) {
             persistList(achievementsFile, merged, AchievementRecord.serializer())
@@ -206,7 +201,7 @@ class LocalLibrary internal constructor(private val dir: File) {
             persistList(progressFile, progress, StoryProgress.serializer())
             _progress.value = progress
         }
-        bundle.providers.size + bundle.characters.size + bundle.stories.size + bundle.saves.size + bundle.bottomRules.size
+        bundle.providers.size + bundle.characters.size + bundle.stories.size + bundle.saves.size
     }
 
     data class SharedImportResult(val added: Int, val existing: Int)
@@ -217,21 +212,17 @@ class LocalLibrary internal constructor(private val dir: File) {
         val newChars = bundle.characters.filter { charIds.add(it.id) }
         val storyIds = _stories.value.mapTo(mutableSetOf()) { it.id }
         val newStories = bundle.stories.filter { storyIds.add(it.id) }
-        val ruleIds = _bottomRules.value.mapTo(mutableSetOf()) { it.id }
-        val newRules = bundle.bottomRules.filter { ruleIds.add(it.id) }
-        if (newChars.isNotEmpty() || newStories.isNotEmpty() || newRules.isNotEmpty()) {
+        // Shared content never changes the baseline.
+        if (newChars.isNotEmpty() || newStories.isNotEmpty()) {
             val chars = _characters.value + newChars
             val stories = _stories.value + newStories
-            val rules = _bottomRules.value + newRules
             persistList(charactersFile, chars, CharacterData.serializer())
             _characters.value = chars
             persistList(storiesFile, stories, Story.serializer())
             _stories.value = stories
-            persistList(bottomRulesFile, rules, BottomRule.serializer())
-            _bottomRules.value = rules
         }
-        val added = newChars.size + newStories.size + newRules.size
-        SharedImportResult(added, bundle.characters.size + bundle.stories.size + bundle.bottomRules.size - added)
+        val added = newChars.size + newStories.size
+        SharedImportResult(added, bundle.characters.size + bundle.stories.size - added)
     }
 
     // ---------------- 内部工具 ----------------
@@ -244,7 +235,6 @@ class LocalLibrary internal constructor(private val dir: File) {
                 is CharacterData -> it.id == id
                 is Story -> it.id == id
                 is SaveSlot -> it.id == id
-                is BottomRule -> it.id == id
                 is StoryProgress -> it.storyId == id
                 else -> false
             }
@@ -253,10 +243,14 @@ class LocalLibrary internal constructor(private val dir: File) {
         return out
     }
 
-    private fun <T> persistList(file: File, list: List<T>, serializer: kotlinx.serialization.KSerializer<T>) {
+    private fun <T> persistList(file: File, list: List<T>, serializer: kotlinx.serialization.KSerializer<T>) =
+        atomicWrite(file) { AppJson.encodeToString(ListSerializer(serializer), list) }
+
+    /** Encoding runs inside the guard so serialization failures are reported like disk failures. */
+    private fun atomicWrite(file: File, encode: () -> String) {
         var pending: File? = null
         try {
-            val text = AppJson.encodeToString(ListSerializer(serializer), list)
+            val text = encode()
             val temp = File.createTempFile(file.name, ".pending", dir)
             pending = temp
             FileOutputStream(temp).use {

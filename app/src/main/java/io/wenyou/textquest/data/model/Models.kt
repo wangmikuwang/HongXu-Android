@@ -99,19 +99,6 @@ enum class ContentClass(val label: String) {
     @SerialName("adult") ADULT("18+")
 }
 
-/**
- * 底层基调（不可动摇规则）：独立、可复用的规则实体。
- * 一个底层基调可被多个角色选择执行；角色扮演时先执行它，再按人设扮演，冲突时以此层为准。
- */
-@Serializable
-data class BottomRule(
-    val id: String,
-    val name: String,
-    val content: String,
-    val createdAt: Long = 0L,
-    val updatedAt: Long = 0L
-)
-
 /** 角色卡：性格/说话方式/背景会注入到 AI 人设与叙事系统提示中，
  * 在作者自编节点中则由 [speakerId] 决定气泡归属（纯离线也能用）。 */
 @Serializable
@@ -128,10 +115,6 @@ data class CharacterData(
     val greeting: String = "",
     /** 附加人设提示语（高优先级）：拼接系统提示时排在最前，用于强化身份/世界观/规则。 */
     val extraPrompt: String = "",
-    /** 底层基调提示语：拼接系统提示时位于该角色人设最底，用于放“不可动摇”的底层规则；留空则不注入。 */
-    val bottomPrompt: String = "",
-    /** 该角色要执行的「底层基调」实体 id 列表（与 [bottomPrompt] 叠加注入，均置于人设最底）。 */
-    val bottomRuleIds: List<String> = emptyList(),
     /** 初始状态（开局新会话沿用；可在角色编辑器调整，对局中由 AI 导演实时更新）。 */
     val initial: CharacterState = CharacterState(),
     /** 性取向（角色库分类用）。 */
@@ -322,8 +305,22 @@ data class SessionState(
     val aiTurns: Int = 0,
     /** Player identity snapshot, retained by saves even if the character is later removed. */
     val playerCharacterId: String = "",
-    val playerCharacterName: String = ""
+    val playerCharacterName: String = "",
+    /** How quickly AI turns move the story: [ScenePace] name. */
+    val pace: String = "NORMAL",
+    /** Recap carried from the previous chapter; kept apart from [memory], which the AI rewrites every turn. */
+    val recap: String = ""
 )
+
+enum class ScenePace(val label: String, val hint: String, val instruction: String) {
+    SLOW("慢", "细腻描写，一次只推进一个片刻", "本轮放慢节奏：只推进一个很小的动作或片刻，着重细节、感官描写、人物神态与对话往来；不跳过时间，不引入新的重大事件。"),
+    NORMAL("标准", "叙述与推进均衡", ""),
+    FAST("快", "略过过渡，直奔下一个关键事件", "本轮加快节奏：明显推进剧情，可略过过渡与琐碎细节、适当跳过时间，直接进入下一个关键事件或转折；叙述简洁。");
+
+    companion object {
+        fun of(name: String) = entries.firstOrNull { it.name == name } ?: NORMAL
+    }
+}
 
 @Serializable
 data class SaveSlot(
@@ -346,7 +343,8 @@ data class AppBundle(
     val characters: List<CharacterData> = emptyList(),
     val stories: List<Story> = emptyList(),
     val saves: List<SaveSlot> = emptyList(),
-    val bottomRules: List<BottomRule> = emptyList(),
+    /** The player's baseline (底层基调), carried only by their own full backups, never by shared content. */
+    val baseline: String = "",
     val achievements: List<AchievementRecord> = emptyList(),
     /** Branch nodes reached per story; older backups simply omit it. */
     val progress: List<StoryProgress> = emptyList(),

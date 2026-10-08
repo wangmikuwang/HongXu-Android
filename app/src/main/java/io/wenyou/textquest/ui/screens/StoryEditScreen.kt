@@ -91,7 +91,6 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
         factory = Vms.factory { StoryEditorViewModel(if (storyId == "new") null else storyId, container) }
     )
     val ui by vm.ui.collectAsStateWithLifecycle()
-    val bottomRules by container.library.bottomRules.collectAsStateWithLifecycle()
     val story = ui.story
     var revisionOpen by remember { mutableStateOf(false) }
     var treeOpen by remember { mutableStateOf(false) }
@@ -108,7 +107,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
 
     if (revisionOpen && story != null) AiRevisionDialog(container,
         io.wenyou.textquest.data.model.AppBundle(stories = listOf(story),
-            characters = ui.characters.filter { it.id in story.characterIds }, bottomRules = bottomRules),
+            characters = ui.characters.filter { it.id in story.characterIds }),
         onApply = vm::applyRevision, onDismiss = { revisionOpen = false })
 
     Scaffold(

@@ -77,8 +77,7 @@ class AiAuthoringTest {
         assertEquals(c.id, s.nodes.getValue("start").choices.single().effects.single().charId)
         assertEquals("end", s.nodes.getValue("start").choices.single().next)
         assertEquals("灰色风衣", c.initial.description); assertEquals(7, c.initial.metrics.size)
-        assertEquals("坚持既有身份", c.extraPrompt); assertEquals("不伤害无辜", c.bottomPrompt)
-        assertEquals(draft.bottomRules.single().id, c.bottomRuleIds.single())
+        assertEquals("坚持既有身份", c.extraPrompt)
     }
 
     @Test fun revisionPreservesIdsAndUnmentionedFields() {
@@ -92,7 +91,6 @@ class AiAuthoringTest {
         assertEquals("end", revised.stories.single().nodes.getValue("start").choices.single().next)
         assertEquals("请进", revised.stories.single().nodes.getValue("start").text)
         assertEquals(c.copy(initial = c.initial.copy(metrics = c.initial.metrics + ("trust" to 60.0))), revised.characters.single())
-        assertEquals(original.bottomRules, revised.bottomRules)
     }
 
     @Test fun badPatchesCannotChangeIdentityOrBreakLinksOrContentPreferences() {

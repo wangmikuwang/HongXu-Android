@@ -8,7 +8,6 @@ import io.wenyou.textquest.data.llm.ProviderPreset
 import io.wenyou.textquest.data.model.ApiProfile
 import io.wenyou.textquest.data.model.AppBundle
 import io.wenyou.textquest.data.model.AppJson
-import io.wenyou.textquest.data.model.BottomRule
 import io.wenyou.textquest.data.model.CharacterData
 import io.wenyou.textquest.data.model.CharacterMetrics
 import io.wenyou.textquest.data.model.ProviderKind
@@ -34,8 +33,7 @@ data class CharacterEditorState(
     val char: CharacterData? = null,
     val isNew: Boolean = true,
     val message: String = "",
-    val flagsText: String = "",
-    val availableRules: List<BottomRule> = emptyList()
+    val flagsText: String = ""
 )
 
 class CharacterEditorViewModel(
@@ -49,7 +47,6 @@ class CharacterEditorViewModel(
     val ui: StateFlow<CharacterEditorState> = _ui.asStateFlow()
 
     init {
-        _ui.update { it.copy(availableRules = library.bottomRules.value) }
         if (charId != null) {
             val c = library.characters.value.firstOrNull { it.id == charId }
             if (c == null) _ui.update { it.copy(message = "未找到该角色") }
@@ -85,8 +82,6 @@ class CharacterEditorViewModel(
     fun setBackground(v: String) = update { it.copy(background = v) }
     fun setExample(v: String) = update { it.copy(exampleDialogue = v) }
     fun setExtraPrompt(v: String) = update { it.copy(extraPrompt = v) }
-    fun setBottomPrompt(v: String) = update { it.copy(bottomPrompt = v) }
-    fun setBottomRuleIds(ids: List<String>) = update { it.copy(bottomRuleIds = ids) }
     fun setGreeting(v: String) = update { it.copy(greeting = v) }
 
     fun setInitialMetric(key: String, v: Double) = update {
@@ -309,81 +304,6 @@ class ProviderEditorViewModel(
 }
 
 // ---------------- 底层基调 ----------------
-
-data class BottomRuleEditorState(
-    val rule: BottomRule? = null,
-    val isNew: Boolean = true,
-    val message: String = ""
-)
-
-class BottomRulesViewModel(container: WenYouApp.AppContainer) : ViewModel() {
-    private val library: LocalLibrary = container.library
-    private val _rules = MutableStateFlow(library.bottomRules.value)
-    val rules: StateFlow<List<BottomRule>> = _rules.asStateFlow()
-
-    init {
-        viewModelScope.launch { library.bottomRules.collect { _rules.value = it } }
-    }
-
-    fun delete(id: String) = launchLibraryWrite { library.deleteBottomRule(id) }
-}
-
-class BottomRuleEditorViewModel(
-    private val ruleId: String?,
-    container: WenYouApp.AppContainer
-) : ViewModel() {
-
-    private val library: LocalLibrary = container.library
-
-    private val _ui = MutableStateFlow(BottomRuleEditorState(isNew = ruleId == null))
-    val ui: StateFlow<BottomRuleEditorState> = _ui.asStateFlow()
-
-    init {
-        if (ruleId != null) {
-            val r = library.bottomRules.value.firstOrNull { it.id == ruleId }
-            if (r == null) _ui.update { it.copy(message = "未找到该底层基调") }
-            else _ui.update { it.copy(rule = r, isNew = false) }
-        } else {
-            _ui.update { it.copy(rule = BottomRule(id = UUID.randomUUID().toString(), name = "", content = "")) }
-        }
-    }
-
-    private fun current() = _ui.value.rule ?: BottomRule(id = UUID.randomUUID().toString(), name = "", content = "")
-    private fun update(t: (BottomRule) -> BottomRule) = _ui.update { it.copy(rule = t(it.rule ?: current())) }
-
-    fun setName(v: String) = update { it.copy(name = v) }
-    fun setContent(v: String) = update { it.copy(content = v) }
-
-    fun save() {
-        val r = _ui.value.rule ?: current()
-        if (r.name.isBlank()) {
-            _ui.update { it.copy(message = "底层基调需要一个名字") }
-            return
-        }
-        if (r.content.isBlank()) {
-            _ui.update { it.copy(message = "请填写底层基调的内容（不可动摇规则）") }
-            return
-        }
-        val now = System.currentTimeMillis()
-        val toSave = r.copy(
-            id = r.id.ifBlank { UUID.randomUUID().toString() },
-            createdAt = if (r.createdAt == 0L) now else r.createdAt,
-            updatedAt = now
-        )
-        viewModelScope.launch {
-            try {
-                library.upsertBottomRule(toSave)
-                _ui.update { it.copy(message = "已保存「${toSave.name}」", isNew = false) }
-            } catch (e: CancellationException) {
-                throw e
-            } catch (t: Exception) {
-                _ui.update { it.copy(message = "保存失败：${t.message}") }
-            }
-        }
-    }
-}
-
-// ---------------- 设置 ----------------
 
 data class SettingsUi(
     val prideUnlocked: Boolean = false,

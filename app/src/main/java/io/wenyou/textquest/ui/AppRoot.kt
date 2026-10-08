@@ -71,8 +71,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import io.wenyou.textquest.WenYouApp
-import io.wenyou.textquest.ui.screens.BottomRuleEditScreen
-import io.wenyou.textquest.ui.screens.BottomRulesScreen
 import io.wenyou.textquest.ui.screens.CharacterEditScreen
 import io.wenyou.textquest.ui.screens.CharactersScreen
 import io.wenyou.textquest.ui.screens.HomeScreen
@@ -107,14 +105,11 @@ object R {
     const val CHAR_EDIT = "char_edit/{$ARG_CHAR}"
     const val PROVIDER_EDIT = "provider_edit/{$ARG_PROVIDER}"
     const val PLAY = "play/{$ARG_STORY}/{$ARG_SAVE}"
-    const val BOTTOM_RULES = "bottom_rules"
-    const val BOTTOM_RULE_EDIT = "bottom_rule_edit/{$ARG_RULE}"
 
     fun storyEdit(id: String) = "story_edit/$id"
     fun charEdit(id: String) = "char_edit/$id"
     fun providerEdit(id: String) = "provider_edit/$id"
     fun play(storyId: String, saveId: String = "new") = "play/$storyId/$saveId"
-    fun bottomRuleEdit(id: String) = "bottom_rule_edit/$id"
 
     val HUB_ROUTES = listOf(HOME, STORIES, CREATE, CHARACTERS, SETTINGS)
     val HUBS = HUB_ROUTES.toSet()
@@ -205,14 +200,6 @@ fun WenYouAppRoot(container: WenYouApp.AppContainer, updateVm: AppUpdateViewMode
                         PrideGallery(prefs.prideThemesUnlocked, prefs.prideThemesEnabled, prefs.showLgbt,
                             container.settings::unlockPrideThemes, container.settings::setPrideThemesEnabled,
                             container.settings::setShowLgbt, container.settings::setPrideTheme, { nav.popBackStack() }, prefs.prideTheme)
-                    }
-                    composable(R.BOTTOM_RULES) { BottomRulesScreen(container, nav) }
-                    composable(
-                        R.BOTTOM_RULE_EDIT,
-                        arguments = listOf(navArgument(R.ARG_RULE) { type = NavType.StringType })
-                    ) { entry ->
-                        val id = entry.arguments?.getString(R.ARG_RULE) ?: "new"
-                        BottomRuleEditScreen(container, nav, ruleId = id)
                     }
                     composable(
                         R.PLAY,

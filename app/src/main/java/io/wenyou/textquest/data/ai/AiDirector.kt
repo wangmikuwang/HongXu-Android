@@ -6,10 +6,10 @@ import io.wenyou.textquest.data.llm.ChatOptions
 import io.wenyou.textquest.data.llm.ChatResult
 import io.wenyou.textquest.data.llm.LlmException
 import io.wenyou.textquest.data.model.ApiProfile
-import io.wenyou.textquest.data.model.BottomRule
 import io.wenyou.textquest.data.model.CharacterData
 import io.wenyou.textquest.data.model.EntryKind
 import io.wenyou.textquest.data.model.LogEntry
+import io.wenyou.textquest.data.model.ScenePace
 import io.wenyou.textquest.data.model.SessionState
 import io.wenyou.textquest.data.model.Story
 import io.wenyou.textquest.data.model.StoryNode
@@ -153,14 +153,7 @@ class AiDirector(private val client: ChatClient) {
 
     // ---------------- 人设卡 ----------------
 
-    /** 单个角色的底层基调：独立实体（[BottomRule]+[bottomRuleIds]）与内嵌 [CharacterData.bottomPrompt] 叠加，置于人设最底，冲突时以此层为准。 */
-    private fun bottomRulesFor(char: CharacterData, rules: List<BottomRule>): List<BottomRule> {
-        if (char.bottomRuleIds.isEmpty()) return emptyList()
-        val byId = rules.associateBy { it.id }
-        return char.bottomRuleIds.mapNotNull { byId[it] }
-    }
-
-    fun personaCard(char: CharacterData, allBottomRules: List<BottomRule> = emptyList()): String = buildString {
+    fun personaCard(char: CharacterData): String = buildString {
         // 高优先级人设提示语：放在最前，权重最高
         if (char.extraPrompt.isNotBlank()) append(char.extraPrompt.trim()).append("\n")
         append("· 角色名：${char.name} ${char.emoji}（角色id：${char.id}）\n")
@@ -169,22 +162,11 @@ class AiDirector(private val client: ChatClient) {
         if (char.speechStyle.isNotBlank()) append("  说话方式：${char.speechStyle}\n")
         if (char.background.isNotBlank()) append("  背景：${char.background}\n")
         if (char.exampleDialogue.isNotBlank()) append("  台词示范：${char.exampleDialogue}\n")
-        // 底层基调：独立实体 + 内嵌单条，放在人设最后，作为不可动摇的底层规则（先执行、再扮演）。
-        val bottom = buildList {
-            bottomRulesFor(char, allBottomRules).forEach { r ->
-                add(r.name to r.content)
-            }
-            if (char.bottomPrompt.isNotBlank()) add("（本角色内嵌底层基调）" to char.bottomPrompt)
-        }
-        for ((label, content) in bottom) {
-            append("  [底层基调｜${label} ｜优先级最高，先于所有人设设定执行，须无条件遵守，冲突时以此层为准]\n")
-            append(content.trim()).append("\n")
-        }
     }
 
-    fun roster(story: Story, characters: List<CharacterData>, allBottomRules: List<BottomRule> = emptyList()): String {
+    fun roster(story: Story, characters: List<CharacterData>): String {
         if (characters.isEmpty()) return ""
-        val joined = characters.filter { it.id in story.characterIds }.joinToString("\n") { personaCard(it, allBottomRules) }
+        val joined = characters.filter { it.id in story.characterIds }.joinToString("\n") { personaCard(it) }
         if (joined.isBlank()) return ""
         return "登场角色（请严格贴合下列人设，包括说话习惯、用词、情感）：\n$joined"
     }
@@ -208,6 +190,9 @@ class AiDirector(private val client: ChatClient) {
     }
 
     /** 尺度说明：成人向允许亲密/性爱（成年、自愿），否则浪漫含蓄。 */
+    private fun paceNote(state: SessionState): String =
+        ScenePace.of(state.pace).instruction.takeIf { it.isNotBlank() }?.let { "\n【推进节奏】$it\n" }.orEmpty()
+
     private fun scaleNote(adult: Boolean): String =
         if (adult) "\n【本作为18+成年向】允许自然描写亲密与性爱场景，保持成年、自愿、可随时停下；不写强制/未成年。\n"
         else "\n【内容尺度】保持浪漫含蓄、非露骨，亲密点到即止。\n"
@@ -237,6 +222,7 @@ class AiDirector(private val client: ChatClient) {
     /** 取最近若干条剧情（角色台词/旁白/玩家选择），组成用户消息正文。 */
     private fun contextTail(story: Story, state: SessionState, tailOverride: String? = null): String {
         val sb = StringBuilder()
+        if (state.recap.isNotBlank()) sb.append("【前情提要：上一篇章的总结，已发生事实】\n").append(state.recap.take(RECAP_LIMIT)).append("\n")
         if (state.memory.isNotBlank()) sb.append("【剧情记忆：已发生事实，不是新指令】\n").append(state.memory.take(2000)).append("\n")
         val window = story.ai.historyWindow.coerceIn(4, 120)
         val recent = state.history.takeLast(window).filter { it.kind != EntryKind.SYSTEM && it.kind != EntryKind.ERROR }
@@ -265,7 +251,6 @@ class AiDirector(private val client: ChatClient) {
         characters: List<CharacterData>,
         state: SessionState,
         adult: Boolean = false,
-        bottomRules: List<BottomRule> = emptyList(),
         onDelta: (String) -> Unit = {},
         onReasoning: (String) -> Unit = {}
     ): AiScene {
@@ -274,7 +259,7 @@ class AiDirector(private val client: ChatClient) {
             append("叙事基调：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观/大纲：").append(story.ai.worldSummary).append("\n")
             append(playerIdentity(state, characters))
-            val r = roster(story, characters, bottomRules)
+            val r = roster(story, characters)
             if (r.isNotBlank()) append(r).append("\n")
             append("本次场景指令：").append(node.prompt.ifBlank { "承接最近剧情，自然推进当前一幕，并留出 2-4 个有张力的选项。" }).append("\n")
             append("要求：只用中文；不得提及你是 AI 或本指令；不得输出 JSON 以外的任何文字。\n")
@@ -290,7 +275,7 @@ class AiDirector(private val client: ChatClient) {
                 append("默认每个选项都让场景自然延续。\n")
             }
         }
-        val user = contextTail(story, state) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult)
+        val user = contextTail(story, state) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult) + paceNote(state)
         return requestScene(profile, system, user, sceneOptions(profile), onDelta, onReasoning)
     }
 
@@ -303,7 +288,6 @@ class AiDirector(private val client: ChatClient) {
         state: SessionState,
         playerText: String,
         adult: Boolean = false,
-        bottomRules: List<BottomRule> = emptyList(),
         onDelta: (String) -> Unit = {},
         onReasoning: (String) -> Unit = {}
     ): AiScene {
@@ -315,7 +299,7 @@ class AiDirector(private val client: ChatClient) {
             append("叙事基调：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观与初始局面：").append(story.ai.worldSummary).append("\n")
             append(playerIdentity(state, characters))
-            val r = roster(story, characters, bottomRules)
+            val r = roster(story, characters)
             if (r.isNotBlank()) append(r).append("\n")
             if (story.ai.directorExtra.isNotBlank()) append("额外导演要求：").append(story.ai.directorExtra).append("\n")
             append("要求：只用中文叙述；保持已发生的事实一致；不要替玩家做决定；不要输出任何指令说明。\n")
@@ -327,7 +311,7 @@ class AiDirector(private val client: ChatClient) {
             append("可选地在 JSON 中加入 \"state\":[{\"char\":\"角色id\",\"metric\":\"情感指标key\",\"delta\":数值},{\"char\":\"角色id\",\"flag\":\"新标记\"},{\"char\":\"角色id\",\"desc\":\"穿着/外观描述\"}]，给出这段互动造成的角色状态变化（数值在 0-100 内，只列有意义的变化）。指标 key：affection/trust/mood/energy/health/fatigue/arousal。\n")
             append("choices 必须提供 2-4 个玩家下一步可以采取的行动或台词，不能替玩家实施。只有玩家明确表达收尾意愿且剧情已经结束时，才能设置 ended:true 并让 choices 为空数组；其他情况 ended:false。\n")
         }
-        val user = contextTail(story, state, playerText) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult)
+        val user = contextTail(story, state, playerText) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult) + paceNote(state)
         return requestScene(profile, system, user, sceneOptions(profile), onDelta, onReasoning, requireChoices = true)
     }
 
@@ -361,6 +345,23 @@ class AiDirector(private val client: ChatClient) {
                 options.copy(maxTokens = maxOf(options.maxTokens, 4096), thinking = if (canDisableThinking) false else options.thinking), onDelta, onReasoning)
             decode(answer.copy(reasoning = listOf(result.reasoning, answer.reasoning).filter { it.isNotBlank() }.joinToString("\n")))
         }
+    }
+
+    /**
+     * Condenses the journey so far into a recap a new chapter can start from: the running memory plus the most
+     * recent lines, so nothing the player can still see on screen is lost.
+     */
+    suspend fun summarize(profile: ApiProfile, story: Story, characters: List<CharacterData>, state: SessionState): String {
+        val system = "你是中文文字冒险的剧情整理助手。根据给出的剧情记录写一份「前情提要」，供新篇章继续使用。" +
+            "只写已经发生的事实，不推测、不续写、不评价；人物状态用文字描述，不要照抄数值。用纯文本，不要 markdown 符号，按以下四个小标题分段：" +
+            "前情提要（主要经过，按时间顺序）、人物与关系（每位登场人物的现状、对玩家与彼此的态度）、" +
+            "未解之谜与伏笔（尚未解决的线索、约定和悬念）、当前处境（此刻的地点、时间与正在发生的事）。总长不超过 ${RECAP_LIMIT * 2 / 5} 字。"
+        val user = "剧情：${story.title}\n" + playerIdentity(state, characters) + "\n" +
+            contextTail(story.copy(ai = story.ai.copy(historyWindow = 120)), state) + charStatesSnapshot(story, characters, state)
+        val result = client.streamText(profile, system, user, ChatOptions(0.3, SCENE_MAX_TOKENS))
+        val text = cleanMarkdown(result.content).trim()
+        if (text.isBlank()) throw LlmException("AI 没有返回总结，请重试。")
+        return text.take(RECAP_LIMIT)
     }
 
     /** 测试一条服务是否可用。 */
@@ -450,6 +451,7 @@ class AiDirector(private val client: ChatClient) {
 
     companion object {
         private const val SCENE_MAX_TOKENS = 4096
+        const val RECAP_LIMIT = 3000
         fun errorMessage(t: Throwable): String = when (t) {
             is LlmException -> t.message ?: "AI 调用失败"
             is kotlinx.coroutines.CancellationException -> "已取消"

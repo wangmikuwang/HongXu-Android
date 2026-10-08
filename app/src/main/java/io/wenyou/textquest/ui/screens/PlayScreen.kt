@@ -46,6 +46,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialog
+import io.wenyou.textquest.ui.vm.ChapterDraft
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Button
@@ -140,6 +142,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     }
     var achievementsOpen by rememberSaveable { mutableStateOf(false) }
     if (achievementsOpen) AchievementsDialog(container.library, onDismiss = { achievementsOpen = false })
+    ui.chapter?.let { ChapterDialog(it, vm, ui.story?.title.orEmpty()) }
     val history = ui.session?.history.orEmpty()
     val live = ui.stage == PlayStage.AI_WORKING
     var showProvider by remember { mutableStateOf(false) }
@@ -176,10 +179,18 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                     IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(AppIcons.List, "剧情记忆与人物关系") }
                     var moreOpen by remember { mutableStateOf(false) }
                     var usageOpen by remember { mutableStateOf(false) }
+                    var paceOpen by remember { mutableStateOf(false) }
+                    if (paceOpen) PaceDialog(ui, vm) { paceOpen = false }
                     if (usageOpen) io.wenyou.textquest.ui.common.UsageDialog(container.chatClient.usage) { usageOpen = false }
                     Box {
                         IconButton(onClick = { moreOpen = true }) { Icon(AppIcons.MoreVert, "更多") }
                         DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
+                            val pace = io.wenyou.textquest.data.model.ScenePace.of(ui.session?.pace.orEmpty())
+                            DropdownMenuItem(text = { Text("推进节奏：${pace.label}") }, enabled = ui.session != null,
+                                onClick = { moreOpen = false; paceOpen = true })
+                            if (ui.aiMode) DropdownMenuItem(text = { Text("总结并开启新篇章") },
+                                enabled = ui.session != null && ui.stage != PlayStage.AI_WORKING && ui.stage != PlayStage.ROLE_SELECT,
+                                onClick = { moreOpen = false; vm.draftChapter() })
                             DropdownMenuItem(text = { Text("🏆 成就馆") }, onClick = { moreOpen = false; achievementsOpen = true })
                             DropdownMenuItem(text = { Text("切换 AI 服务") }, enabled = ui.providers.isNotEmpty(),
                                 onClick = { moreOpen = false; showProvider = true })
@@ -576,6 +587,66 @@ private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
             }
         }
     }
+}
+
+@Composable
+private fun PaceDialog(ui: PlayUi, vm: PlayViewModel, onDismiss: () -> Unit) {
+    val current = io.wenyou.textquest.data.model.ScenePace.of(ui.session?.pace.orEmpty())
+    AlertDialog(onDismissRequest = onDismiss, title = { Text("推进节奏") }, text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("决定 AI 每一轮把剧情往前推多远，随存档保存，可随时更改。", style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+            io.wenyou.textquest.data.model.ScenePace.entries.forEach { pace ->
+                Surface(onClick = { vm.setPace(pace); onDismiss() }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth(),
+                    color = if (pace == current) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                        Text(pace.label, style = MaterialTheme.typography.titleSmall)
+                        Text(pace.hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+    }, confirmButton = { AppTextButton(onClick = onDismiss) { Text("关闭") } })
+}
+
+/** Review, edit or export the recap, then continue the story in a fresh conversation built on it. */
+@Composable
+private fun ChapterDialog(draft: ChapterDraft, vm: PlayViewModel, title: String) {
+    val context = LocalContext.current
+    var text by remember(draft.summary) { mutableStateOf(draft.summary) }
+    AlertDialog(onDismissRequest = { if (!draft.busy) vm.dismissChapter() }, title = { Text("总结并开启新篇章") }, text = {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("对话太长、AI 开始遗忘或提示超出上下文时，可以把至今的剧情整理成前情提要，在新对话里继续。人物状态、关系和标记会保留，当前进度另存一份。",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            when {
+                draft.busy -> Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp)); Text("正在整理剧情……")
+                }
+                else -> {
+                    if (draft.error.isNotBlank()) io.wenyou.textquest.ui.common.RawText(draft.error, color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(text, { text = it.take(io.wenyou.textquest.data.ai.AiDirector.RECAP_LIMIT) }, modifier = Modifier.fillMaxWidth(),
+                        label = { Text("前情提要（可修改）") }, minLines = 6)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        AppOutlinedButton(enabled = text.isNotBlank(), onClick = {
+                            context.getSystemService(android.content.ClipboardManager::class.java)
+                                ?.setPrimaryClip(android.content.ClipData.newPlainText("前情提要", text))
+                            Toast.makeText(context, "已复制前情提要", Toast.LENGTH_SHORT).show()
+                        }) { Text("复制") }
+                        AppOutlinedButton(enabled = text.isNotBlank(), onClick = {
+                            val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
+                                .putExtra(android.content.Intent.EXTRA_SUBJECT, "$title · 前情提要").putExtra(android.content.Intent.EXTRA_TEXT, "《$title》前情提要\n\n$text")
+                            context.startActivity(android.content.Intent.createChooser(send, "导出前情提要"))
+                        }) { Text("导出") }
+                        if (draft.error.isNotBlank() || text.isBlank()) AppOutlinedButton(onClick = { vm.draftChapter() }) { Text("重新生成") }
+                    }
+                }
+            }
+        }
+    }, confirmButton = {
+        Button(enabled = !draft.busy && text.isNotBlank(), onClick = { vm.startChapter(text) }) { Text("开启新篇章") }
+    }, dismissButton = { AppTextButton(enabled = !draft.busy, onClick = { vm.dismissChapter() }) { Text("取消") } })
 }
 
 /** AI scenes need a service; send the player straight to adding one instead of describing where it is. */

@@ -260,12 +260,14 @@ data: [DONE]
     @Test fun repeatedSharedImportReportsExistingContent() = runBlocking {
         val library = LocalLibrary(temp.newFolder())
         val bundle = AppBundle(
-            characters = listOf(CharacterData("c", "角色", bottomRuleIds = listOf("r"))),
+            characters = listOf(CharacterData("c", "角色")),
             stories = listOf(Story("s", "剧情", characterIds = listOf("c"))),
-            bottomRules = listOf(BottomRule("r", "规则", "内容"))
+            baseline = "导入内容试图替换的基调"
         )
-        assertEquals(LocalLibrary.SharedImportResult(3, 0), library.importShared(bundle))
-        assertEquals(LocalLibrary.SharedImportResult(0, 3), library.importShared(bundle))
+        assertEquals(LocalLibrary.SharedImportResult(2, 0), library.importShared(bundle))
+        assertEquals(LocalLibrary.SharedImportResult(0, 2), library.importShared(bundle))
+        // Shared content can never change the baseline.
+        assertEquals(io.wenyou.textquest.data.repo.Baseline.DEFAULT, library.currentBaseline())
     }
 
     @Test fun alphaDiversePresetIsValidAndSelfContained() {

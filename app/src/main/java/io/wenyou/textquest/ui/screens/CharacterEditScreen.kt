@@ -62,7 +62,7 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
     val char = ui.char
     var revisionOpen by remember { mutableStateOf(false) }
     if (revisionOpen && char != null) AiRevisionDialog(container,
-        io.wenyou.textquest.data.model.AppBundle(characters = listOf(vm.revisionDraft()), bottomRules = ui.availableRules),
+        io.wenyou.textquest.data.model.AppBundle(characters = listOf(vm.revisionDraft())),
         onApply = { vm.applyRevision(it.characters.single()) }, onDismiss = { revisionOpen = false })
 
     Scaffold(
@@ -146,39 +146,6 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
                         label = "附加人设提示语（高优先级）", minLines = 5,
                         placeholder = "写你的身份/世界观/规则/说话风格……会放到人设最前，权重最高，供 AI 优先遵循。",
                         supporting = "用于强化人设与世界观；拼接系统提示时位于最高优先级。")
-                    Spacer(Modifier.padding(top = 8.dp))
-                    AppField(value = char.bottomPrompt, onValueChange = { vm.setBottomPrompt(it) },
-                        label = "底层基调 / 不可动摇规则（内嵌单条）", minLines = 5,
-                        placeholder = "写本角色必须无条件遵守的底层规则……会拼接到该角色人设的最底部。",
-                        supporting = "置于该角色人设最底，冲突时以此层为准；留空则不注入。")
-                    if (ui.availableRules.isNotEmpty()) {
-                        Spacer(Modifier.padding(top = 12.dp))
-                        Text("选择要执行的底层基调（可多选，各角色可不同）",
-                            style = MaterialTheme.typography.labelLarge)
-                        Spacer(Modifier.padding(top = 6.dp))
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            ui.availableRules.forEach { r ->
-                                val selected = r.id in char.bottomRuleIds
-                                FilterChip(
-                                    selected = selected,
-                                    onClick = {
-                                        val next = if (selected) char.bottomRuleIds - r.id else char.bottomRuleIds + r.id
-                                        vm.setBottomRuleIds(next)
-                                    },
-                                    label = { io.wenyou.textquest.ui.common.RawText(r.name) }
-                                )
-                            }
-                        }
-                        Spacer(Modifier.padding(top = 4.dp))
-                        Text(
-                            "在「设置 → 底层基调」里可新建更多规则。",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                     Spacer(Modifier.padding(top = 8.dp))
                     AppDropdown(
                         label = "性取向",

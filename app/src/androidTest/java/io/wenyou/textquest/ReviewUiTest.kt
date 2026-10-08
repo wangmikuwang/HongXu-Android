@@ -4,10 +4,9 @@ import android.content.ContextWrapper
 import androidx.activity.compose.setContent
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import io.wenyou.textquest.data.model.BottomRule
+import io.wenyou.textquest.data.repo.Baseline
 import io.wenyou.textquest.ui.WenYouAppRoot
-import io.wenyou.textquest.ui.screens.BottomRulesScreen
-import io.wenyou.textquest.ui.screens.BottomRuleEditScreen
+import io.wenyou.textquest.ui.screens.BaselineCard
 import io.wenyou.textquest.ui.theme.ThemeStyle
 import io.wenyou.textquest.ui.theme.WenYouTheme
 import androidx.navigation.compose.rememberNavController
@@ -29,22 +28,18 @@ class ReviewUiTest {
         return WenYouApp.AppContainer(context)
     }
 
-    @Test fun ruleListAndEditorUseTheSuppliedLibrary() {
+    @Test fun baselineEditorSavesTheSingleBaselineForThisLibraryOnly() {
         val container = container()
-        val name = "isolated-${UUID.randomUUID()}"
-        val rule = BottomRule(id = "test-rule", name = name, content = "测试规则")
-        runBlocking { container.library.upsertBottomRule(rule) }
-        compose.runOnIdle { compose.activity.setContent { WenYouTheme {
-            BottomRulesScreen(container, rememberNavController())
-        } } }
-        compose.onNodeWithText(name).assertIsDisplayed()
-        compose.runOnIdle { compose.activity.viewModelStore.clear(); compose.activity.setContent { WenYouTheme {
-            BottomRuleEditScreen(container, rememberNavController(), rule.id)
-        } } }
-        compose.onNodeWithText(name).assertExists()
-        compose.onNodeWithText("测试规则").assertExists()
-        assertEquals(rule, container.library.bottomRules.value.single())
-        assertFalse((compose.activity.application as WenYouApp).container.library.bottomRules.value.any { it.id == rule.id })
+        val text = "测试基调-${UUID.randomUUID()}"
+        compose.runOnIdle { compose.activity.setContent { WenYouTheme { BaselineCard(container) } } }
+        compose.onNodeWithTag("baseline-field").performTextClearance()
+        compose.onNodeWithTag("baseline-field").performTextInput(text)
+        compose.onNodeWithText("保存").performClick()
+        compose.waitUntil(5_000) { container.library.baseline.value == text }
+        assertEquals(text, container.library.currentBaseline())
+        assertNotEquals(text, (compose.activity.application as WenYouApp).container.library.currentBaseline())
+        compose.onNodeWithText("恢复默认").performClick()
+        compose.waitUntil(5_000) { container.library.currentBaseline() == Baseline.DEFAULT }
     }
 
     @Test fun navigationLabelsFollowTheChosenLanguageInBothStyles() {

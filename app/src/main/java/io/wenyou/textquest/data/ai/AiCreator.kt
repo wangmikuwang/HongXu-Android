@@ -21,17 +21,12 @@ private data class GeneratedCharacter(
     val exampleDialogue: String = "",
     val greeting: String = "",
     val extraPrompt: String = "",
-    val bottomPrompt: String = "",
-    val bottomRules: List<GeneratedRule> = emptyList(),
     val initial: CharacterState = CharacterState(),
     val orientation: SexualOrientation = SexualOrientation.UNKNOWN,
     val colorIndex: Int = 0,
     val lgbt: Boolean = false,
     val adult: Boolean = false
 )
-
-@Serializable
-private data class GeneratedRule(val name: String, val content: String)
 
 @Serializable
 private data class GeneratedStory(
@@ -149,7 +144,7 @@ class AiCreator(private val client: ChatClient) {
             "exampleDialogue":"台词示例","greeting":"初见招呼","lgbt":false,"adult":false}]}
             必须补齐正常编辑表单的所有内容：story 还包括 colorIndex(0-11)、mode(ai_dm 或 script)、directorExtra(导演要求)、initialVariables(全局数值对象，例如 {"clues":0}，不要使用列表；人物数值只写入对应人物的 initial.metrics)、initialFlags(标记)、startNodeId、nodes。
             nodes 用节点名作键，每个节点包括 kind(narration/ai/ending)、title、speakerId(人物名字或空旁白)、text、prompt、choices([{text,next,conditions,effects,hint}])、onEnter、endTarget。节点跳转使用真实节点名或 @self；条件/效果中的 charId 使用人物名字或空全局。默认 mode=ai_dm，nodes 只生成 1 个完整开场节点，后续由导演在游玩时续写；仅用户明确要求分支剧本时用 script，最多生成 8 个连贯节点含结局。保持每个节点简短，不展开多章或穷举所有分支。
-            每个人物还必须补齐 colorIndex(0-11)、orientation(straight/gay/lesbian/bi/pan/asexual/unknown)、extraPrompt、bottomPrompt、bottomRules([{name,content}])、initial:{metrics:{affection,trust,mood,energy,health,fatigue,arousal},flags:[],description:"初始穿着与外观"}。状态数值 0-100。填充符合人设的内容，无适用条件或效果时用空列表。initialFlags 和 initial.flags 必须用字符串数组，例如 ["metInCafe"]，不要写 {"metInCafe":true}；false 标记不要放入数组。规则应具体贴合人物而非无关指令。
+            每个人物还必须补齐 colorIndex(0-11)、orientation(straight/gay/lesbian/bi/pan/asexual/unknown)、extraPrompt、initial:{metrics:{affection,trust,mood,energy,health,fatigue,arousal},flags:[],description:"初始穿着与外观"}。状态数值 0-100。填充符合人设的内容，无适用条件或效果时用空列表。initialFlags 和 initial.flags 必须用字符串数组，例如 ["metInCafe"]，不要写 {"metInCafe":true}；false 标记不要放入数组。
             条件格式必须为 {"type":"var","name":"trust","op":"gte","value":30,"charId":"人物名"}；type 只能是 flag_true/flag_false/var，op 只能是 eq/ne/gt/gte/lt/lte。
             效果格式必须为 {"type":"add_var","name":"affection","value":5,"charId":"人物名"}；set_flag/clear_flag 只写 type、name、charId，不写 value；type 只能是 set_flag/clear_flag/set_var/add_var/random_var/roll，随机效果还包括 from/to。变量增减用 add_var、变量赋值用 set_var；禁止 type:"variable" 或 target 字段。旁白 speakerId 用空字符串。
             人物名必须互不相同，创建 1–4 位重要人物，设定彼此一致。不要输出实体 UUID、服务配置或 API Key；节点名允许用于故事内部跳转。
@@ -174,7 +169,6 @@ class AiCreator(private val client: ChatClient) {
             require(text.length <= max && (!required || text.isNotEmpty())) { "$label 不完整或过长，请重新生成" }
             return text
         }
-        val rules = mutableListOf<BottomRule>()
         val characters = generated.characters.map { c ->
             require(adultContent || !c.adult) { "当前已关闭成人内容，请修改创意" }
             CharacterData(
@@ -183,11 +177,8 @@ class AiCreator(private val client: ChatClient) {
                 tagline = field(c.tagline, "人物简介", 500), personality = field(c.personality, "性格", 4000, true),
                 speechStyle = field(c.speechStyle, "说话习惯", 2000), background = field(c.background, "背景", 6000, true),
                 exampleDialogue = field(c.exampleDialogue, "台词", 4000), greeting = field(c.greeting, "招呼", 2000),
-                extraPrompt = field(c.extraPrompt, "附加人设", 6000), bottomPrompt = field(c.bottomPrompt, "底层基调", 6000),
-                bottomRuleIds = c.bottomRules.map { r ->
-                    BottomRule(UUID.randomUUID().toString(), field(r.name, "规则名称", 120, true), field(r.content, "规则内容", 6000, true))
-                        .also { rules.add(it) }.id
-                }, initial = c.initial, orientation = c.orientation,
+                extraPrompt = field(c.extraPrompt, "附加人设", 6000),
+                initial = c.initial, orientation = c.orientation,
                 lgbt = c.lgbt, adult = c.adult
             )
         }
@@ -213,15 +204,15 @@ class AiCreator(private val client: ChatClient) {
             node.copy(id = id, speakerId = actor(node.speakerId), onEnter = node.onEnter.map(::effect),
                 choices = node.choices.map { c -> c.copy(conditions = c.conditions.map { it.copy(charId = actor(it.charId)) }, effects = c.effects.map(::effect)) })
         }) }
-        return checked(AppBundle(characters = characters, stories = linked, bottomRules = rules), adultContent)
+        return checked(AppBundle(characters = characters, stories = linked), adultContent)
     }
 
     suspend fun revise(profile: ApiProfile, instruction: String, original: AppBundle, adultContent: Boolean): AppBundle {
         require(instruction.isNotBlank() && instruction.length <= 2000) { "请用 1–2000 字描述修改要求" }
-        val safe = original.copy(providers = emptyList(), saves = emptyList(), achievements = emptyList())
+        val safe = original.copy(providers = emptyList(), saves = emptyList(), achievements = emptyList(), baseline = "")
         val system = "你是中文剧情编辑助手。只返回 JSON 修改补丁：{\"story\":{需要修改的剧情字段},\"characters\":[{\"id\":\"原人物id\",需要修改的字段}]}。" +
             "仅输出需要改变的字段；未提及内容必须保留。不改变实体 id，不输出服务、密钥或存档。嵌套对象只填写变化部分，列表字段填写修改后的完整列表。" +
-            "沿用已有节点名、角色 id 和规则 id；不得引用不存在的实体。角色台词仍用独立节点及 speakerId，正文与思考分离。" +
+            "沿用已有节点名和角色 id；不得引用不存在的实体。角色台词仍用独立节点及 speakerId，正文与思考分离。" +
             if (adultContent) "成人内容仅限成年人自愿关系。" else "保持全年龄、非露骨，不生成成人内容。"
         val user = "修改要求：$instruction\n原稿：" + AppJson.encodeToString(AppBundle.serializer(), safe)
         return applyRevision(requestContent(profile, system, user), safe, adultContent)
@@ -282,11 +273,9 @@ class AiCreator(private val client: ChatClient) {
 
     private fun checked(bundle: AppBundle, adultContent: Boolean): AppBundle {
         val ids = bundle.characters.map { it.id }.toSet()
-        val ruleIds = bundle.bottomRules.map { it.id }.toSet()
         bundle.characters.forEach { c ->
             require(c.name.isNotBlank() && c.name.length <= 80 && c.colorIndex in 0..11) { "人物基本信息无效" }
             require(adultContent || !c.adult) { "当前已关闭成人内容" }
-            require(c.bottomRuleIds.all { it in ruleIds }) { "人物规则引用不存在" }
             require(c.initial.metrics.values.all { it.isFinite() && it in 0.0..100.0 }) { "人物状态须为 0–100 的有限数值" }
         }
         bundle.stories.forEach { s ->
