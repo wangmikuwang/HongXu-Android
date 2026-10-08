@@ -42,12 +42,14 @@ internal fun CreationHubContent(onStory: () -> Unit, onCharacter: () -> Unit, on
             Spacer(Modifier.height(16.dp))
             Text("编写世界、开场和剧情分支", style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
             AppOutlinedButton(onClick = onStory, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("create-story")) {
                 Icon(AppIcons.List, null); Spacer(Modifier.width(8.dp)); Text("新建剧情")
             }
             Spacer(Modifier.height(16.dp))
             Text("设定人物、性格和背景", style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(Modifier.height(8.dp))
             AppOutlinedButton(onClick = onCharacter, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("create-character")) {
                 Icon(AppIcons.Person, null); Spacer(Modifier.width(8.dp)); Text("新建角色")
             }

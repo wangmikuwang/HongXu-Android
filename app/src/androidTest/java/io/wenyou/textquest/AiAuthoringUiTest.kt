@@ -347,10 +347,11 @@ class AiAuthoringUiTest {
             screenshot("large-font-story-card.png")
             compose.onNodeWithContentDescription("角色", useUnmergedTree = true).performClick()
             compose.onNodeWithText(name).assertIsDisplayed()
-            compose.onNodeWithContentDescription("分享").assertIsDisplayed()
-            compose.onNodeWithContentDescription("编辑").assertIsDisplayed()
-            compose.onNodeWithContentDescription("删除").assertIsDisplayed()
             screenshot("large-font-character-card.png")
+            compose.onAllNodesWithContentDescription("更多")[0].performClick()
+            compose.onNodeWithText("分享").assertIsDisplayed()
+            compose.onNodeWithText("编辑").assertIsDisplayed()
+            compose.onNodeWithText("删除").assertIsDisplayed()
         } finally { ok.dispatcher.executorService.shutdownNow(); ok.connectionPool.evictAll() }
     }
 
@@ -406,7 +407,7 @@ class AiAuthoringUiTest {
             compose.onNodeWithText("1 位人物", substring = true).assertExists()
             compose.onNodeWithText("分支剧本").performClick().assertIsSelected()
             compose.onNodeWithText("雨城").assertDoesNotExist()
-            compose.onAllNodesWithText("全部")[0].performClick()
+            compose.onNodeWithText("全部玩法").performClick()
             compose.onNodeWithText("雨城").assertExists()
             compose.onNodeWithContentDescription("角色", useUnmergedTree = true).performClick()
             compose.onNodeWithText("参演剧情 · 1").assertExists()

@@ -291,7 +291,7 @@ class AiDirector(private val client: ChatClient) {
             }
         }
         val user = contextTail(story, state) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult)
-        return requestScene(profile, system, user, ChatOptions(story.ai.temperature, story.ai.maxTokens), onDelta, onReasoning)
+        return requestScene(profile, system, user, sceneOptions(profile), onDelta, onReasoning)
     }
 
     // ---------------- AI 导演模式（自由对话） ----------------
@@ -328,8 +328,14 @@ class AiDirector(private val client: ChatClient) {
             append("choices 必须提供 2-4 个玩家下一步可以采取的行动或台词，不能替玩家实施。只有玩家明确表达收尾意愿且剧情已经结束时，才能设置 ended:true 并让 choices 为空数组；其他情况 ended:false。\n")
         }
         val user = contextTail(story, state, playerText) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult)
-        return requestScene(profile, system, user, ChatOptions(story.ai.temperature, story.ai.maxTokens), onDelta, onReasoning, requireChoices = true)
+        return requestScene(profile, system, user, sceneOptions(profile), onDelta, onReasoning, requireChoices = true)
     }
+
+    /**
+     * Scenes take the service's creativity setting, capped where long JSON stays well formed, and an output cap that
+     * leaves room for thinking plus text, choices and memory (900 tokens made most DeepSeek turns retry).
+     */
+    private fun sceneOptions(profile: ApiProfile) = ChatOptions(minOf(profile.temperature, 1.0), SCENE_MAX_TOKENS)
 
     private suspend fun requestScene(profile: ApiProfile, system: String, user: String, options: ChatOptions,
         onDelta: (String) -> Unit, onReasoning: (String) -> Unit, requireChoices: Boolean = false): AiScene {
@@ -380,7 +386,7 @@ class AiDirector(private val client: ChatClient) {
     /** 正文与服务返回的思考字段分开处理，纯思考不能作为旁白或角色台词。 */
     private fun resolveScene(result: ChatResult): AiScene {
         val scene = sanitizeScene(parseScene(result.content).copy(reasoning = result.reasoning))
-        if (scene.text.isBlank() && scene.entries.isEmpty()) throw LlmException("AI 未返回剧情正文，可能输出额度已被思考耗尽；请提高剧情输出上限后重试。")
+        if (scene.text.isBlank() && scene.entries.isEmpty()) throw LlmException("AI 未返回剧情正文，可能输出额度已被思考耗尽；请重试，或换用不带思考的模型。")
         return scene
     }
 
@@ -443,6 +449,7 @@ class AiDirector(private val client: ChatClient) {
 
 
     companion object {
+        private const val SCENE_MAX_TOKENS = 4096
         fun errorMessage(t: Throwable): String = when (t) {
             is LlmException -> t.message ?: "AI 调用失败"
             is kotlinx.coroutines.CancellationException -> "已取消"

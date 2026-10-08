@@ -1,4 +1,6 @@
 package io.wenyou.textquest.ui.screens
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
 import io.wenyou.textquest.ui.common.ShareActions
 import io.wenyou.textquest.ui.common.SearchField
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -299,6 +301,19 @@ private fun CharacterCard(
                             overflow = TextOverflow.Ellipsis)
                 }
                 Spacer(Modifier.width(8.dp))
+                // Same ⋯ menu as story cards, so delete is never one stray tap away.
+                var menuOpen by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(AppIcons.MoreVert, "更多", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(text = { Text("编辑") }, onClick = { menuOpen = false; onEdit() })
+                        DropdownMenuItem(text = { Text("分享") }, onClick = { menuOpen = false; onShare() })
+                        DropdownMenuItem(text = { Text("删除", color = MaterialTheme.colorScheme.error) },
+                            onClick = { menuOpen = false; onDelete() })
+                    }
+                }
             }
             Spacer(Modifier.height(10.dp))
             FlowRow(
@@ -310,13 +325,6 @@ private fun CharacterCard(
                 if (c.adult) Pill("18+", container = MaterialTheme.colorScheme.primaryContainer, accentIndex = 2)
             }
             Spacer(Modifier.height(10.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                IconButton(onClick = onShare) {
-                    Icon(AppIcons.Share, "分享", tint = MaterialTheme.colorScheme.readableAccent())
-                }
-                IconButton(onClick = onEdit) { Icon(AppIcons.Edit, "编辑") }
-                IconButton(onClick = onDelete) { Icon(AppIcons.Delete, "删除", tint = MaterialTheme.colorScheme.outline) }
-            }
             Text("参演剧情 · ${stories.size}", style = MaterialTheme.typography.labelLarge)
             if (stories.isEmpty()) {
                 Text("暂无", style = MaterialTheme.typography.bodySmall,

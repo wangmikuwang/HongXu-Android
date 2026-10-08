@@ -11,6 +11,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -39,6 +41,37 @@ data class ChatOptions(val temperature: Double = 0.85, val maxTokens: Int = 1024
 
 /** 调用失败（网络 / HTTP / 解析）时向用户展示的可读错误。 */
 class LlmException(message: String, cause: Throwable? = null) : Exception(message, cause)
+
+/** Names the likely cause and the next step; the provider's own message is kept short for diagnosis. */
+internal fun httpFailure(code: Int, body: String): LlmException {
+    val detail = runCatching {
+        when (val error = AppJson.parseToJsonElement(body).jsonObject["error"]) {
+            is JsonObject -> error["message"]?.jsonPrimitive?.contentOrNull
+            is JsonPrimitive -> error.contentOrNull
+            else -> null
+        }
+    }.getOrNull() ?: body.trim().takeUnless { it.startsWith("<") }.orEmpty()
+    val reason = when (code) {
+        400 -> "请求没有被接受：模型名或参数可能不正确，请核对模型名"
+        401, 403 -> "API Key 无效或没有权限：请检查 Key 是否填写正确、是否已过期"
+        402 -> "账户余额不足：请到服务商平台充值后重试"
+        404 -> "找不到接口或模型：请核对接口地址和模型名"
+        408, 504 -> "服务响应超时：请稍后重试"
+        413 -> "内容过长：请缩短描述后重试"
+        429 -> "请求太频繁或额度已用完：请稍等片刻再试，或检查账户额度"
+        in 500..599 -> "服务商暂时不可用：通常是服务繁忙，请稍后重试"
+        else -> "服务返回了错误"
+    }
+    return LlmException("$reason（HTTP $code）" + if (detail.isBlank()) "" else "\n服务商信息：${detail.take(120)}")
+}
+
+internal fun networkFailure(e: IOException): LlmException = LlmException(when (e) {
+    is java.net.UnknownHostException -> "无法连接到服务器：请检查网络，或核对接口地址是否正确"
+    is java.net.SocketTimeoutException -> "连接超时：网络较慢或服务繁忙，请稍后重试"
+    is javax.net.ssl.SSLException -> "安全连接失败：请检查接口地址或网络代理设置"
+    is java.net.ConnectException -> "连接被拒绝：请核对接口地址和端口；本地服务请确认已经启动"
+    else -> "网络错误：请检查网络后重试"
+}, e)
 
 /** 多品牌流式聊天客户端。OpenAI 兼容、Anthropic、Gemini 三种协议收敛到 [streamText]。 */
 /** 一次流式/非流式调用的结果：正文 + 思考过程。 */
@@ -78,14 +111,14 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
                     requestCall.enqueue(object : Callback {
                         override fun onFailure(call: Call, e: IOException) {
                             if (cont.isCancelled) return
-                            cont.resumeWith(Result.failure(LlmException("网络错误：${e.message}", e)))
+                            cont.resumeWith(Result.failure(networkFailure(e)))
                         }
 
                         override fun onResponse(call: Call, response: Response) {
                             try {
                                 if (!response.isSuccessful) {
-                                    val body = response.body?.string()?.take(400) ?: ""
-                                    cont.resumeWith(Result.failure(LlmException("HTTP ${response.code} 服务返回错误：${body.trim().ifBlank { "（无详情）" }}")))
+                                    val body = response.body?.string()?.take(2000) ?: ""
+                                    cont.resumeWith(Result.failure(httpFailure(response.code, body)))
                                     return
                                 }
                                 val src = response.body?.source() ?: run {
@@ -125,7 +158,7 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
                             } catch (e: CancellationException) {
                                 cont.resumeWith(Result.failure(e))
                             } catch (t: Throwable) {
-                                if (cont.isActive) cont.resumeWith(Result.failure(LlmException("读取响应失败：${t.message}", t)))
+                                if (cont.isActive) cont.resumeWith(Result.failure(LlmException(if (t is IOException) "网络连接中断，内容没有接收完整，请重试" else "读取 AI 回复失败，请重试", t)))
                             } finally {
                                 try { response.close() } catch (_: Throwable) {}
                             }
@@ -162,7 +195,7 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
             continuation.invokeOnCancellation { call.cancel() }
             call.enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    if (continuation.isActive) continuation.resumeWith(Result.failure(e))
+                    if (continuation.isActive) continuation.resumeWith(Result.failure(networkFailure(e)))
                 }
 
                 override fun onResponse(call: Call, response: Response) {
@@ -175,8 +208,7 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
 
     private fun parseModels(kind: ProviderKind, response: Response): List<String> {
         if (!response.isSuccessful) {
-            val body = response.body?.string()?.take(300) ?: ""
-            throw LlmException("HTTP ${response.code} 读取模型失败：${body.trim().ifBlank { "（无详情）" }}")
+            throw httpFailure(response.code, response.body?.string()?.take(2000).orEmpty())
         }
         val text = response.body?.string().orEmpty()
         val element = try {

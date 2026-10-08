@@ -328,10 +328,10 @@ class PlayViewModel internal constructor(
         val profile = provider()
         if (profile == null) {
             appendEntries(listOf(LogEntry(EntryKind.ERROR, speaker = "系统",
-                text = "这个场景需要 AI 生成，但还没有可用的 AI 服务。请到「AI 服务」添加并设为默认，再重试。")))
+                text = "这个场景需要 AI 生成，但还没有可用的 AI 服务。")))
             _ui.update {
-                it.copy(stage = PlayStage.STOPPED, stoppedTitle = "缺少 AI 服务",
-                    stoppedMessage = "前往「AI 服务」页添加任一家（支持 OpenAI 兼容 / Claude / Gemini / 本地 Ollama）。")
+                it.copy(stage = PlayStage.STOPPED, stoppedTitle = "缺少 AI 服务", providerMissing = true,
+                    stoppedMessage = "添加任意一家 AI 服务后点「重试」继续（推荐 DeepSeek，也支持 OpenAI 兼容服务、Claude、Gemini 和本地 Ollama）。")
             }
             return
         }
@@ -480,13 +480,14 @@ class PlayViewModel internal constructor(
         val profile = provider()
         if (profile == null) {
             appendEntries(listOf(LogEntry(EntryKind.ERROR, speaker = "系统",
-                text = "AI 导演模式需要先配置并选择一家 AI 服务（「AI 服务」页）。")))
+                text = "AI 导演模式需要先接入一家 AI 服务。")))
+            _ui.update { it.copy(providerMissing = true) }
             return
         }
         if (ui.stage != PlayStage.DM_INPUT || aiJob?.isActive == true) return
         appendEntries(listOf(playerEntry(trimmed)))
         session = session?.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
-        _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiReasoningDelta = "", pendingAiChoices = emptyList()) }
+        _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiReasoningDelta = "", pendingAiChoices = emptyList(), providerMissing = false) }
         launchAiJob { job ->
             try {
                 val reasoning = ReasoningStream()

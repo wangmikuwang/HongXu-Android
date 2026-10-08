@@ -1,5 +1,6 @@
 package io.wenyou.textquest.ui.common
 
+import androidx.compose.ui.unit.dp
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
@@ -33,6 +34,7 @@ fun GenerationNotificationSettings(store: SettingsStore) {
                 Text("生成实时通知", style = MaterialTheme.typography.labelLarge)
                 Text("显示阶段和耗时，点击返回应用。支持的系统可显示实时更新或小米超级岛；其余显示普通通知。", style = MaterialTheme.typography.bodySmall)
             }
+            Spacer(Modifier.width(12.dp))
             Switch(checked = prefs.generationNotifications, onCheckedChange = { on ->
                 if (on && Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS)

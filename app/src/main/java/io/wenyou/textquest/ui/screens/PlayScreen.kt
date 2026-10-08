@@ -46,6 +46,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -168,13 +170,22 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                     }
                 },
                 actions = {
-                    IconButton(onClick = { achievementsOpen = true }) { Text("🏆", Modifier.semantics { contentDescription = "成就馆" }, fontSize = 20.sp) }
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(AppIcons.Person, "剧情记忆与人物关系") }
-                    IconButton(onClick = { showProvider = true },
-                        enabled = ui.providers.isNotEmpty()) {
-                        Icon(AppIcons.Build, "切换 AI 服务")
+                    // Frequent actions stay visible with clear labels; occasional ones live in a labelled menu.
+                    AppTextButton(onClick = { vm.saveNow() }, enabled = ui.stage != PlayStage.INIT && ui.stage != PlayStage.ROLE_SELECT,
+                        modifier = Modifier.semantics { contentDescription = "存档" }) { Text("存档") }
+                    IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(AppIcons.List, "剧情记忆与人物关系") }
+                    var moreOpen by remember { mutableStateOf(false) }
+                    var usageOpen by remember { mutableStateOf(false) }
+                    if (usageOpen) io.wenyou.textquest.ui.common.UsageDialog(container.chatClient.usage) { usageOpen = false }
+                    Box {
+                        IconButton(onClick = { moreOpen = true }) { Icon(AppIcons.MoreVert, "更多") }
+                        DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
+                            DropdownMenuItem(text = { Text("🏆 成就馆") }, onClick = { moreOpen = false; achievementsOpen = true })
+                            DropdownMenuItem(text = { Text("切换 AI 服务") }, enabled = ui.providers.isNotEmpty(),
+                                onClick = { moreOpen = false; showProvider = true })
+                            DropdownMenuItem(text = { Text("生成用量与费用统计") }, onClick = { moreOpen = false; usageOpen = true })
+                        }
                     }
-                    IconButton(onClick = { vm.saveNow() }, enabled = ui.stage != PlayStage.INIT && ui.stage != PlayStage.ROLE_SELECT) { Icon(AppIcons.Check, "存档") }
                 }
             )
         },
@@ -210,14 +221,14 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
             GlassBackdrop(content = historyContent, controls = {}, footer = {
                 Box(Modifier.padding(8.dp).fillMaxWidth().heightIn(max = panelHeight)
                     .testTag("play-actions").liquidGlass().verticalScroll(rememberScrollState())) {
-                    Column { UsagePanel(container.chatClient.usage, showLast = false); ActionPanel(vm, ui, nav, visited) }
+                    Column { UsagePanel(container.chatClient.usage, showLast = false, showStats = false); ActionPanel(vm, ui, nav, visited) }
                 }
             })
         } else {
             Column(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f)) { historyContent() }
                 Box(Modifier.fillMaxWidth().heightIn(max = panelHeight).testTag("play-actions").verticalScroll(rememberScrollState())) {
-                    Column { UsagePanel(container.chatClient.usage, showLast = false); ActionPanel(vm, ui, nav, visited) }
+                    Column { UsagePanel(container.chatClient.usage, showLast = false, showStats = false); ActionPanel(vm, ui, nav, visited) }
                 }
             }
         }
@@ -336,7 +347,7 @@ private fun StoryEntry(entry: LogEntry, characters: List<CharacterData>) {
                                 fontSize = 13.sp)
                         }
                         Spacer(Modifier.width(8.dp))
-                        Text("角色内对话 · $name", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.readableAccent(),
+                        Text(name, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.readableAccent(),
                             fontWeight = FontWeight.SemiBold)
                     }
                     Spacer(Modifier.height(8.dp))
@@ -423,6 +434,7 @@ private fun StreamingCard() {
 
 @Composable
 private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController, visited: Set<String>) {
+    if (ui.providerMissing && ui.stage == PlayStage.DM_INPUT) MissingProviderCard(nav)
     when (ui.stage) {
         PlayStage.INIT, PlayStage.ROLE_SELECT -> Unit
         PlayStage.AI_WORKING -> {
@@ -520,16 +532,17 @@ private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
     var text by rememberSaveable { mutableStateOf("") }
     Surface(Modifier.fillMaxWidth(), color = if (LocalGlassEnabled.current) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerLow) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (ui.pendingAiChoices.isNotEmpty()) {
-                Text("AI 导演给的走向灵感（点一下直接采用，也可自由输入）：",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ui.pendingAiChoices.forEach { c ->
-                        FilterChip(selected = false, onClick = { vm.dmSend(c.text) },
-                            label = { io.wenyou.textquest.ui.common.RawText(c.text, maxLines = 1, overflow = TextOverflow.Ellipsis) })
-                    }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(if (ui.pendingAiChoices.isNotEmpty()) "推荐回复 · 点一下直接采用" else "写下你的行动，或让导演继续",
+                    style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                AppTextButton(onClick = { vm.dmSend("继续") }) { Text("让导演继续") }
+            }
+            // Full-width rows so long suggestions stay readable instead of being cut off in a sideways strip.
+            ui.pendingAiChoices.forEach { c ->
+                Surface(onClick = { vm.dmSend(c.text) }, shape = RoundedCornerShape(14.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+                    io.wenyou.textquest.ui.common.RawText(c.text, Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
+                        style = MaterialTheme.typography.bodyMedium, maxLines = 3, overflow = TextOverflow.Ellipsis)
                 }
             }
             Row(verticalAlignment = Alignment.Bottom) {
@@ -561,9 +574,20 @@ private fun DmInput(ui: PlayUi, vm: PlayViewModel) {
                     Icon(AppIcons.Send, "发送", tint = MaterialTheme.colorScheme.readableAccent())
                 }
             }
-            AppTextButton(onClick = { vm.dmSend("继续") }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Text("让导演继续（不输入直接推进）")
-            }
+        }
+    }
+}
+
+/** AI scenes need a service; send the player straight to adding one instead of describing where it is. */
+@Composable
+private fun MissingProviderCard(nav: NavHostController) {
+    Card(shape = RoundedCornerShape(20.dp), modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer, contentColor = MaterialTheme.colorScheme.onTertiaryContainer)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("还没有可用的 AI 服务", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+            Text("AI 导演需要接入一家 AI 服务才能继续。推荐 DeepSeek：注册后创建一个 API Key 填进去即可，按用量计费。",
+                style = MaterialTheme.typography.bodySmall)
+            Button(onClick = { nav.navigate(io.wenyou.textquest.ui.R.providerEdit("new")) }) { Text("添加 AI 服务") }
         }
     }
 }
@@ -584,6 +608,9 @@ private fun StoppedPanel(ui: PlayUi, vm: PlayViewModel, nav: NavHostController) 
             io.wenyou.textquest.ui.common.RawText(ui.stoppedMessage, style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (ui.providerMissing) Button(onClick = { nav.navigate(io.wenyou.textquest.ui.R.providerEdit("new")) }, modifier = Modifier.fillMaxWidth()) {
+                    Text("添加 AI 服务")
+                }
                 Button(onClick = { vm.restart() }, modifier = Modifier.fillMaxWidth()) {
                     Icon(AppIcons.PlayArrow, null)
                     Spacer(Modifier.width(6.dp))

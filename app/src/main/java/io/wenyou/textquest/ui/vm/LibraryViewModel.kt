@@ -36,14 +36,14 @@ data class HomeCard(
 
 /** 剧情库按「运行模式」的分类。 */
 enum class StoryModeFilter(val label: String) {
-    ALL("全部"),
+    ALL("全部玩法"),
     SCRIPT("分支剧本"),
     AI_DIRECTOR("AI 导演")
 }
 
 /** 剧情库按「内容」的分类。 */
 enum class StoryContentFilter(val label: String) {
-    ALL("全部"),
+    ALL("全部内容"),
     ALL_AGE("全年龄"),
     LGBT("LGBT"),
     ADULT("18+")

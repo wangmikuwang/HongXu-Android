@@ -164,12 +164,12 @@ class ProviderEditorViewModel(
             if (p == null) _ui.update { it.copy(message = "未找到该服务") }
             else _ui.update { it.copy(profile = p, isNew = false) }
         } else {
-            _ui.update { it.copy(profile = freshFromPreset("openai")) }
+            _ui.update { it.copy(profile = freshFromPreset("deepseek")) }
         }
     }
 
     private fun freshFromPreset(key: String): ApiProfile {
-        val preset = ProviderCatalog.find(key) ?: ProviderCatalog.find("openai")!!
+        val preset = ProviderCatalog.find(key) ?: ProviderCatalog.find("deepseek")!!
         return ApiProfile(
             id = UUID.randomUUID().toString(),
             name = preset.label,
@@ -219,7 +219,6 @@ class ProviderEditorViewModel(
     fun setCurrency(v: String) = update { it.copy(priceCurrency = v.uppercase().take(3)) }
     fun setNote(v: String) = update { it.copy(note = v) }
     fun setTemperature(v: Double) = update { it.copy(temperature = v) }
-    fun setMaxTokens(v: Int) = update { it.copy(maxTokens = v) }
 
     fun save() {
         val p = profile()

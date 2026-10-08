@@ -13,6 +13,7 @@ import io.wenyou.textquest.ui.common.AppUpdateCard
 import io.wenyou.textquest.ui.theme.WenYouTheme
 import io.wenyou.textquest.ui.vm.AppUpdateState
 import org.junit.Assert.*
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import java.net.URL
@@ -20,7 +21,18 @@ import java.net.URL
 class AppUpdatesUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
+    /** These tests use the real release; an exhausted anonymous GitHub quota skips them instead of failing. */
+    private fun latestReleaseJson(): String {
+        val connection = URL("https://api.github.com/repos/${BuildConfig.UPDATE_REPOSITORY}/releases/latest").openConnection() as java.net.HttpURLConnection
+        connection.connectTimeout = 20_000; connection.readTimeout = 20_000
+        connection.setRequestProperty("User-Agent", "WenYou-update-test")
+        val code = connection.responseCode
+        assumeTrue("GitHub API unavailable (HTTP $code), likely the anonymous rate limit", code == 200)
+        return connection.inputStream.bufferedReader().use { it.readText() }
+    }
+
     @Test fun settingsCheckAndUpdateActionsWork() {
+        latestReleaseJson()
         compose.waitUntil(5_000) { compose.onAllNodesWithText(compose.activity.getString(R.string.app_name)).fetchSemanticsNodes().size == 1 }
         compose.onNodeWithContentDescription("设置", useUnmergedTree = true).performClick()
         compose.onNodeWithText("系统与关于").performClick()
@@ -53,10 +65,7 @@ class AppUpdatesUiTest {
         val previousId = prefs.getLong("download_id", -1)
         val previousUrl = prefs.getString("download_url", null)
         val previousRelease = prefs.getString("download_release", null)
-        val connection = URL("https://api.github.com/repos/${BuildConfig.UPDATE_REPOSITORY}/releases/latest").openConnection()
-        connection.connectTimeout = 20_000; connection.readTimeout = 20_000
-        connection.setRequestProperty("User-Agent", "WenYou-update-test")
-        val release = parseAppRelease(connection.getInputStream().bufferedReader().use { it.readText() },
+        val release = parseAppRelease(latestReleaseJson(),
             BuildConfig.UPDATE_REPOSITORY, BuildConfig.FLAVOR, "0.0.0")!!
         val manager = context.getSystemService(DownloadManager::class.java)
         var id = -1L

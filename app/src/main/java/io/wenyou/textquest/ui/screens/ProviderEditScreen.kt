@@ -125,8 +125,14 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
                     Spacer(Modifier.height(8.dp))
                     AppField(value = profile.model, onValueChange = { vm.setModel(it) },
                         label = "模型名 model", singleLine = true,
-                        supporting = "示例：deepseek-chat / glm-4-flash / claude-3-5-sonnet-latest / gemini-2.0-flash")
+                        supporting = "选择厂商会自动填入常用模型，也可在下方「读取可用模型」中挑选")
                     Spacer(Modifier.height(8.dp))
+                    vm.presets.firstOrNull { it.kind == profile.kind && it.baseUrl == profile.baseUrl }?.keyUrl?.takeIf { it.isNotBlank() }?.let { url ->
+                        val context = androidx.compose.ui.platform.LocalContext.current
+                        AppTextButton(onClick = {
+                            runCatching { context.startActivity(android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))) }
+                        }) { Text("还没有 Key？去服务商平台获取") }
+                    }
                     AppField(value = profile.apiKey, onValueChange = { vm.setKey(it) },
                         label = "API Key", singleLine = true,
                         supporting = if (profile.kind.label.contains("Ollama") || profile.note.contains("本地"))
@@ -138,24 +144,21 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
                         label = "备注（可选）", singleLine = true)
                 }
             }
+            item { ModelPickerCard(ui, vm) }
             item { SectionHeader("2 · 生成参数") }
             item {
                 TonalCard {
                     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                         Text("创意温度", style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(90.dp))
                         Slider(
-                            value = profile.temperature.toFloat(),
+                            value = profile.temperature.toFloat().coerceAtMost(1f),
                             onValueChange = { vm.setTemperature(it.toDouble()) },
-                            valueRange = 0.0f..1.5f
+                            valueRange = 0.0f..1.0f
                         )
-                        io.wenyou.textquest.ui.common.RawText(String.format("%.2f", profile.temperature), style = MaterialTheme.typography.labelMedium)
+                        io.wenyou.textquest.ui.common.RawText(String.format("%.2f", minOf(profile.temperature, 1.0)), style = MaterialTheme.typography.labelMedium)
                     }
-                    Spacer(Modifier.height(4.dp))
-                    IntField(
-                        value = profile.maxTokens,
-                        onChange = { vm.setMaxTokens(it) },
-                        label = "最大回复长度（tokens）"
-                    )
+                    Text("越高越有想象力，越低越稳定；剧情游玩和 AI 创建都使用这个值。", style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             item { SectionHeader("3 · 费用估算（可选）") }
@@ -171,7 +174,6 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
                     }
                 }
             }
-            item { ModelPickerCard(ui, vm) }
             item { Spacer(Modifier.height(4.dp)) }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -255,19 +257,4 @@ private fun ModelPickerCard(ui: ProviderEditorState, vm: ProviderEditorViewModel
     }
 }
 
-@Composable
-private fun IntField(value: Int, onChange: (Int) -> Unit, label: String) {
-    var draft by remember(value) { mutableStateOf(value.toString()) }
-    OutlinedTextField(
-        value = draft,
-        onValueChange = { raw ->
-            draft = raw
-            raw.toIntOrNull()?.let(onChange)
-        },
-        label = { io.wenyou.textquest.ui.common.RawText(label) },
-        singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-    )
-}
 

@@ -24,7 +24,7 @@ private fun UsageRecord.label(): String = "$service · $model · $status · ${el
     (estimatedCost?.let { "估算费用 $currency ${String.format(Locale.ROOT, "%.6f", it)}" + (estimatedCostUpper?.let { upper -> "–${String.format(Locale.ROOT, "%.6f", upper)}" } ?: "") + if (pricingNote.isNotBlank()) "\n$pricingNote" else "" } ?: "费用未知（缺少用量或单价，取消/失败可能仍计费）")
 
 @Composable
-fun UsagePanel(tracker: UsageTracker, showLast: Boolean = true) {
+fun UsagePanel(tracker: UsageTracker, showLast: Boolean = true, showStats: Boolean = true) {
     val active by tracker.active.collectAsStateWithLifecycle()
     val records by tracker.records.collectAsStateWithLifecycle()
     val now = generationClock(active.isNotEmpty())
@@ -36,11 +36,17 @@ fun UsagePanel(tracker: UsageTracker, showLast: Boolean = true) {
         if (active.isEmpty() && showLast) records.lastOrNull()?.let {
             Text("最近一次请求\n${it.label()}", style = MaterialTheme.typography.bodySmall)
         }
-        AppTextButton(onClick = { open = true }) { Text("生成用量与费用统计") }
+        if (showStats) AppTextButton(onClick = { open = true }) { Text("生成用量与费用统计") }
     }
-    if (open) {
+    if (open) UsageDialog(tracker) { open = false }
+}
+
+@Composable
+fun UsageDialog(tracker: UsageTracker, onDismiss: () -> Unit) {
+    val records by tracker.records.collectAsStateWithLifecycle()
+    run {
         val error by tracker.persistenceError.collectAsStateWithLifecycle()
-        AlertDialog(onDismissRequest = { open = false }, title = { Text("生成用量与费用统计") },
+        AlertDialog(onDismissRequest = onDismiss, title = { Text("生成用量与费用统计") },
             text = {
                 Column(Modifier.heightIn(max = 500.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("本机最近 ${records.size} 次请求（最多 100 次），包含连接测试。tokens 取自服务返回，字符数不是 tokens。费用按官方价格快照或手动单价估算，实际账单以服务商为准。")
@@ -55,7 +61,7 @@ fun UsagePanel(tracker: UsageTracker, showLast: Boolean = true) {
                         HorizontalDivider()
                     }
                 }
-            }, confirmButton = { AppTextButton(onClick = { open = false }) { Text("关闭") } })
+            }, confirmButton = { AppTextButton(onClick = onDismiss) { Text("关闭") } })
     }
 }
 
