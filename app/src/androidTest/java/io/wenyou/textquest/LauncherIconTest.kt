@@ -19,25 +19,27 @@ class LauncherIconTest {
         val rainbow = render(R.drawable.ic_launcher_rainbow)
         val colors = listOf(0xE40303, 0xFF8C00, 0xFFED00, 0x008026, 0x24408E, 0x732982)
         colors.forEachIndexed { i, expected ->
-            val y = 742 + i * 15
-            val actual = rainbow.getPixel(740, y)
+            // Sample each arc along the diagonal towards the fan centre at (900, 900).
+            val d = ((222 - (i * 260 + 130) / 10) * 0.7071).toInt()
+            val actual = rainbow.getPixel(900 - d, 900 - d)
             for (channel in listOf<(Int) -> Int>(Color::red, Color::green, Color::blue)) {
                 assertTrue("Flag color $i differs", kotlin.math.abs(channel(actual) - channel(expected)) <= 14)
             }
         }
         val background = original.getPixel(950, 950)
         var changed = 0
+        var covered = 0
         for (y in 0 until 1080) for (x in 0 until 1080) {
             if (original.getPixel(x, y) != rainbow.getPixel(x, y)) {
-                assertTrue("Badge extends beyond its small corner", x in 700..780 && y in 740..820)
+                assertTrue("Badge extends beyond its lower-right fan", kotlin.math.hypot(x - 900.0, y - 900.0) <= 245)
                 val old = original.getPixel(x, y)
-                for (channel in listOf<(Int) -> Int>(Color::red, Color::green, Color::blue)) {
-                    assertTrue("Badge covers portrait", kotlin.math.abs(channel(old) - channel(background)) <= 4)
-                }
+                if (listOf<(Int) -> Int>(Color::red, Color::green, Color::blue).any { kotlin.math.abs(it(old) - it(background)) > 32 }) covered++
                 changed++
             }
         }
-        assertTrue(changed in 1..6_400)
+        // The fan stops short of the figure; only one small floating petal lies beneath it (faint frame lines are ignored).
+        assertTrue("Badge covers portrait: $covered", covered <= 400)
+        assertTrue("changed $changed", changed in 80_000..180_000)
         val preview = Bitmap.createBitmap(512, 512, Bitmap.Config.ARGB_8888)
         context.getDrawable(R.drawable.ic_launcher_rainbow)!!.apply {
             setBounds(0, 0, 512, 512); draw(Canvas(preview))

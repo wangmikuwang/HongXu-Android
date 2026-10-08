@@ -3,16 +3,21 @@
     <item android:drawable="@drawable/ic_launcher_fg" />
     <item>
         <vector android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-            <!-- Small badge in the portrait's empty lower-right area; keep within adaptive safe bounds. -->
-            <path android:pathData="M72,74 L76,74 Q78,74 78,76 L78,80 Q78,82 76,82 L72,82 Q70,82 70,80 L70,76 Q70,74 72,74 Z">
+            <!-- Pride rainbow as a fan of softly blended arcs centred just past the icon's lower-right corner: the outer
+                 edge stops short of the figure; rounded-square icons show all six colours, circular masks the outer ones. -->
+            <path android:fillColor="#30002838" android:pathData="M66.40,90.00 a23.60,23.60 0 1,0 47.20,0 a23.60,23.60 0 1,0 -47.20,0 Z" />
+            <path android:fillColor="#FFFFFF" android:pathData="M67.00,90.00 a23.00,23.00 0 1,0 46.00,0 a23.00,23.00 0 1,0 -46.00,0 Z" />
+            <path android:pathData="M67.80,90.00 a22.20,22.20 0 1,0 44.40,0 a22.20,22.20 0 1,0 -44.40,0 Z">
                 <aapt:attr name="android:fillColor">
-                    <gradient android:type="linear" android:startX="74" android:startY="74.2" android:endX="74" android:endY="81.8">
-                    <item android:offset="0.0" android:color="#E40303" />
-                    <item android:offset="0.2" android:color="#FF8C00" />
-                    <item android:offset="0.4" android:color="#FFED00" />
-                    <item android:offset="0.6" android:color="#008026" />
-                    <item android:offset="0.8" android:color="#24408E" />
-                    <item android:offset="1.0" android:color="#732982" />
+                    <gradient android:type="radial" android:centerX="90.0" android:centerY="90.0" android:gradientRadius="22.2">
+                        <item android:offset="0.000" android:color="#732982" />
+                        <item android:offset="0.356" android:color="#732982" />
+                        <item android:offset="0.473" android:color="#24408E" />
+                        <item android:offset="0.590" android:color="#008026" />
+                        <item android:offset="0.707" android:color="#FFED00" />
+                        <item android:offset="0.824" android:color="#FF8C00" />
+                        <item android:offset="0.941" android:color="#E40303" />
+                        <item android:offset="1.000" android:color="#E40303" />
                     </gradient>
                 </aapt:attr>
             </path>

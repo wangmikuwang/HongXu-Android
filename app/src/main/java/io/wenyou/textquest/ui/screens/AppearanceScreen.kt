@@ -261,6 +261,7 @@ private fun IconAppearanceContent(prefs: AppearancePrefs, update: ((AppearancePr
             Choice("图标外观", listOf("跟随系统" to "system", "浅色" to "light", "深色" to "dark"), prefs.launcherShell, { value -> update { it.copy(launcherShell = value, launcherIcon = "default") } })
             Text("保留本应用图标与名称；桌面图标由系统启动器刷新。", style = MaterialTheme.typography.bodySmall)
         }
+        io.wenyou.textquest.ui.common.CustomIconCard()
     }
 }
 
