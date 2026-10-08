@@ -1,5 +1,7 @@
 package io.wenyou.textquest
 
+import io.wenyou.textquest.data.parseMirrorRelease
+import io.wenyou.textquest.data.validateAppRelease
 import io.wenyou.textquest.data.AppUpdates
 import io.wenyou.textquest.data.parseAppRelease
 import io.wenyou.textquest.data.UpdatePolicy
@@ -42,12 +44,25 @@ class AppUpdatesTest {
     }
 
     @Test fun requestUsesPublicOwnRepositoryAndHandlesFailures() = runBlocking {
-        fun checker(code: Int, body: String) = AppUpdates(OkHttpClient.Builder().addInterceptor { chain ->
-            assertEquals("/repos/${BuildConfig.UPDATE_REPOSITORY}/releases/latest", chain.request().url.encodedPath)
+        // The F-Droid index mirror fails here, so every GitHub API failure still surfaces.
+        fun checker(code: Int, body: String, mirrorCode: Int = 503, mirrorBody: String = "") = AppUpdates(OkHttpClient.Builder().addInterceptor { chain ->
+            val url = chain.request().url
+            val mirror = url.host == "wangmikuwang.github.io"
+            assertEquals(if (mirror) "/fdroid/repo/index-v1.json" else "/repos/${BuildConfig.UPDATE_REPOSITORY}/releases/latest", url.encodedPath)
             assertNull(chain.request().header("Authorization"))
-            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(code).message("test")
-                .body(body.toResponseBody()).build()
+            Response.Builder().request(chain.request()).protocol(Protocol.HTTP_1_1).code(if (mirror) mirrorCode else code).message("test")
+                .body((if (mirror) mirrorBody else body).toResponseBody()).build()
         }.build())
+        // A rate-limited API falls back to the index: same APK, downloaded from the GitHub release.
+        val sha = "b".repeat(64)
+        val index = """{"packages":{"${BuildConfig.APPLICATION_ID}":[{"versionName":"99.0.0","versionCode":9900,"hashType":"sha256","hash":"${"a".repeat(64)}","size":5},
+            {"versionName":"99.1.0","versionCode":9910,"hashType":"sha256","hash":"$sha","size":7}]}}"""
+        val viaMirror = checker(403, "rate limited", 200, index).check()!!
+        assertEquals("99.1.0", viaMirror.version); assertEquals(sha, viaMirror.sha256); assertEquals(7L, viaMirror.size)
+        assertEquals("https://github.com/${BuildConfig.UPDATE_REPOSITORY}/releases/download/v99.1.0/${BuildConfig.APP_FILE_PREFIX}-v99.1.0.apk", viaMirror.url)
+        validateAppRelease(viaMirror)
+        assertNull(parseMirrorRelease(index, BuildConfig.APPLICATION_ID, BuildConfig.UPDATE_REPOSITORY, BuildConfig.FLAVOR, "99.1.0"))
+        try { checker(403, "rate limited", 200, index.replace("sha256", "md5")).check(); fail("Unverifiable mirror accepted") } catch (_: Exception) { }
         assertNull(checker(404, "").check())
         for ((code, body) in listOf(403 to "rate limited", 500 to "error", 200 to "not-json", 200 to "x".repeat(1_048_577))) {
             try { checker(code, body).check(); fail("Invalid response accepted") } catch (_: Exception) { }
