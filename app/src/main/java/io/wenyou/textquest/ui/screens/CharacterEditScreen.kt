@@ -143,9 +143,9 @@ fun CharacterEditScreen(container: WenYouApp.AppContainer, nav: NavHostControlle
                         placeholder = "给 AI 一两句标志性台词，便于模仿语气。")
                     Spacer(Modifier.padding(top = 8.dp))
                     AppField(value = char.extraPrompt, onValueChange = { vm.setExtraPrompt(it) },
-                        label = "附加人设提示语（高优先级）", minLines = 5,
-                        placeholder = "写你的身份/世界观/规则/说话风格……会放到人设最前，权重最高，供 AI 优先遵循。",
-                        supporting = "用于强化人设与世界观；拼接系统提示时位于最高优先级。")
+                        label = "附加人设提示语", minLines = 5,
+                        placeholder = "写你的身份/世界观/说话风格……会放到该角色人设最前，供 AI 优先参考。",
+                        supporting = "用于强化人设与世界观；优先于该角色其他设定，但始终服从「设置 → 底层基调」。")
                     Spacer(Modifier.padding(top = 8.dp))
                     AppDropdown(
                         label = "性取向",

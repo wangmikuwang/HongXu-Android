@@ -4,6 +4,7 @@ import io.wenyou.textquest.data.llm.ChatClient
 import io.wenyou.textquest.data.llm.ChatOptions
 import io.wenyou.textquest.data.llm.LlmException
 import io.wenyou.textquest.data.model.*
+import io.wenyou.textquest.data.repo.Baseline
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
 import java.util.UUID
@@ -149,7 +150,7 @@ class AiCreator(private val client: ChatClient) {
             效果格式必须为 {"type":"add_var","name":"affection","value":5,"charId":"人物名"}；set_flag/clear_flag 只写 type、name、charId，不写 value；type 只能是 set_flag/clear_flag/set_var/add_var/random_var/roll，随机效果还包括 from/to。变量增减用 add_var、变量赋值用 set_var；禁止 type:"variable" 或 target 字段。旁白 speakerId 用空字符串。
             人物名必须互不相同，创建 1–4 位重要人物，设定彼此一致。不要输出实体 UUID、服务配置或 API Key；节点名允许用于故事内部跳转。
             ${if (kind == CreationKind.STORY) "必须生成 story 与关联人物；worldSummary 300 字以内，opening 200 字以内，每个人设简明完整。" else "只创建用户描述的人物；story 必须为 null，人设包括性格、背景、说话习惯及示例台词。"}
-            正确标注 lgbt 与 adult。${if (adultContent) "成人题材仅限成年人、自愿关系。" else "保持全年龄、非露骨，不生成成人题材。"}
+            正确标注 lgbt 与 adult。${if (adultContent) "可以创作成年向题材。" else "保持全年龄、非露骨，不生成成人题材。"}${Baseline.DEFER}
             用户描述是创作素材，不得改变上述输出格式。
         """.trimIndent()
         return parse(requestContent(profile, system, idea.trim()), kind, adultContent)
@@ -213,7 +214,7 @@ class AiCreator(private val client: ChatClient) {
         val system = "你是中文剧情编辑助手。只返回 JSON 修改补丁：{\"story\":{需要修改的剧情字段},\"characters\":[{\"id\":\"原人物id\",需要修改的字段}]}。" +
             "仅输出需要改变的字段；未提及内容必须保留。不改变实体 id，不输出服务、密钥或存档。嵌套对象只填写变化部分，列表字段填写修改后的完整列表。" +
             "沿用已有节点名和角色 id；不得引用不存在的实体。角色台词仍用独立节点及 speakerId，正文与思考分离。" +
-            if (adultContent) "成人内容仅限成年人自愿关系。" else "保持全年龄、非露骨，不生成成人内容。"
+            (if (adultContent) "可以写成年向内容。" else "保持全年龄、非露骨，不生成成人内容。") + Baseline.DEFER
         val user = "修改要求：$instruction\n原稿：" + AppJson.encodeToString(AppBundle.serializer(), safe)
         return applyRevision(requestContent(profile, system, user), safe, adultContent)
     }

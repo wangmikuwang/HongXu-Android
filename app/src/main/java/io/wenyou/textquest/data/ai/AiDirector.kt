@@ -10,6 +10,7 @@ import io.wenyou.textquest.data.model.CharacterData
 import io.wenyou.textquest.data.model.EntryKind
 import io.wenyou.textquest.data.model.LogEntry
 import io.wenyou.textquest.data.model.ScenePace
+import io.wenyou.textquest.data.repo.Baseline
 import io.wenyou.textquest.data.model.SessionState
 import io.wenyou.textquest.data.model.Story
 import io.wenyou.textquest.data.model.StoryNode
@@ -168,7 +169,7 @@ class AiDirector(private val client: ChatClient) {
         if (characters.isEmpty()) return ""
         val joined = characters.filter { it.id in story.characterIds }.joinToString("\n") { personaCard(it) }
         if (joined.isBlank()) return ""
-        return "登场角色（请严格贴合下列人设，包括说话习惯、用词、情感）：\n$joined"
+        return "登场角色（在底层基调范围内严格贴合下列人设，包括说话习惯、用词、情感）：\n$joined"
     }
 
     internal fun playerIdentity(state: SessionState, characters: List<CharacterData>): String {
@@ -189,13 +190,13 @@ class AiDirector(private val client: ChatClient) {
         }
     }
 
-    /** 尺度说明：成人向允许亲密/性爱（成年、自愿），否则浪漫含蓄。 */
     private fun paceNote(state: SessionState): String =
         ScenePace.of(state.pace).instruction.takeIf { it.isNotBlank() }?.let { "\n【推进节奏】$it\n" }.orEmpty()
 
+    /** The player's content setting only narrows what is written; limits themselves come from the baseline. */
     private fun scaleNote(adult: Boolean): String =
-        if (adult) "\n【本作为18+成年向】允许自然描写亲密与性爱场景，保持成年、自愿、可随时停下；不写强制/未成年。\n"
-        else "\n【内容尺度】保持浪漫含蓄、非露骨，亲密点到即止。\n"
+        if (adult) "\n【内容尺度】本作为成年向，亲密场景可以自然描写。${Baseline.DEFER}\n"
+        else "\n【内容尺度】保持浪漫含蓄、非露骨，亲密点到即止。${Baseline.DEFER}\n"
     /** 角色当前状态（好恶/身体/穿着/氛围值等）注入上下文。 */
     private fun charStatesSnapshot(story: Story, characters: List<CharacterData>, state: SessionState): String = buildString {
         val bound = characters.filter { it.id in story.characterIds }
@@ -294,8 +295,8 @@ class AiDirector(private val client: ChatClient) {
         val system = buildString {
             append("你是这款中文文字游戏的「AI 导演/主持人」。你负责：\n")
             append("1) 用细腻的叙述推进剧情，营造氛围；\n")
-            append("2) 扮演所有出场角色——严格贴合他们的性格、语气与背景，绝不擅自改变人设；\n")
-            append("3) 尊重玩家自由输入，任何走向都可以发展（包括危险、温情、悬疑、搞笑）。\n")
+            append("2) 扮演所有出场角色——严格贴合他们的性格、语气与背景，除底层基调要求外不擅自改变人设；\n")
+            append("3) 尊重玩家自由输入，剧情可以走向危险、温情、悬疑、搞笑等任何方向；${Baseline.DEFER}\n")
             append("叙事基调：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观与初始局面：").append(story.ai.worldSummary).append("\n")
             append(playerIdentity(state, characters))

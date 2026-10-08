@@ -60,6 +60,25 @@ class BaselineTest {
         assertTrue(captured("  ", ProviderKind.OPENAI_COMPAT) { c, p -> AiDirector(c).testProfile(p) }.contains("不生成任何涉及未成年人"))
     }
 
+    @Test fun featurePromptsDeferToTheBaselineInsteadOfDefiningLimits() {
+        val rules = "自定义基调-甲乙丙"
+        val story = Story("s", "雨城", characterIds = listOf("c"))
+        val actor = CharacterData("c", "阿雨")
+        val bodies = listOf(true, false).flatMap { adult ->
+            listOf(
+                captured(rules, ProviderKind.OPENAI_COMPAT) { c, p -> AiDirector(c).directorTurn(p, story, listOf(actor), SessionState("s"), "继续", adult) },
+                captured(rules, ProviderKind.OPENAI_COMPAT) { c, p -> io.wenyou.textquest.data.ai.AiCreator(c).generate(p, "雨夜", io.wenyou.textquest.data.ai.CreationKind.STORY, adult) },
+            )
+        }
+        for (body in bodies) {
+            val text = AppJson.parseToJsonElement(body).toString()
+            // Strip the baseline itself; what remains is what the features wrote.
+            val features = text.replace(Regex("【底层基调｜最高优先级】.*?【底层基调结束】"), "").replace(Regex("【底层基调｜再次确认】.*"), "")
+            assertTrue(features.contains("以系统提示开头的「底层基调」为准"))
+            for (own in listOf("未成年", "自愿", "强制")) assertFalse("A feature prompt defines its own limit: $own", features.contains(own))
+        }
+    }
+
     @Test fun legacyRulesFoldIntoTheSingleBaselineAndCharacterRulesMoveToTheirPersona() {
         val dir = Files.createTempDirectory("baseline").toFile()
         File(dir, "bottom_rules.json").writeText("""[{"id":"r","name":"守约","content":"信守承诺"},{"id":"e","name":"空","content":" "}]""")

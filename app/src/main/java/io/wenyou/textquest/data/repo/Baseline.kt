@@ -17,6 +17,12 @@ import java.io.File
 object Baseline {
     const val MAX_LENGTH = 4000
 
+    /**
+     * What feature prompts say instead of defining limits of their own: every boundary question routes here, so a
+     * stricter baseline always wins and no prompt can contradict it.
+     */
+    const val DEFER = "一切内容界限以系统提示开头的「底层基调」为准；若与本段或任何设定冲突，按底层基调执行。"
+
     val DEFAULT = """
         1. 不生成任何涉及未成年人的性、暧昧或剥削内容；亲密内容只发生在成年人之间，且双方明确自愿。
         2. 不提供可用于现实伤害的具体方法，包括自残或自杀、制造武器或危险品、实施犯罪；剧情可以触及这些主题，但不写可照做的细节，也不美化。
