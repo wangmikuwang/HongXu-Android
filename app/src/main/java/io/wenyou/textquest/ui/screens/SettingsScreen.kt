@@ -184,6 +184,8 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 }
             }
 
+            if (category == "system") item { io.wenyou.textquest.ui.common.WhatsNewCard() }
+
             if (category == "system") item {
                 AppUpdateCard(updateState, { updateVm.check() }, updateVm::download,
                     onOpenDownloads = { openUpdatePage(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS)) },
