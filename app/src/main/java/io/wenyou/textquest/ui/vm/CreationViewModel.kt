@@ -7,6 +7,7 @@ import io.wenyou.textquest.data.ai.AiCreator
 import io.wenyou.textquest.data.ai.AiDirector
 import io.wenyou.textquest.data.ai.CreationKind
 import io.wenyou.textquest.data.model.AppBundle
+import io.wenyou.textquest.data.model.StoryMode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +19,7 @@ data class CreationUi(
     val idea: String = "",
     val revision: String = "",
     val kind: CreationKind = CreationKind.STORY,
+    val mode: StoryMode = StoryMode.AI_DIRECTOR,
     val busy: Boolean = false,
     val saving: Boolean = false,
     val draft: AppBundle? = null,
@@ -36,6 +38,9 @@ class CreationViewModel(private val container: WenYouApp.AppContainer) : ViewMod
     }
     fun setKind(value: CreationKind) {
         if (!ui.value.busy) state.update { it.copy(kind = value, draft = null, error = "", saved = false) }
+    }
+    fun setMode(value: StoryMode) {
+        if (!ui.value.busy) state.update { it.copy(mode = value, draft = null, error = "", saved = false) }
     }
     fun setRevision(value: String) { if (!ui.value.busy) state.update { it.copy(revision = value.take(2000), error = "") } }
     fun revise() {
@@ -68,7 +73,7 @@ class CreationViewModel(private val container: WenYouApp.AppContainer) : ViewMod
         state.update { it.copy(busy = true, error = "", draft = null, saved = false) }
         generation = viewModelScope.launch {
             try {
-                val draft = creator.generate(profile, current.idea, current.kind, prefs.adultContent)
+                val draft = creator.generate(profile, current.idea, current.kind, prefs.adultContent, current.mode)
                 state.update { it.copy(draft = draft) }
             } catch (e: CancellationException) {
                 throw e
