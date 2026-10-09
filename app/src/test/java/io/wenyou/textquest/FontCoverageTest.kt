@@ -30,8 +30,11 @@ class FontCoverageTest {
 
     @Test fun everyIdeographInTheAppsOwnTextIsInTheBundledFont() {
         val covered = coverage(ByteBuffer.wrap(fontFile.readBytes()))
-        val sources = File(app, "src/main").walkTopDown().filter { f ->
-            f.isFile && (f.extension == "kt" || f.extension == "md" || f.extension == "json" ||
+        // Main code plus every flavor's assets and strings (built-in stories live in flavor assets).
+        val sources = File(app, "src").walkTopDown().filter { f ->
+            val path = f.invariantSeparatorsPath
+            f.isFile && "/test/" !in path && "/androidTest/" !in path && (
+                (f.extension == "kt" && "/src/main/" in path) || (f.extension in setOf("md", "json") && "/assets/" in path) ||
                 (f.name == "strings.xml" && f.parentFile?.name?.startsWith("values") == true))
         }
         val missing = sources.flatMap { ideographs(it.readText()) }.toSet() - covered

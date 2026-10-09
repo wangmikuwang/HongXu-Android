@@ -17,7 +17,7 @@ SOURCE = Path(__file__).with_name('LXGWWenKai-Regular.ttf')
 TARGET = ROOT / 'app/src/main/res/font/bundled_kai_regular.ttf'
 FAMILY = 'Bundled Kai'
 # The app's own text; FontCoverageTest checks the same files so new UI text cannot fall outside the subset.
-APP_TEXT = ['app/src/main/java/**/*.kt', 'app/src/main/res/values*/strings.xml', 'app/src/main/assets/**/*.md', 'app/src/main/assets/**/*.json']
+APP_TEXT = ['app/src/main/java/**/*.kt', 'app/src/*/res/values*/strings.xml', 'app/src/*/assets/**/*.md', 'app/src/*/assets/**/*.json']
 
 
 def is_ideograph(u):

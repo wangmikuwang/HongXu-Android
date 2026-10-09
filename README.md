@@ -8,7 +8,7 @@
 
 多元人物与情感故事的 Android 文字冒险与 AI 叙事工坊——离线游玩分支剧本，或接入大模型，让 AI 导演与角色陪你即兴共创。
 
-[![最新版本](https://img.shields.io/github/v/release/wangmikuwang/WenYou-TextQuest?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC&color=ff2d8f)](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest)
+[![最新版本](https://img.shields.io/github/v/release/wangmikuwang/HongXu-Android?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC&color=ff2d8f)](https://github.com/wangmikuwang/HongXu-Android/releases/latest)
 ![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
@@ -16,7 +16,7 @@
 [![GPL-3.0](https://img.shields.io/badge/%E8%AE%B8%E5%8F%AF%E8%AF%81-GPL--3.0-blue)](LICENSE)
 [![F-Droid 仓库](https://img.shields.io/badge/F--Droid-%E8%87%AA%E5%BB%BA%E4%BB%93%E5%BA%93-1976d2?logo=fdroid&logoColor=white)](https://wangmikuwang.github.io/fdroid/)
 
-### [⬇️ 下载最新版](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest) · [📦 通过 F-Droid 安装](https://wangmikuwang.github.io/fdroid/)
+### [⬇️ 下载最新版](https://github.com/wangmikuwang/HongXu-Android/releases/latest) · [📦 通过 F-Droid 安装](https://wangmikuwang.github.io/fdroid/)
 
 [功能](#-亮点) · [快速开始](#-快速开始) · [玩法](#-三种玩法) · [开发者](#%EF%B8%8F-开发者) · [更新日志](CHANGELOG.md) · [致谢](#-致谢)
 
@@ -45,14 +45,14 @@
 - ✍️ **一句话创作**：一句创意生成完整剧情与人物，再用「一句话修改」微调，预览后才写入。
 - 🗺️ **分支图与探索进度**：游玩中随时查看剧情走向，标出当前位置、已到达节点和已解锁结局。
 - 🫧 **液态玻璃界面**：实时模糊与边缘折射的玻璃材质，按住底栏会浮起一枚会放大的透镜；也可切回 Material You。
-- 🌈 **多元人物与情感故事**：内置异性恋、同性恋、双性恋、泛性恋与无性恋角色及配套剧情；LGBT 与 18+ 内容各有独立开关，只影响显示、不删数据。
+- 🌈 **多元人物与情感故事**：内置异性恋、男/女同性恋、双性恋、泛性恋、全性恋、多性恋、流动性取向、无性恋、半性恋、灰性恋、无浪漫倾向与不贴标签的角色及配套剧情，也有跨性别、非二元、性别流动与间性人角色；LGBT 与 18+ 内容各有独立开关，只影响显示、不删数据。
 - 📦 **分享与导出**：剧情和角色一键发送链接或文件，对方点开即可导入；也支持分享码、二维码海报；对局可导出成小说文本；整包备份随时迁移。
 - 🔒 **本地优先**：所有数据只存在你的手机里；AI 请求直连你自己配置的服务商，密钥不上传。
 
 ## 🚀 快速开始
 
 1. **安装**（Android 8.0 及以上，二选一）：
-   - **直接下载**：到 [Releases](https://github.com/wangmikuwang/WenYou-TextQuest/releases/latest) 下载 `HongXu-v版本号.apk`，首次安装请允许本应用「安装未知应用」。之后应用会自动检查更新，在应用内下载并校验。
+   - **直接下载**：到 [Releases](https://github.com/wangmikuwang/HongXu-Android/releases/latest) 下载 `HongXu-v版本号.apk`，首次安装请允许本应用「安装未知应用」。之后应用会自动检查更新，在应用内下载并校验。
    - **F-Droid**：在 F-Droid 客户端「设置 → 仓库」中添加 `https://wangmikuwang.github.io/fdroid/repo`，或在手机上打开[仓库页面](https://wangmikuwang.github.io/fdroid/)一键添加。仓库指纹：`885F92BA3C2DDD5EE6F095BB3E6796A194E4EE88F558FB95FCB4C18388A5B9E6`。两种方式的安装包签名相同，可以互相覆盖升级。
 2. **开玩**：打开即可游玩内置剧情。标着「分支剧本」的故事完全离线，不需要任何配置。
 3. **接入 AI（可选）**：设置 → AI 服务与生成 → 管理 AI 服务，添加服务商的地址、密钥和模型，先「测试连接」再保存。之后就能玩 AI 导演、AI 场景，以及一句话创作。
@@ -90,7 +90,7 @@
 
 ### 内容与分级
 
-内置异性恋、男/女同性恋、双性恋、泛性恋与无性恋角色及配套剧情，成人向（18+）内容覆盖同样的取向。剧情与角色都可标记 **LGBT** 与 **18+**：同时标记的作品在两个筛选下都会出现，都未标记则归为「全年龄」。内容开关只影响列表显示，不会删除本地数据。
+内置异性恋、男/女同性恋、双性恋、泛性恋、全性恋、多性恋、流动性取向、无性恋、半性恋、灰性恋、无浪漫倾向与不贴标签的角色及配套剧情，其中也有跨性别、非二元、性别流动与间性人角色；角色编辑器可选择以上任一性取向。成人向（18+）内容覆盖男/女同性恋、双性恋、泛性恋、无性恋与异性恋。剧情与角色都可标记 **LGBT** 与 **18+**：同时标记的作品在两个筛选下都会出现，都未标记则归为「全年龄」。内容开关只影响列表显示，不会删除本地数据。
 
 ### 外观
 
@@ -322,7 +322,7 @@ third_party/           随包组件的来源与许可
 
 ## 🙏 致谢
 
-这个项目从一个想法开始，一路有 AI 伙伴并肩：**DeepSeek 的 Harness**、**OpenAI 的 Codex** 与 **Anthropic 的 Claude**，帮助把想法一点点变成现实。感谢的话写在[这条置顶 issue](https://github.com/wangmikuwang/WenYou-TextQuest/issues/1) 里。
+这个项目从一个想法开始，一路有 AI 伙伴并肩：**DeepSeek 的 Harness**、**OpenAI 的 Codex** 与 **Anthropic 的 Claude**，帮助把想法一点点变成现实。感谢的话写在[这条置顶 issue](https://github.com/wangmikuwang/HongXu-Android/issues/1) 里。
 
 - [wangmikuwang](https://github.com/wangmikuwang)：项目发起、整体架构与产品设计。
 - Little Code Sauce（AI 编程搭档）：功能实现、代码审核与优化、构建与发布流程。

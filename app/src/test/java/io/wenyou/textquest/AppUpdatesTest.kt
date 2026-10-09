@@ -22,7 +22,7 @@ class AppUpdatesTest {
     @Test fun versionsAndDownloadsAreRestrictedToThisApp() {
         fun parse(text: String, current: String = "4.1.0") = parseAppRelease(text, BuildConfig.UPDATE_REPOSITORY, BuildConfig.FLAVOR, current)
         assertEquals("4.2.0", parse(release())!!.version)
-        val legacy = release().replace(BuildConfig.APP_FILE_PREFIX, "WenYou-${BuildConfig.FLAVOR}")
+        val legacy = release().replace("${BuildConfig.APP_FILE_PREFIX}-v", "WenYou-${BuildConfig.FLAVOR}-v")
         assertEquals("WenYou-${BuildConfig.FLAVOR}-v4.2.0.apk", parse(legacy)!!.fileName)
         assertNotNull(parse(release("4.10.0"), "4.9.99"))
         assertNotNull(parse(release("5.0.0"), "4.9.99-α"))
