@@ -27,7 +27,6 @@ object CharacterMetrics {
     fun byKey(key: String): Def? = defs.firstOrNull { it.key == key }
     fun label(key: String): String = byKey(key)?.label ?: key
     fun icon(key: String): String = byKey(key)?.icon ?: "📌"
-    fun isAtmosphere(key: String): Boolean = byKey(key)?.atmosphere ?: false
 
     /** 归一化到 0..100。 */
     fun clamp(v: Double): Double = v.coerceIn(0.0, 100.0)

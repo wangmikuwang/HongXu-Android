@@ -99,7 +99,6 @@ object R {
     const val ARG_SAVE = "saveId"
     const val ARG_CHAR = "charId"
     const val ARG_PROVIDER = "providerId"
-    const val ARG_RULE = "ruleId"
 
     const val STORY_EDIT = "story_edit/{$ARG_STORY}"
     const val CHAR_EDIT = "char_edit/{$ARG_CHAR}"

@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -295,5 +294,3 @@ class LocalLibrary internal constructor(private val dir: File) {
     }
 }
 
-/** 解析 Json 的兜底实例（复用 AppJson 的宽松配置）。 */
-val LenientJson: Json get() = AppJson

@@ -10,7 +10,7 @@ import androidx.compose.ui.text.font.FontFamily
 import io.wenyou.textquest.data.AppearanceFiles
 import java.io.File
 
-internal val DefaultAppFont = FontFamily(Font(R.font.lxgw_wenkai_regular))
+internal val DefaultAppFont = FontFamily(Font(R.font.bundled_kai_regular))
 
 internal fun appearanceTypography(base: Typography, prefs: AppearancePrefs, context: Context): Typography {
     val family = if (prefs.fontFile.isEmpty()) null else runCatching {

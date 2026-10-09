@@ -444,7 +444,7 @@ class PlayViewModel internal constructor(
         val ui = _ui.value
         val story = ui.story ?: return
         val node = story.nodes[ui.nodeId]
-        session = session?.let { it.copy(aiTurns = (it.aiTurns.coerceAtLeast(0).toLong() + 1).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
+        countAiTurn()
         session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
         applyStateChanges(scene.stateEffects)
         appendEntries(scene.logEntries(ui.characters, node?.speakerId.orEmpty(), session?.playerCharacterId.orEmpty()))
@@ -506,7 +506,7 @@ class PlayViewModel internal constructor(
                     onReasoning = reasoning::append,
                     onDelta = { reasoning.flush() })
                 if (job.isActive && aiJob === job) {
-                    session = session?.let { it.copy(aiTurns = (it.aiTurns.coerceAtLeast(0).toLong() + 1).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
+                    countAiTurn()
                     appendEntries(scene.logEntries(ui.characters, playerId = session?.playerCharacterId.orEmpty()))
                     session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
                     applyStateChanges(scene.stateEffects)
@@ -701,6 +701,10 @@ class PlayViewModel internal constructor(
         val choices = maxOf(s.choicesTaken, s.history.count { it.kind == EntryKind.CHOICE })
         session = s.copy(history = (s.history + stamped).takeLast(600), updatedAt = now,
             choicesTaken = (choices.coerceAtLeast(0).toLong() + entries.count { it.kind == EntryKind.CHOICE }).coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
+    }
+
+    private fun countAiTurn() {
+        session = session?.let { it.copy(aiTurns = if (it.aiTurns >= Int.MAX_VALUE) Int.MAX_VALUE else it.aiTurns.coerceAtLeast(0) + 1) }
     }
 
     private fun toChoiceData(choice: AiChoice) = ChoiceData(choice.text, choice.next)

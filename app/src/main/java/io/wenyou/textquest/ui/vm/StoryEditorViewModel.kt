@@ -136,13 +136,6 @@ class StoryEditorViewModel(
         return id
     }
 
-    fun duplicateNode(): String {
-        val base = current() ?: return ""
-        val id = nextNodeId()
-        updateStory { s -> s.copy(nodes = s.nodes + (id to base.copy(id = id))) }
-        _ui.update { it.copy(selectedNodeId = id) }
-        return id
-    }
 
     fun removeNode(id: String) {
         if ((_ui.value.story?.nodes?.size ?: 0) <= 1) {

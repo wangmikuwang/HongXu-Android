@@ -3,6 +3,7 @@ package io.wenyou.textquest.data.llm
 import io.wenyou.textquest.data.model.ApiProfile
 import io.wenyou.textquest.data.model.AppJson
 import io.wenyou.textquest.data.model.ProviderKind
+import io.wenyou.textquest.data.repo.Baseline
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
@@ -31,11 +32,6 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
 import java.util.concurrent.TimeUnit
-
-/** 统一的对话消息。 */
-enum class LlmRole(val wire: String) { SYSTEM("system"), USER("user"), ASSISTANT("assistant") }
-
-data class LlmMessage(val role: LlmRole, val content: String)
 
 data class ChatOptions(val temperature: Double = 0.85, val maxTokens: Int = 1024, val thinking: Boolean? = null)
 
@@ -73,19 +69,19 @@ internal fun networkFailure(e: IOException): LlmException = LlmException(when (e
     else -> "网络错误：请检查网络后重试"
 }, e)
 
-/** 多品牌流式聊天客户端。OpenAI 兼容、Anthropic、Gemini 三种协议收敛到 [streamText]。 */
 /** 一次流式/非流式调用的结果：正文 + 思考过程。 */
 data class ChatResult(val content: String, val reasoning: String)
 
 /** 一个响应帧可以同时包含正文和思考。 */
 private data class Delta(val content: String = "", val reasoning: String = "")
+
+/** 多品牌流式聊天客户端。OpenAI 兼容、Anthropic、Gemini 三种协议收敛到 [streamText]。 */
 class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = UsageTracker()) {
     /**
      * The player's baseline (底层基调). Every request is built in [streamText], which always wraps it around the
      * prompt, so no feature can send AI text without it.
      */
-    @Volatile var baseline: () -> String = { io.wenyou.textquest.data.repo.Baseline.DEFAULT }
-
+    @Volatile var baseline: () -> String = { Baseline.DEFAULT }
 
     private val client = ok
 
@@ -110,7 +106,7 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
         // read timeout, so this cap only bounds the total. Reasoning models think longer still.
         val timeoutMs = if (profile.model.contains("reasoner", ignoreCase = true)) 360_000L else 300_000L
         try {
-            val (guardedSystem, guardedUser) = io.wenyou.textquest.data.repo.Baseline.guard(baseline(), system, user)
+            val (guardedSystem, guardedUser) = Baseline.guard(baseline(), system, user)
             call = buildCall(profile, guardedSystem, guardedUser, options)
             val requestCall = call
             val result = withTimeout(timeoutMs) {
@@ -133,6 +129,11 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
                                     cont.resumeWith(Result.failure(LlmException("空响应")))
                                     return
                                 }
+                                fun emit(d: Delta?) {
+                                    if (d == null || !cont.isActive) return
+                                    if (d.reasoning.isNotEmpty()) { reasoningFull.append(d.reasoning); usage.progress(id, "正在思考", full.length + reasoningFull.length); onReasoning(d.reasoning) }
+                                    if (d.content.isNotEmpty()) { full.append(d.content); usage.progress(id, "正在生成内容", full.length + reasoningFull.length); onDelta(d.content) }
+                                }
                                 var sawData = false
                                 val raw = StringBuilder()
                                 while (true) {
@@ -143,21 +144,13 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
                                         val payload = line.removePrefix("data:").trim()
                                         if (payload == "[DONE]") break
                                         if (payload.isEmpty()) continue
-                                        val d = try { val element = AppJson.parseToJsonElement(payload); tokens = tokens.read(profile.kind, element); extractDelta(profile.kind, element) } catch (_: Throwable) { null }
-                                        if (d != null && cont.isActive) {
-                                            if (d.reasoning.isNotEmpty()) { reasoningFull.append(d.reasoning); usage.progress(id, "正在思考", full.length + reasoningFull.length); onReasoning(d.reasoning) }
-                                            if (d.content.isNotEmpty()) { full.append(d.content); usage.progress(id, "正在生成内容", full.length + reasoningFull.length); onDelta(d.content) }
-                                        }
+                                        emit(try { val element = AppJson.parseToJsonElement(payload); tokens = tokens.read(profile.kind, element); extractDelta(profile.kind, element) } catch (_: Throwable) { null })
                                     } else if (!sawData) {
                                         raw.append(line).append('\n')
                                     }
                                 }
                                 if (!sawData && raw.isNotBlank()) {
-                                    val d = try { val element = AppJson.parseToJsonElement(raw.toString()); tokens = tokens.read(profile.kind, element); extractWhole(profile.kind, element) } catch (_: Throwable) { null }
-                                    if (d != null && cont.isActive) {
-                                        if (d.reasoning.isNotEmpty()) { reasoningFull.append(d.reasoning); usage.progress(id, "正在思考", full.length + reasoningFull.length); onReasoning(d.reasoning) }
-                                        if (d.content.isNotEmpty()) { full.append(d.content); usage.progress(id, "正在生成内容", full.length + reasoningFull.length); onDelta(d.content) }
-                                    }
+                                    emit(try { val element = AppJson.parseToJsonElement(raw.toString()); tokens = tokens.read(profile.kind, element); extractWhole(profile.kind, element) } catch (_: Throwable) { null })
                                 }
                                 // 流已结束（[DONE] 或响应流结束）但正文仍为空：视为失败，避免用户看到无提示的空白
                                 if (full.isBlank() && reasoningFull.isBlank()) {
@@ -319,7 +312,7 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
         val body = buildJsonObject {
             put("model", profile.model)
             put("stream", true)
-            put("temperature", options.temperature)
+            put("temperature", options.temperature.coerceIn(0.0, 1.0))
             put("max_tokens", options.maxTokens)
             if (system.isNotBlank()) put("system", system)
             putJsonArray("messages") {
@@ -382,15 +375,17 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
                 if (t == null || t is JsonNull) return null
                 Delta(content = primText(t))
             }
-            ProviderKind.GEMINI -> {
-                val candidates = root["candidates"]?.jsonArray ?: return null
-                if (candidates.isEmpty()) return null
-                val parts = candidates[0].jsonObject["content"]?.jsonObject?.get("parts")?.jsonArray ?: return null
-                val el = parts.firstOrNull()?.jsonObject?.get("text") ?: return null
-                if (el is JsonNull) return null
-                Delta(content = primText(el))
-            }
+            ProviderKind.GEMINI -> geminiText(root)
         }
+    }
+
+    private fun geminiText(root: JsonObject): Delta? {
+        val parts = root["candidates"]?.jsonArray?.firstOrNull()?.jsonObject
+            ?.get("content")?.jsonObject?.get("parts")?.jsonArray ?: return null
+        val text = parts.mapNotNull { it as? JsonObject }
+            .filterNot { it["thought"]?.jsonPrimitive?.contentOrNull == "true" }
+            .joinToString("") { primText(it["text"] ?: JsonNull) }
+        return if (text.isEmpty()) null else Delta(content = text)
     }
 
     private fun primText(p: kotlinx.serialization.json.JsonElement): String = when (p) {
@@ -410,17 +405,12 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
                 Delta(content = primText(content ?: JsonNull), reasoning = primText(reason ?: JsonNull))
             }
             ProviderKind.ANTHROPIC -> {
-                val t = root["content"]?.jsonArray?.firstOrNull()?.jsonObject?.get("text")
-                if (t == null || t is JsonNull) return null
-                Delta(content = primText(t))
+                val text = root["content"]?.jsonArray.orEmpty().mapNotNull { it as? JsonObject }
+                    .filter { (it["type"]?.jsonPrimitive?.contentOrNull ?: "text") == "text" }
+                    .joinToString("") { primText(it["text"] ?: JsonNull) }
+                if (text.isEmpty()) null else Delta(content = text)
             }
-            ProviderKind.GEMINI -> {
-                val parts = root["candidates"]?.jsonArray?.firstOrNull()?.jsonObject
-                    ?.get("content")?.jsonObject?.get("parts")?.jsonArray ?: return null
-                val el = parts.firstOrNull()?.jsonObject?.get("text") ?: return null
-                if (el is JsonNull) return null
-                Delta(content = primText(el))
-            }
+            ProviderKind.GEMINI -> geminiText(root)
         }
     }
     companion object {

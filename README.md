@@ -97,7 +97,7 @@
 - **两种界面风格**：Material You（支持动态取色）与液态玻璃，均支持跟随系统、浅色与深色。
 - **液态玻璃**：浮动导航与对局操作区实时采样背后内容，带高斯模糊、边缘折射、高光与阴影；文字和图标单独绘制，保持清晰。按住或拖动底栏，选中胶囊会膨胀成放大、折射的玻璃透镜（Android 13 及以上），松手弹回。Android 12 使用模糊，Android 8–11 回退为可读的着色材质。
 - **外观与主题**：界面预设、屏幕帧率、图标与弹窗样式、17 套配色预设、色彩风格、高级配色、字号与界面缩放、字体加粗、开屏壁纸、桌面图标（可用相册图片自定义桌面快捷图标）和界面标签语言。
-- **字体**：默认使用离线内置的[霞鹜文楷](https://github.com/lxgw/LxgwWenKai)，也可导入自己的字体。
+- **字体**：默认使用离线内置的楷体（精简自[霞鹜文楷](https://github.com/lxgw/LxgwWenKai)，保留常用简繁汉字，罕见字由系统字体显示），也可导入自己的字体。
 - **系统长截图**：Android 12 及以上支持滚动截图，浮层不会遮挡正文。
 
 ### 分享与数据
@@ -332,7 +332,7 @@ third_party/           随包组件的来源与许可
 | 项目 | 用途 | 许可 |
 | --- | --- | --- |
 | [Ionicons](https://github.com/ionic-team/ionicons) | 圆润线框图标（子集） | MIT |
-| [霞鹜文楷 LXGW WenKai](https://github.com/lxgw/LxgwWenKai) | 默认字体 | SIL OFL 1.1 |
+| [霞鹜文楷 LXGW WenKai](https://github.com/lxgw/LxgwWenKai) | 默认字体（精简子集，已按 OFL 更名为 Bundled Kai） | SIL OFL 1.1 |
 | [Material Color Utilities](https://github.com/material-foundation/material-color-utilities) | 动态配色算法 | Apache-2.0 |
 | [ZXing](https://github.com/zxing/zxing) | 二维码生成与识别 | Apache-2.0 |
 | [LiquidGlassKMP](https://github.com/philipplackner/LiquidGlassKMP) | 液态玻璃的分层设计参考（未使用其代码） | — |

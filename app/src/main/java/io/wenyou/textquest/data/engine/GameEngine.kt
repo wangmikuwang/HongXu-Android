@@ -194,22 +194,5 @@ object GameEngine {
         return Arrival(base, afterEnter.notes)
     }
 
-    /** 应用选项效果并跳转（next 为空则留在当前节点由调用方处理）。 */
-    fun choose(story: Story, state: SessionState, choice: io.wenyou.textquest.data.model.ChoiceData): Arrival {
-        val outcome = applyEffects(state, choice.effects)
-        val target = choice.next.ifBlank { state.currentNodeId }
-        return if (target == "@self" || target == state.currentNodeId) {
-            Arrival(outcome.state, outcome.notes)
-        } else {
-            val arrived = arriveAt(story, outcome.state, target)
-            Arrival(arrived.state, outcome.notes + arrived.notes)
-        }
-    }
 
-    /** 判断是否走到了「结局」节点（无可继续项）。 */
-    fun isEnding(story: Story, state: SessionState, nodeId: String): Boolean {
-        val node = story.nodes[nodeId] ?: return true
-        if (node.kind != io.wenyou.textquest.data.model.NodeKind.ENDING) return false
-        return visibleChoices(state, story, nodeId).isEmpty()
-    }
 }

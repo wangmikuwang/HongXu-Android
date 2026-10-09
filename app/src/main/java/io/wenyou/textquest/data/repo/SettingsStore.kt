@@ -166,9 +166,6 @@ class SettingsStore(context: Context) {
         get() = prefs.getString(KEY_CRASH_DIR, null)
         set(value) = prefs.edit().putString(KEY_CRASH_DIR, value).apply()
 
-    var compactCards: Boolean
-        get() = prefs.getBoolean(KEY_COMPACT, false)
-        set(value) = prefs.edit().putBoolean(KEY_COMPACT, value).apply()
 
     private companion object {
         val appearanceJson = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -184,6 +181,5 @@ class SettingsStore(context: Context) {
         const val KEY_SHOW_LGBT = "show_lgbt"
         const val KEY_ADULT = "adult_content"
         const val KEY_CONTENT_UNLOCKED = "content_unlocked_v1"
-        const val KEY_COMPACT = "compact_cards"
     }
 }

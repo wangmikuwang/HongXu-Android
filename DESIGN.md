@@ -18,7 +18,7 @@ Android 12+ 且用户在设置中开启动态取色时，通过 `dynamicLightCol
 ## 形态与排版
 
 - 组件圆角沿用 M3 形状体系：卡片 16–24dp，选项按钮 18dp 胶囊，封面与头像为圆形。
-- 排版以 M3 字阶为基础（`ui/theme/Type.kt`），默认标题与正文使用随包提供的霞鹜文楷 Regular，保留字阶与长文行距，字重由字体合成；导入字体优先，恢复默认回到文楷。缺失字形与 Emoji 由 Android 回退。
+- 排版以 M3 字阶为基础（`ui/theme/Type.kt`），默认标题与正文使用随包提供的楷体（霞鹜文楷 Regular 的子集），保留字阶与长文行距，字重由字体合成；导入字体优先，恢复默认回到文楷。缺失字形与 Emoji 由 Android 回退。
 - 首页以应用标题、当前旅程、创作入口分出三级层次；剧情速览使用分隔线与留白，避免所有内容都装入同等权重的卡片。按钮高度至少 48dp，标题允许换行。
 
 ## 明暗与导航
@@ -58,7 +58,7 @@ AI 服务管理位于设置的二级页面；设置首页采用搜索和分类�
 
 ## 5.4.4 字体与玻璃参考
 
-默认字体离线加载未经改动的 LXGW WenKai Regular（OFL 1.1），保留导入和字重设置。参考 LiquidGlassKMP 的原生 chrome 与内容分离、内容从玻璃下方滚动及前景可读性原则；其 swift-ui 分支的 Android 是普通 Material 导航，并非 Android 玻璃库，不复制 SwiftUI 或宣称使用 iOS 原生材质。Android 保留独立 AGSL/RenderEffect 实现，减轻表面遮白、阴影和高光，在边缘增加细微反光；列表/对话的占位及长截图排除控件机制保持。
+默认字体离线加载由 LXGW WenKai Regular 精简的子集（OFL 1.1；按保留字体名条款更名为 Bundled Kai，生成方式见 third_party/lxgw-wenkai/subset.py），保留导入和字重设置。参考 LiquidGlassKMP 的原生 chrome 与内容分离、内容从玻璃下方滚动及前景可读性原则；其 swift-ui 分支的 Android 是普通 Material 导航，并非 Android 玻璃库，不复制 SwiftUI 或宣称使用 iOS 原生材质。Android 保留独立 AGSL/RenderEffect 实现，减轻表面遮白、阴影和高光，在边缘增加细微反光；列表/对话的占位及长截图排除控件机制保持。
 
 ## 5.4.5 字体加粗
 

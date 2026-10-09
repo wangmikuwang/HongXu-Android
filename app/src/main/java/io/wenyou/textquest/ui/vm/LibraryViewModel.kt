@@ -170,7 +170,6 @@ class LibraryViewModel(container: WenYouApp.AppContainer) : ViewModel() {
     fun setShowLgbt(on: Boolean) = settings.setShowLgbt(on)
     fun showLgbt(): Boolean = settings.state.value.showLgbt
 
-    fun storyCount(): Int = library.stories.value.size
 
     companion object {
         fun formatWhen(ts: Long): String {

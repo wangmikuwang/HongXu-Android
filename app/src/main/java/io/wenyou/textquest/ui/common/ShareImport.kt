@@ -62,11 +62,6 @@ object ShareActions {
         context.startActivity(Intent.createChooser(send, "分享「$title」"))
     }
 
-    fun copyLink(context: Context, kind: String, title: String, code: String) {
-        context.getSystemService(ClipboardManager::class.java)
-            ?.setPrimaryClip(ClipData.newPlainText(title, message(context, kind, title, code)))
-        Toast.makeText(context, "链接已复制", Toast.LENGTH_SHORT).show()
-    }
 
     /** Writes the code to a small .wenyou file; the recipient opens it with this app to import. */
     fun sendFile(context: Context, title: String, code: String) {

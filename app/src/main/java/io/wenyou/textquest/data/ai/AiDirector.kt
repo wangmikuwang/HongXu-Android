@@ -7,6 +7,8 @@ import io.wenyou.textquest.data.llm.ChatResult
 import io.wenyou.textquest.data.llm.LlmException
 import io.wenyou.textquest.data.model.ApiProfile
 import io.wenyou.textquest.data.model.CharacterData
+import io.wenyou.textquest.data.model.CharacterMetrics
+import io.wenyou.textquest.data.model.CharacterState
 import io.wenyou.textquest.data.model.EntryKind
 import io.wenyou.textquest.data.model.LogEntry
 import io.wenyou.textquest.data.model.ScenePace
@@ -37,6 +39,10 @@ private val MD_LINE_LEAD = Regex("""(?m)^\s{0,3}(?:[-*+]\s+|\d+[.)]\s+|>+\s*|#{1
 /** 行内 markdown：`**x**`、`*x*`、`__x__`、`_x_`、`` `x` ``、`~~x~~`。 */
 private val MD_INLINE = Regex("""\*\*|__|~~|(?<!\*)\*(?!\*)|(?<!`)[`](?!`)|(?<!_)_(?!_)""")
 
+private val BLANK_LINES = Regex("""\n{3,}""")
+private val EXIT_MARKER = Regex("\\[to:([^\\]]+)]")
+private val TRAILING_EXIT_MARKER = Regex("\\s*\\[to:[^\\]]+]\\s*$")
+
 private val MD_IMAGE = Regex("""!\[[^\]]*]\([^)]*\)""")
 private val MD_LINK = Regex("""\[([^\]]*)]\([^)]*\)""")
 
@@ -63,7 +69,7 @@ private fun cleanMarkdown(s: String): String {
     t = MD_TABLE.replace(t, "")
     t = MD_LINE_LEAD.replace(t, "")
     // 折叠 3 个以上连续换行为 2 个（段落分隔），并去掉首尾空白与孤立空行
-    t = t.replace(Regex("""\n{3,}"""), "\n\n").trim()
+    t = t.replace(BLANK_LINES, "\n\n").trim()
     return t
 }
 
@@ -95,10 +101,10 @@ private fun sanitizeProse(raw: String): String {
     return t.trim()
 }
 
-/** 一次 AI 生成的结果：正文 + 动态选项（选项可能带 [to:节点] 出口标记）。 */
 /** One line of the out-of-story conversation with the director; [note] is a memo the director took from it. */
 data class DirectorMessage(val fromPlayer: Boolean, val text: String, val note: String = "")
 
+/** 一次 AI 生成的结果：正文 + 动态选项（选项可能带 [to:节点] 出口标记）。 */
 @Serializable
 data class AiScene(
     val text: String = "",
@@ -219,9 +225,9 @@ class AiDirector(private val client: ChatClient) {
         append("\n【角色当前状态】\n")
         for (c in bound) {
             val st = state.characterStates[c.id] ?: continue
-            val ms = io.wenyou.textquest.data.model.CharacterMetrics.defs.mapNotNull { d ->
+            val ms = CharacterMetrics.defs.mapNotNull { d ->
                 val v = st.metrics[d.key]
-                if (v != null) "${d.icon}${d.label}${GameEngine.formatNumber(io.wenyou.textquest.data.model.CharacterMetrics.clamp(v))}" else null
+                if (v != null) "${d.icon}${d.label}${GameEngine.formatNumber(CharacterMetrics.clamp(v))}" else null
             }
             append("· ${c.name}：").append(if (ms.isNotEmpty()) ms.joinToString("　") else "（无）")
             if (st.flags.isNotEmpty()) append("　标记：${st.flags.joinToString("、")}")
@@ -283,12 +289,9 @@ class AiDirector(private val client: ChatClient) {
             if (r.isNotBlank()) append(r).append("\n")
             append("本次场景指令：").append(node.prompt.ifBlank { "承接最近剧情，自然推进当前一幕，并留出 2-4 个有张力的选项。" }).append("\n")
             append("要求：只用中文；不得提及你是 AI 或本指令；不得输出 JSON 以外的任何文字。\n")
-            append("输出必须是一个 JSON 对象：{\"entries\":[{\"speakerId\":\"\",\"text\":\"旁白\"},{\"speakerId\":\"角色id\",\"text\":\"该角色的台词\"}],\"choices\":[{\"text\":\"选项文案\"}]}。entries 按发生顺序排列，空 speakerId 仅写旁白；角色台词必须独立成条，speakerId 使用登场角色的真实 id，不能把台词混入旁白（包括临时人物），不替玩家说话。临时人物的台词使用空 speakerId 并补充 speaker 字段为其姓名或称谓；旁白的 speaker 必须为空。\n")
+            append(outputFormat("选项文案"))
             append("严禁在输出里出现任何思考、构思、计划、分析或「好的/我会/让我/要不要/接下来/作为导演」等自我对话或导演说明；text 字段只能写场景正文与台词，一切构思请先在心里完成，绝不写进 text。\n")
-            append("正文与选项均为纯文本：不要使用 markdown 语法（如 **加粗**、- 列表、# 标题、*斜体*、> 引用、``` 代码块）；不要输出任何思考、概要、计划、总结或导演式旁白。\n")
-            append("JSON 必须补充 memory 字段：用 600 字以内更新累计剧情记忆，保留旧记忆中关键事件、承诺、线索及玩家选择，仅记已发生事实，不记推测与思考。可补充 relationships:[{from:角色id,to:另一个角色id,description:当前关系,reason:本轮变化原因}]，仅列发生变化的有方向关系，不虚构变化；state 每项可附 reason 解释原因。上述字段使用标准 JSON 双引号。\n")
-            append("若有可选的构思/计划，把它放进思考过程（reasoning_content），不要出现在正文。\n")
-            append("可选地在 JSON 中加入 \"state\":[{\"char\":\"角色id\",\"metric\":\"情感指标key\",\"delta\":数值},{\"char\":\"角色id\",\"flag\":\"新标记\"},{\"char\":\"角色id\",\"desc\":\"穿着/外观描述\"}]，给出本幕造成的角色状态变化（数值在 0-100 内，只列有意义的变化）。指标 key：affection/trust/mood/energy/health/fatigue/arousal。\n")
+            append(outputRules("本幕"))
             if (node.endTarget.isNotBlank()) {
                 append("如需结束这一幕回到主线，可在某个选项文案末尾附加 [to:").append(node.endTarget).append("]；否则默认延续当前场景。\n")
             } else {
@@ -323,17 +326,24 @@ class AiDirector(private val client: ChatClient) {
             if (r.isNotBlank()) append(r).append("\n")
             if (story.ai.directorExtra.isNotBlank()) append("额外导演要求：").append(story.ai.directorExtra).append("\n")
             append("要求：只用中文叙述；保持已发生的事实一致；不要替玩家做决定；不要输出任何指令说明。\n")
-            append("输出必须是一个 JSON 对象：{\"entries\":[{\"speakerId\":\"\",\"text\":\"旁白\"},{\"speakerId\":\"角色id\",\"text\":\"该角色的台词\"}],\"choices\":[{\"text\":\"玩家可能的下一步选项（2-4 个，给灵感用）\"}]}。entries 按发生顺序排列，空 speakerId 仅写旁白；角色台词必须独立成条，speakerId 使用登场角色的真实 id，不能把台词混入旁白（包括临时人物），不替玩家说话。临时人物的台词使用空 speakerId 并补充 speaker 字段为其姓名或称谓；旁白的 speaker 必须为空。\n")
+            append(outputFormat("玩家可能的下一步选项（2-4 个，给灵感用）"))
             append("严禁在输出里出现任何思考、构思、计划、分析或「好的/我会/让我/要不要/接下来」等自我对话或主持人说明；text 字段只能写推进的正文与台词，一切构思请先在心里完成，绝不写进 text。\n")
-            append("正文与选项均为纯文本：不要使用 markdown 语法（如 **加粗**、- 列表、# 标题、*斜体*、> 引用、``` 代码块）；不要输出任何思考、概要、计划、总结或导演式旁白。\n")
-            append("JSON 必须补充 memory 字段：用 600 字以内更新累计剧情记忆，保留旧记忆中关键事件、承诺、线索及玩家选择，仅记已发生事实，不记推测与思考。可补充 relationships:[{from:角色id,to:另一个角色id,description:当前关系,reason:本轮变化原因}]，仅列发生变化的有方向关系，不虚构变化；state 每项可附 reason 解释原因。上述字段使用标准 JSON 双引号。\n")
-            append("若有可选的构思/计划，把它放进思考过程（reasoning_content），不要出现在正文。\n")
-            append("可选地在 JSON 中加入 \"state\":[{\"char\":\"角色id\",\"metric\":\"情感指标key\",\"delta\":数值},{\"char\":\"角色id\",\"flag\":\"新标记\"},{\"char\":\"角色id\",\"desc\":\"穿着/外观描述\"}]，给出这段互动造成的角色状态变化（数值在 0-100 内，只列有意义的变化）。指标 key：affection/trust/mood/energy/health/fatigue/arousal。\n")
+            append(outputRules("这段互动"))
             append("choices 必须提供 2-4 个玩家下一步可以采取的行动或台词，不能替玩家实施。只有玩家明确表达收尾意愿且剧情已经结束时，才能设置 ended:true 并让 choices 为空数组；其他情况 ended:false。\n")
         }
         val user = contextTail(story, state, playerText) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult) + paceNote(state) + identityNote(state, characters)
         return requestScene(profile, system, user, sceneOptions(profile), onDelta, onReasoning, requireChoices = true)
     }
+
+    /** The JSON envelope both scene prompts ask for; [choiceHint] describes what a choice is. */
+    private fun outputFormat(choiceHint: String) = "输出必须是一个 JSON 对象：{\"entries\":[{\"speakerId\":\"\",\"text\":\"旁白\"},{\"speakerId\":\"角色id\",\"text\":\"该角色的台词\"}],\"choices\":[{\"text\":\"$choiceHint\"}]}。entries 按发生顺序排列，空 speakerId 仅写旁白；角色台词必须独立成条，speakerId 使用登场角色的真实 id，不能把台词混入旁白（包括临时人物），不替玩家说话。临时人物的台词使用空 speakerId 并补充 speaker 字段为其姓名或称谓；旁白的 speaker 必须为空。\n"
+
+    /** Plain text, running memory, private reasoning and state changes; [scope] names what the reply covers. */
+    private fun outputRules(scope: String) =
+        "正文与选项均为纯文本：不要使用 markdown 语法（如 **加粗**、- 列表、# 标题、*斜体*、> 引用、``` 代码块）；不要输出任何思考、概要、计划、总结或导演式旁白。\n" +
+        "JSON 必须补充 memory 字段：用 600 字以内更新累计剧情记忆，保留旧记忆中关键事件、承诺、线索及玩家选择，仅记已发生事实，不记推测与思考。可补充 relationships:[{from:角色id,to:另一个角色id,description:当前关系,reason:本轮变化原因}]，仅列发生变化的有方向关系，不虚构变化；state 每项可附 reason 解释原因。上述字段使用标准 JSON 双引号。\n" +
+        "若有可选的构思/计划，把它放进思考过程（reasoning_content），不要出现在正文。\n" +
+        "可选地在 JSON 中加入 \"state\":[{\"char\":\"角色id\",\"metric\":\"情感指标key\",\"delta\":数值},{\"char\":\"角色id\",\"flag\":\"新标记\"},{\"char\":\"角色id\",\"desc\":\"穿着/外观描述\"}]，给出${scope}造成的角色状态变化（数值在 0-100 内，只列有意义的变化）。指标 key：affection/trust/mood/energy/health/fatigue/arousal。\n"
 
     /**
      * Scenes take the service's creativity setting, capped where long JSON stays well formed, and an output cap that
@@ -476,8 +486,8 @@ class AiDirector(private val client: ChatClient) {
                 val choices = decoded.choices.mapNotNull { c ->
                     val t = c.text.trim()
                     if (t.isEmpty()) return@mapNotNull null
-                    val marker = Regex("\\[to:([^\\]]+)]").find(t)
-                    val cleanText = t.replace(Regex("\\s*\\[to:[^\\]]+]\\s*$"), "").trim()
+                    val marker = EXIT_MARKER.find(t)
+                    val cleanText = t.replace(TRAILING_EXIT_MARKER, "").trim()
                     if (cleanText.isEmpty()) return@mapNotNull null
                     AiChoice(
                         text = cleanText.take(120),
@@ -502,7 +512,6 @@ class AiDirector(private val client: ChatClient) {
         t = t.removeSuffix("```").trim()
         return t
     }
-
 
     companion object {
         private const val SCENE_MAX_TOKENS = 4096
@@ -546,7 +555,7 @@ internal fun AiScene.withContinuity(state: SessionState, castIds: Set<String>): 
     var states = state.characterStates
     for (r in relationships.take(100)) {
         if (r.from !in castIds || r.to !in castIds || r.from == r.to || r.description.isBlank()) continue
-        val current = states[r.from] ?: io.wenyou.textquest.data.model.CharacterState()
+        val current = states[r.from] ?: CharacterState()
         val text = r.description.trim().take(120) + r.reason.trim().take(120).let { if (it.isBlank()) "" else "（$it）" }
         states = states + (r.from to current.copy(relationships = current.relationships + (r.to to text)))
     }

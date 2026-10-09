@@ -82,7 +82,6 @@ class CharacterEditorViewModel(
     fun setBackground(v: String) = update { it.copy(background = v) }
     fun setExample(v: String) = update { it.copy(exampleDialogue = v) }
     fun setExtraPrompt(v: String) = update { it.copy(extraPrompt = v) }
-    fun setGreeting(v: String) = update { it.copy(greeting = v) }
 
     fun setInitialMetric(key: String, v: Double) = update {
         it.copy(initial = it.initial.copy(

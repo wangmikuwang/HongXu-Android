@@ -46,5 +46,3 @@ val AvatarPalette: List<Color> = listOf(
 fun avatarColor(index: Int): Color =
     AvatarPalette[((index % AvatarPalette.size) + AvatarPalette.size) % AvatarPalette.size]
 
-/** 深色背景下的角色色（提高对比度）。 */
-fun avatarColorOnDark(index: Int): Color = avatarColor(index).copy(alpha = 1f)
