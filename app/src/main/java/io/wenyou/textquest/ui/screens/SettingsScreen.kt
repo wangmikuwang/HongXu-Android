@@ -41,6 +41,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.layout.width
+import io.wenyou.textquest.ui.common.AppTextButton
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -85,6 +88,8 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
         catch (_: Exception) { updateVm.showOpenError() }
     }
 
+    var exportKeys by remember { mutableStateOf(false) }
+    var confirmImport by remember { mutableStateOf(false) }
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->
@@ -93,11 +98,11 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
             val ok = withContext(Dispatchers.IO) {
                 runCatching {
                     context.contentResolver.openOutputStream(uri)?.use { out ->
-                        out.write(vm.exportString().toByteArray(Charsets.UTF_8))
+                        out.write(vm.exportString(exportKeys).toByteArray(Charsets.UTF_8))
                     }
                 }.isSuccess
             }
-            vm.setMessage(if (ok) "已导出全部数据（剧情/角色/服务/存档）" else "导出失败")
+            vm.setMessage(if (!ok) "导出失败" else if (exportKeys) "已导出全部数据（含 API Key，请妥善保管文件）" else "已导出全部数据（不含 API Key）")
         }
     }
 
@@ -260,7 +265,7 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                 item { SectionHeader("数据备份") }
                 item {
                     TonalCard {
-                        Text("整体备份剧情、人物、AI 服务与存档，供恢复或迁移。",
+                        Text("整体备份剧情、人物、AI 服务与存档，供恢复或迁移。默认不含 API Key；导入时会保留本机已有的 Key。",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Spacer(Modifier.height(10.dp))
@@ -268,10 +273,22 @@ fun SettingsScreen(container: WenYouApp.AppContainer, nav: NavHostController, up
                             Button(onClick = {
                                 exportLauncher.launch("${BuildConfig.APP_FILE_PREFIX}-backup-${System.currentTimeMillis()}.json")
                             }) { Text("导出备份") }
-                            AppOutlinedButton(onClick = {
-                                importLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
-                            }) { Text("导入备份") }
+                            AppOutlinedButton(onClick = { confirmImport = true }) { Text("导入备份") }
+                            if (vm.hasImportSnapshot()) AppTextButton(onClick = { vm.undoLastImport() }) { Text("撤销上次导入") }
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                            Column(Modifier.weight(1f)) {
+                                Text("导出时包含 API Key", style = MaterialTheme.typography.labelLarge)
+                                Text("只在迁移到自己的新设备时开启；文件里的 Key 是明文。", style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Switch(exportKeys, { exportKeys = it })
+                        }
+                        if (confirmImport) AlertDialog(onDismissRequest = { confirmImport = false }, title = { Text("导入备份") },
+                            text = { Text("导入会用备份替换当前的全部剧情、人物、存档与 AI 服务。导入前会自动保留一份当前数据，之后可以「撤销上次导入」。") },
+                            confirmButton = { AppTextButton(onClick = { confirmImport = false; importLauncher.launch(arrayOf("application/json", "text/plain", "*/*")) }) { Text("选择备份文件") } },
+                            dismissButton = { AppTextButton(onClick = { confirmImport = false }) { Text("取消") } })
                     }
                 }
 

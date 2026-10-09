@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android cloud backup and device-to-device transfer (API 31+) keep the library but never the AI service keys. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="lib/providers.json" />
+        <exclude domain="file" path="lib/before-import.json" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="lib/providers.json" />
+        <exclude domain="file" path="lib/before-import.json" />
+    </device-transfer>
+</data-extraction-rules>

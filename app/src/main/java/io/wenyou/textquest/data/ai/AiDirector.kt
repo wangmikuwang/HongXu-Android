@@ -264,7 +264,7 @@ class AiDirector(private val client: ChatClient) {
     ): AiScene {
         val system = buildString {
             append("你是一名中文文字冒险游戏的「场景生成器」，只负责根据给定素材续写当前场景。\n")
-            append("叙事基调：").append(story.ai.tone).append("\n")
+            append("叙事风格：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观/大纲：").append(story.ai.worldSummary).append("\n")
             append(playerIdentity(state, characters))
             val r = roster(story, characters)
@@ -304,7 +304,7 @@ class AiDirector(private val client: ChatClient) {
             append("1) 用细腻的叙述推进剧情，营造氛围；\n")
             append("2) 扮演所有出场角色——严格贴合他们的性格、语气与背景，除底层基调要求外不擅自改变人设；\n")
             append("3) 尊重玩家自由输入，剧情可以走向危险、温情、悬疑、搞笑等任何方向；${Baseline.DEFER}\n")
-            append("叙事基调：").append(story.ai.tone).append("\n")
+            append("叙事风格：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观与初始局面：").append(story.ai.worldSummary).append("\n")
             append(playerIdentity(state, characters))
             val r = roster(story, characters)

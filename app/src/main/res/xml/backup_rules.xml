@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android system backups (API 30 and below) keep the library but never the AI service keys. -->
+<full-backup-content>
+    <exclude domain="file" path="lib/providers.json" />
+    <exclude domain="file" path="lib/before-import.json" />
+</full-backup-content>

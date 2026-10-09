@@ -211,7 +211,7 @@ fun StoryEditScreen(container: WenYouApp.AppContainer, nav: NavHostController, s
                         placeholder = "描述世界、初始局面与核心悬念，越具体 AI 越稳。")
                     Spacer(Modifier.height(8.dp))
                     AppField(value = story.ai.tone, onValueChange = { vm.setTone(it) },
-                        label = "叙事基调", minLines = 2,
+                        label = "叙事风格", minLines = 2,
                         placeholder = "例如：克制的悬疑感；多用对话推进；雨声氛围。")
                     Spacer(Modifier.height(8.dp))
                     AppField(value = story.ai.directorExtra, onValueChange = { vm.setDirectorExtra(it) },

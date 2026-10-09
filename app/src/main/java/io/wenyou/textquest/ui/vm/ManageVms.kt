@@ -358,8 +358,19 @@ class SettingsViewModel(container: WenYouApp.AppContainer) : ViewModel() {
         _message.value = text
     }
 
-    fun exportString(): String =
-        AppJson.encodeToString(AppBundle.serializer(), library.bundle())
+    /** API keys stay out of backup files unless the player asks for them (moving to their own new device). */
+    fun exportString(includeKeys: Boolean = false): String {
+        val bundle = library.bundle()
+        val safe = if (includeKeys) bundle else bundle.copy(providers = bundle.providers.map { it.copy(apiKey = "") })
+        return AppJson.encodeToString(AppBundle.serializer(), safe)
+    }
+
+    fun hasImportSnapshot() = library.hasImportSnapshot()
+
+    fun undoLastImport() = launchLibraryWrite {
+        val n = library.undoLastImport()
+        _message.value = "已恢复到上次导入前的数据（$n 条）"
+    }
 
     fun importString(text: String) {
         try {

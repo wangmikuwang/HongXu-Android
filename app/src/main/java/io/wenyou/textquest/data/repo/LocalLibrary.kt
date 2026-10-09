@@ -52,6 +52,7 @@ class LocalLibrary internal constructor(private val dir: File) {
     private val storiesFile = File(dir, "stories.json")
     private val savesFile = File(dir, "saves.json")
     private val baselineFile = File(dir, "baseline.txt")
+    private val importSnapshotFile = File(dir, "before-import.json")
     private val achievementsFile = File(dir, "achievements.json")
     private val progressFile = File(dir, "progress.json")
     // A finite achievement write belongs to the library, so leaving a play screen cannot cancel it.
@@ -174,9 +175,24 @@ class LocalLibrary internal constructor(private val dir: File) {
         origin = io.wenyou.textquest.BuildConfig.SHARE_ORIGIN
     ) }
 
+    /** The library as it was before the last backup import, so that import can be undone. */
+    fun hasImportSnapshot(): Boolean = importSnapshotFile.isFile
+
+    suspend fun undoLastImport(): Int {
+        val snapshot = withContext(Dispatchers.IO) { AppJson.decodeFromString(AppBundle.serializer(), importSnapshotFile.readText()) }
+        return importBundle(snapshot)
+    }
+
+    /**
+     * Replaces the library with a backup. The current library is kept as a snapshot first, and providers the backup
+     * lists without an API key (backups leave keys out by default) keep the key already on this device.
+     */
     suspend fun importBundle(bundle: AppBundle): Int = write {
-        persistList(providersFile, bundle.providers, ApiProfile.serializer())
-        _providers.value = bundle.providers
+        atomicWrite(importSnapshotFile) { AppJson.encodeToString(AppBundle.serializer(), bundle()) }
+        val keys = _providers.value.associate { it.id to it.apiKey }
+        val providers = bundle.providers.map { p -> if (p.apiKey.isBlank()) p.copy(apiKey = keys[p.id].orEmpty()) else p }
+        persistList(providersFile, providers, ApiProfile.serializer())
+        _providers.value = providers
         persistList(charactersFile, bundle.characters, CharacterData.serializer())
         _characters.value = bundle.characters
         persistList(storiesFile, bundle.stories, Story.serializer())

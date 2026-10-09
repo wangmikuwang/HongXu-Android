@@ -106,8 +106,9 @@ class ChatClient(ok: OkHttpClient = defaultClient(), val usage: UsageTracker = U
         val full = StringBuilder()
         val reasoningFull = StringBuilder()
         var call: Call? = null
-        // 推理模型（如 deepseek-reasoner）思考耗时更长，放宽超时
-        val timeoutMs = if (profile.model.contains("reasoner", ignoreCase = true)) 150_000L else 90_000L
+        // A whole reply may stream for minutes (long branching scripts); a stalled connection is caught by the client's
+        // read timeout, so this cap only bounds the total. Reasoning models think longer still.
+        val timeoutMs = if (profile.model.contains("reasoner", ignoreCase = true)) 360_000L else 300_000L
         try {
             val (guardedSystem, guardedUser) = io.wenyou.textquest.data.repo.Baseline.guard(baseline(), system, user)
             call = buildCall(profile, guardedSystem, guardedUser, options)
