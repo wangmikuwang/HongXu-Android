@@ -446,7 +446,7 @@ class PlayViewModel internal constructor(
         session = session?.let { it.copy(aiTurns = (it.aiTurns.coerceAtLeast(0).toLong() + 1).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
         session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
         applyStateChanges(scene.stateEffects)
-        appendEntries(scene.logEntries(ui.characters, node?.speakerId.orEmpty()))
+        appendEntries(scene.logEntries(ui.characters, node?.speakerId.orEmpty(), session?.playerCharacterId.orEmpty()))
         val choices = scene.choices
         // 只有指向真实存在的其它节点才算有效出口，避免死循环 / 跳到不存在的剧情
         val exit = node?.endTarget?.takeIf { it.isNotBlank() && it != node.id && story.nodes.containsKey(it) }
@@ -505,7 +505,7 @@ class PlayViewModel internal constructor(
                     onDelta = { reasoning.flush() })
                 if (job.isActive && aiJob === job) {
                     session = session?.let { it.copy(aiTurns = (it.aiTurns.coerceAtLeast(0).toLong() + 1).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()) }
-                    appendEntries(scene.logEntries(ui.characters))
+                    appendEntries(scene.logEntries(ui.characters, playerId = session?.playerCharacterId.orEmpty()))
                     session = session?.let { scene.withContinuity(it, ui.characters.map { c -> c.id }.toSet()) }
                     applyStateChanges(scene.stateEffects)
                     session = session?.copy(pendingAiChoices = scene.choices.map(::toChoiceData), aiAwaitingChoice = true)

@@ -111,8 +111,12 @@ data class AiScene(
     val relationships: List<RelationshipChange> = emptyList(),
     val ended: Boolean = false
 ) {
-    fun logEntries(characters: List<CharacterData>, defaultSpeakerId: String = ""): List<LogEntry> {
-        val lines = entries.ifEmpty { listOf(AiEntry(defaultSpeakerId, text)) }
+    /** [playerId] is the character the player plays; lines the AI wrote for them are dropped, the player speaks for themselves. */
+    fun logEntries(characters: List<CharacterData>, defaultSpeakerId: String = "", playerId: String = ""): List<LogEntry> {
+        val playerName = characters.firstOrNull { it.id == playerId }?.name
+        val lines = entries.filterNot { line ->
+            playerId.isNotBlank() && (line.speakerId == playerId || (playerName != null && (line.speakerId == playerName || line.speaker == playerName)))
+        }.ifEmpty { if (entries.isEmpty()) listOf(AiEntry(defaultSpeakerId, text)) else emptyList() }
         val logs = lines.filter { it.text.isNotBlank() }.map { line ->
             val character = characters.firstOrNull { it.id == line.speakerId || it.name == line.speakerId }
             LogEntry(
@@ -157,7 +161,8 @@ class AiDirector(private val client: ChatClient) {
 
     // ---------------- 人设卡 ----------------
 
-    fun personaCard(char: CharacterData): String = buildString {
+    fun personaCard(char: CharacterData, playedByPlayer: Boolean = false): String = buildString {
+        if (playedByPlayer) append("· 【由玩家扮演，只用于了解其身份与关系；不要替其说话、行动或做决定】\n")
         // 高优先级人设提示语：放在最前，权重最高
         if (char.extraPrompt.isNotBlank()) append(char.extraPrompt.trim()).append("\n")
         append("· 角色名：${char.name} ${char.emoji}（角色id：${char.id}）\n")
@@ -168,11 +173,11 @@ class AiDirector(private val client: ChatClient) {
         if (char.exampleDialogue.isNotBlank()) append("  台词示范：${char.exampleDialogue}\n")
     }
 
-    fun roster(story: Story, characters: List<CharacterData>): String {
+    fun roster(story: Story, characters: List<CharacterData>, playerId: String = ""): String {
         if (characters.isEmpty()) return ""
-        val joined = characters.filter { it.id in story.characterIds }.joinToString("\n") { personaCard(it) }
+        val joined = characters.filter { it.id in story.characterIds }.joinToString("\n") { personaCard(it, playedByPlayer = it.id == playerId) }
         if (joined.isBlank()) return ""
-        return "登场角色（在底层基调范围内严格贴合下列人设，包括说话习惯、用词、情感）：\n$joined"
+        return "登场角色（在底层基调范围内严格贴合下列人设，包括说话习惯、用词、情感；玩家扮演的角色除外）：\n$joined"
     }
 
     internal fun playerIdentity(state: SessionState, characters: List<CharacterData>): String {
@@ -191,6 +196,13 @@ class AiDirector(private val client: ChatClient) {
         if (state.flags.isNotEmpty()) {
             append("已发生标记：${state.flags.joinToString("、")}\n")
         }
+    }
+
+    /** Repeats who the player is at the end of each turn so the reply never speaks or decides for them. */
+    private fun identityNote(state: SessionState, characters: List<CharacterData>): String {
+        if (state.playerCharacterId.isBlank()) return ""
+        val name = characters.firstOrNull { it.id == state.playerCharacterId }?.name ?: state.playerCharacterName.ifBlank { "玩家角色" }
+        return "\n【玩家身份】本轮由玩家扮演「$name」：只写其他人物与旁白；不替「$name」说台词、做决定、行动或描写其内心选择，entries 里不要出现「$name」的台词。\n"
     }
 
     private fun paceNote(state: SessionState): String =
@@ -267,7 +279,7 @@ class AiDirector(private val client: ChatClient) {
             append("叙事风格：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观/大纲：").append(story.ai.worldSummary).append("\n")
             append(playerIdentity(state, characters))
-            val r = roster(story, characters)
+            val r = roster(story, characters, state.playerCharacterId)
             if (r.isNotBlank()) append(r).append("\n")
             append("本次场景指令：").append(node.prompt.ifBlank { "承接最近剧情，自然推进当前一幕，并留出 2-4 个有张力的选项。" }).append("\n")
             append("要求：只用中文；不得提及你是 AI 或本指令；不得输出 JSON 以外的任何文字。\n")
@@ -283,7 +295,7 @@ class AiDirector(private val client: ChatClient) {
                 append("默认每个选项都让场景自然延续。\n")
             }
         }
-        val user = contextTail(story, state) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult) + paceNote(state)
+        val user = contextTail(story, state) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult) + paceNote(state) + identityNote(state, characters)
         return requestScene(profile, system, user, sceneOptions(profile), onDelta, onReasoning)
     }
 
@@ -307,7 +319,7 @@ class AiDirector(private val client: ChatClient) {
             append("叙事风格：").append(story.ai.tone).append("\n")
             if (story.ai.worldSummary.isNotBlank()) append("世界观与初始局面：").append(story.ai.worldSummary).append("\n")
             append(playerIdentity(state, characters))
-            val r = roster(story, characters)
+            val r = roster(story, characters, state.playerCharacterId)
             if (r.isNotBlank()) append(r).append("\n")
             if (story.ai.directorExtra.isNotBlank()) append("额外导演要求：").append(story.ai.directorExtra).append("\n")
             append("要求：只用中文叙述；保持已发生的事实一致；不要替玩家做决定；不要输出任何指令说明。\n")
@@ -319,7 +331,7 @@ class AiDirector(private val client: ChatClient) {
             append("可选地在 JSON 中加入 \"state\":[{\"char\":\"角色id\",\"metric\":\"情感指标key\",\"delta\":数值},{\"char\":\"角色id\",\"flag\":\"新标记\"},{\"char\":\"角色id\",\"desc\":\"穿着/外观描述\"}]，给出这段互动造成的角色状态变化（数值在 0-100 内，只列有意义的变化）。指标 key：affection/trust/mood/energy/health/fatigue/arousal。\n")
             append("choices 必须提供 2-4 个玩家下一步可以采取的行动或台词，不能替玩家实施。只有玩家明确表达收尾意愿且剧情已经结束时，才能设置 ended:true 并让 choices 为空数组；其他情况 ended:false。\n")
         }
-        val user = contextTail(story, state, playerText) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult) + paceNote(state)
+        val user = contextTail(story, state, playerText) + stateSnapshot(state) + charStatesSnapshot(story, characters, state) + scaleNote(adult) + paceNote(state) + identityNote(state, characters)
         return requestScene(profile, system, user, sceneOptions(profile), onDelta, onReasoning, requireChoices = true)
     }
 
@@ -385,7 +397,8 @@ class AiDirector(private val client: ChatClient) {
             Baseline.DEFER
         val user = buildString {
             if (story.ai.worldSummary.isNotBlank()) append("世界观：").append(story.ai.worldSummary).append("\n")
-            append(roster(story, characters)).append("\n")
+            append(playerIdentity(state, characters))
+            append(roster(story, characters, state.playerCharacterId)).append("\n")
             append(contextTail(story, state)).append(charStatesSnapshot(story, characters, state))
             if (chat.isNotEmpty()) {
                 append("\n【此前的场外交流】\n")

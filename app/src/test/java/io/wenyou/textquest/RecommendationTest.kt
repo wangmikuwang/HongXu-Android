@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class RecommendationTest {
     @get:Rule val temp = TemporaryFolder()
     private val profile = ApiProfile("p", "mock", baseUrl = "http://localhost/v1", model = "mock")
-    private val good = """{"entries":[{"text":"灯亮了。"},{"speakerId":"a","text":"请坐。"}],"choices":[{"text":"在窗边坐下"},{"text":"询问来意"}]}"""
+    private val good = """{"entries":[{"text":"灯亮了。"},{"speakerId":"b","text":"请坐。"}],"choices":[{"text":"在窗边坐下"},{"text":"询问来意"}]}"""
     private fun client(reply: (String) -> String) = OkHttpClient.Builder().addInterceptor { chain ->
         val buffer = okio.Buffer(); chain.request().body!!.writeTo(buffer)
         val content = reply(buffer.readUtf8())
@@ -80,7 +80,9 @@ class RecommendationTest {
             val library = LocalLibrary(temp.newFolder())
             library.upsertProvider(profile)
             library.upsertCharacter(CharacterData("a", "阿雨"))
-            library.upsertStory(Story("s", "雨城", mode = StoryMode.AI_DIRECTOR, characterIds = listOf("a")))
+            library.upsertCharacter(CharacterData("b", "小晴"))
+            // The player plays 阿雨; the AI voices everyone else.
+            library.upsertStory(Story("s", "雨城", mode = StoryMode.AI_DIRECTOR, characterIds = listOf("a", "b")))
             val state = SessionState("s", playerCharacterId = "a", playerCharacterName = "阿雨",
                 pendingAiChoices = listOf(ChoiceData("在窗边坐下")), aiAwaitingChoice = true,
                 history = listOf(LogEntry(text = "雨还在下。")))
