@@ -75,6 +75,7 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -149,10 +150,19 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     BackHandler(enabled = drawerState.isOpen) { scope.launch { drawerState.close() } }
+    // Follow new lines only while the reader is at the end or has just acted; otherwise offer a jump instead.
+    val nearEnd by remember { derivedStateOf {
+        val info = listState.layoutInfo
+        (info.visibleItemsInfo.lastOrNull()?.index ?: -1) >= info.totalItemsCount - 3
+    } }
+    var unseen by remember { mutableStateOf(false) }
+    val lastItem = history.size - 1 + if (live) 1 else 0
     LaunchedEffect(history.size, live) {
-        val last = history.size - 1 + if (live) 1 else 0
-        if (!capturing && last >= 0) listState.scrollToItem(last)
+        if (capturing || lastItem < 0) return@LaunchedEffect
+        if (nearEnd || history.lastOrNull()?.kind == EntryKind.CHOICE) { listState.scrollToItem(lastItem); unseen = false }
+        else unseen = true
     }
+    LaunchedEffect(nearEnd) { if (nearEnd) unseen = false }
 
     ModalNavigationDrawer(drawerState = drawerState, drawerContent = { CharacterStateDrawer(ui) }) {
         Scaffold(
@@ -210,7 +220,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
         BoxWithConstraints(Modifier.padding(padding).consumeWindowInsets(padding).imePadding().fillMaxSize()) {
         val panelHeight = maxHeight * 0.5f
         val glass = LocalGlassEnabled.current
-        val historyContent: @Composable () -> Unit = {
+        val historyContent: @Composable () -> Unit = { Box(Modifier.fillMaxSize()) {
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize().testTag("play-history"),
@@ -219,7 +229,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                     bottom = 16.dp
                 )
             ) {
-                itemsIndexed(history) { _, entry ->
+                itemsIndexed(history, contentType = { _, entry -> entry.kind }) { _, entry ->
                     StoryEntry(entry, ui.characters)
                     Spacer(Modifier.height(10.dp))
                 }
@@ -232,7 +242,9 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                 }
                 item(key = "bottom-space") { Spacer(Modifier.height(8.dp)) }
             }
-        }
+            if (unseen) FilledTonalButton(onClick = { scope.launch { listState.animateScrollToItem(lastItem); unseen = false } },
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp).testTag("jump-to-latest")) { Text("↓ 新内容") }
+        } }
         if (glass) {
             GlassBackdrop(content = historyContent, controls = {}, footer = {
                 Box(Modifier.padding(8.dp).fillMaxWidth().heightIn(max = panelHeight)
@@ -459,7 +471,8 @@ private fun ActionPanel(vm: PlayViewModel, ui: PlayUi, nav: NavHostController, v
                     CircularProgressIndicator(Modifier.width(16.dp).height(16.dp), strokeWidth = 2.dp)
                     Spacer(Modifier.width(8.dp))
                     Text("正在写作……", style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.weight(1f))
+                    AppTextButton(onClick = vm::stopAi, modifier = Modifier.testTag("stop-ai")) { Text("停止生成") }
                 }
             }
         }

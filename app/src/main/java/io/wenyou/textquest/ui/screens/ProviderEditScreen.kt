@@ -155,7 +155,7 @@ fun ProviderEditScreen(container: WenYouApp.AppContainer, nav: NavHostController
                             onValueChange = { vm.setTemperature(it.toDouble()) },
                             valueRange = 0.0f..1.0f
                         )
-                        io.wenyou.textquest.ui.common.RawText(String.format("%.2f", minOf(profile.temperature, 1.0)), style = MaterialTheme.typography.labelMedium)
+                        io.wenyou.textquest.ui.common.RawText(String.format(java.util.Locale.ROOT, "%.2f", minOf(profile.temperature, 1.0)), style = MaterialTheme.typography.labelMedium)
                     }
                     Text("越高越有想象力，越低越稳定；剧情游玩和 AI 创建都使用这个值。", style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant)

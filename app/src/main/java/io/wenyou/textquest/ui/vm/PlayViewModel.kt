@@ -346,6 +346,7 @@ class PlayViewModel internal constructor(
         }
         // 已有生成任务在运行时，不再发起新的并发请求（覆盖快速连点等场景）
         if (aiJob?.isActive == true) return
+        turnBeforeAi = TurnBeforeAi(s, emptyList(), directorTurn = false)
         session = s.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
         _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiReasoningDelta = "", pendingAiChoices = emptyList(), providerMissing = false) }
         launchAiJob { job ->
@@ -493,6 +494,7 @@ class PlayViewModel internal constructor(
             return
         }
         if (ui.stage != PlayStage.DM_INPUT || aiJob?.isActive == true) return
+        turnBeforeAi = TurnBeforeAi(s, ui.pendingAiChoices, directorTurn = true)
         appendEntries(listOf(playerEntry(trimmed)))
         session = session?.copy(pendingAiChoices = emptyList(), aiAwaitingChoice = false)
         _ui.update { it.copy(stage = PlayStage.AI_WORKING, aiReasoningDelta = "", pendingAiChoices = emptyList(), providerMissing = false) }
@@ -521,6 +523,29 @@ class PlayViewModel internal constructor(
                     _ui.update { it.copy(aiReasoningDelta = "", stage = PlayStage.DM_INPUT, pendingAiChoices = ui.pendingAiChoices) }
                 }
             }
+        }
+    }
+
+    private data class TurnBeforeAi(val session: SessionState, val choices: List<AiChoice>, val directorTurn: Boolean)
+    private var turnBeforeAi: TurnBeforeAi? = null
+
+    /**
+     * Stops the AI request in progress. A director turn is put back exactly as it was, input and suggestions
+     * included, so it can be resent or changed; an AI scene stops with a retry.
+     */
+    fun stopAi() {
+        val job = aiJob ?: return
+        if (_ui.value.stage != PlayStage.AI_WORKING) return
+        aiJob = null
+        job.cancel()
+        val before = turnBeforeAi
+        if (before != null && before.directorTurn) {
+            session = before.session
+            _ui.update { it.copy(stage = PlayStage.DM_INPUT, aiReasoningDelta = "", pendingAiChoices = before.choices, lastMessage = "已停止生成") }
+        } else {
+            before?.let { session = it.session }
+            _ui.update { it.copy(stage = PlayStage.STOPPED, aiReasoningDelta = "", stoppedTitle = "已停止生成",
+                stoppedMessage = "这一幕还没有写完。点「重试」重新生成，或返回稍后再来。") }
         }
     }
 

@@ -36,8 +36,10 @@ class AiAuthoringUiTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     private val generated = """{"story":{"title":"雨城","worldSummary":"旧物留有记忆","opening":"门响了","directorExtra":"尊重选择","initialVariables":{"clues":0},"initialFlags":{"rain":true,"revealed":false},"nodes":{"start":{"text":"门响了","choices":[{"text":"敲门","next":"@self","effects":[{"type":"variable","target":"clues","value":1}]}]}}},"characters":[{"name":"阿雨","personality":"守约","background":"旧城居民","extraPrompt":"遵循身份","bottomPrompt":"不伤害无辜","initial":{"metrics":{"trust":30},"description":"灰色风衣"},"bottomRules":[{"name":"守约","content":"信守承诺"}]}]}"""
 
+    // Diagnostic only: a slow window capture on a busy emulator must not fail the test.
     private fun screenshot(name: String) {
-        val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
+        compose.waitForIdle()
+        val bitmap = runCatching { compose.onRoot().captureToImage().asAndroidBitmap() }.getOrNull() ?: return
         File(compose.activity.cacheDir, "ui-${BuildConfig.VERSION_CODE}-$name").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
     private fun container(ok: OkHttpClient): WenYouApp.AppContainer {
