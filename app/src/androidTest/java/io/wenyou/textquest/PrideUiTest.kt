@@ -59,8 +59,11 @@ class PrideUiTest {
         compose.runOnIdle { scale.value = 1.5f }
         val first = compose.onNodeWithTag("pride-flag-GAY").fetchSemanticsNode().boundsInRoot
         val second = compose.onNodeWithTag("pride-flag-LESBIAN").fetchSemanticsNode().boundsInRoot
-        assertEquals(first.left, second.left)
-        assertTrue(second.top > first.top)
+        // The grid fits as many columns as the width allows; on a phone, large text leaves one.
+        if (phoneWidth()) {
+            assertEquals(first.left, second.left)
+            assertTrue(second.top > first.top)
+        }
         compose.onNodeWithTag("pride-flags").performScrollToIndex(2)
         compose.onNodeWithTag("pride-flag-TRANS").performClick().assertIsSelected()
         val bitmap = compose.onRoot().captureToImage().asAndroidBitmap()
@@ -109,7 +112,8 @@ class PrideUiTest {
         val first = compose.onNodeWithTag("pride-flag-GAY").fetchSemanticsNode().boundsInRoot
         val second = compose.onNodeWithTag("pride-flag-LESBIAN").fetchSemanticsNode().boundsInRoot
         val third = compose.onNodeWithTag("pride-flag-TRANS").fetchSemanticsNode().boundsInRoot
-        assertTrue(first.left < second.left && first.top == second.top && third.top > first.top)
+        assertTrue(first.left < second.left && first.top == second.top)
+        if (phoneWidth()) assertTrue(third.top > first.top)
         compose.onNodeWithTag("pride-flag-LESBIAN").performClick()
         compose.onNodeWithText("顺序", substring = true).assertDoesNotExist()
         compose.onNodeWithText("已完成", substring = true).assertDoesNotExist()
@@ -204,4 +208,7 @@ class PrideUiTest {
         expect(PrideTheme.INTERSEX, 0.5f, 0.5f, 0xFFFFD800)
         expect(PrideTheme.INTERSEX, 0.668f, 0.5f, 0xFF7902AA)
     }
+
+    /** Tablets and landscape windows fit more flags per row than the phone layout these checks describe. */
+    private fun phoneWidth() = compose.activity.resources.configuration.screenWidthDp < 600
 }
