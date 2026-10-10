@@ -90,7 +90,8 @@ fun CustomIconCard() {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var icon by remember { mutableStateOf<Bitmap?>(null) }
-    var label by remember { mutableStateOf(context.getString(R.string.app_name)) }
+    val appName = androidx.compose.ui.res.stringResource(R.string.app_name)
+    var label by remember { mutableStateOf(appName) }
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) scope.launch {
             withContext(Dispatchers.IO) { runCatching { CustomIcon.render(context, uri) } }

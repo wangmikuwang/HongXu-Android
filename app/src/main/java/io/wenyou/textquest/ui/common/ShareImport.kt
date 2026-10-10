@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Build
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -38,9 +39,12 @@ fun checkClipboardForShare(context: Context, inbox: ShareInbox) {
     val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
     val description = clipboard.primaryClipDescription ?: return
     if (!description.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN) && !description.hasMimeType(ClipDescription.MIMETYPE_TEXT_HTML)) return
-    if (description.timestamp == inbox.lastClipStamp) return
-    inbox.lastClipStamp = description.timestamp
+    // Android 8.0+ stamps each clip; before that (no read notices yet) the text itself tells whether it changed.
+    if (Build.VERSION.SDK_INT >= 26 && description.timestamp == inbox.lastClipStamp) return
     val text = runCatching { clipboard.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString() }.getOrNull() ?: return
+    val stamp = if (Build.VERSION.SDK_INT >= 26) description.timestamp else text.hashCode().toLong()
+    if (stamp == inbox.lastClipStamp) return
+    inbox.lastClipStamp = stamp
     inbox.offer(text, fromClipboard = true)
 }
 

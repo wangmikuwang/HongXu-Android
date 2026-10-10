@@ -121,7 +121,8 @@ fun QrScannerDialog(onResult: (String) -> Unit, onDismiss: () -> Unit) {
             val previewView = remember { PreviewView(context) }
             AndroidView(factory = { previewView }, modifier = Modifier.fillMaxSize())
 
-            val frame = (config.screenWidthDp * 0.7f).dp
+            // 70% of a phone screen; capped so tablets and landscape windows keep a reasonable scan frame.
+            val frame = minOf(config.screenWidthDp, config.screenHeightDp).times(0.7f).coerceAtMost(320f).dp
             Box(
                 Modifier
                     .size(frame)

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 6.0–7.1 have no adaptive icons; mipmap-anydpi-v26 takes over from 8.0. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/launcher_dark_background" />
+    <item android:drawable="@drawable/ic_launcher_fg" />
+</layer-list>

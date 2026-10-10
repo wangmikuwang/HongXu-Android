@@ -3,7 +3,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
@@ -30,12 +29,13 @@ val appVersionName: String = "$appVersionMajor.$appVersionMinor.$appVersionPatch
 
 android {
     namespace = "io.wenyou.textquest"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "io.wenyou.textquest"
-        minSdk = 26
-        targetSdk = 34
+        // Android 6.0 – 16; Java APIs newer than the device come from core library desugaring.
+        minSdk = 23
+        targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
         // Share codes record which app wrote them; the link page opens this app through its own scheme.
@@ -75,9 +75,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
+        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         compose = true
@@ -89,12 +87,17 @@ android {
         }
     }
 
-    // APK 产物去掉 debug 字样，直接可用于分发。
-    applicationVariants.all {
-        val baseName = "HongXu-v$appVersionName"
-        outputs.all {
-            (this as? com.android.build.gradle.internal.api.BaseVariantOutputImpl)
-                ?.outputFileName = "$baseName.apk"
+}
+
+kotlin {
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
+}
+
+// APK 产物去掉 debug 字样，直接可用于分发。
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            (output as? com.android.build.api.variant.impl.VariantOutputImpl)?.outputFileName?.set("HongXu-v$appVersionName.apk")
         }
     }
 }
@@ -133,7 +136,8 @@ tasks.register("bumpVersion") {
 }
 
 dependencies {
-    compileOnly("com.google.errorprone:error_prone_annotations:2.36.0")
+    compileOnly(libs.error.prone.annotations)
+    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)

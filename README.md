@@ -9,7 +9,7 @@
 多元人物与情感故事的 Android 文字冒险与 AI 叙事工坊——离线游玩分支剧本，或接入大模型，让 AI 导演与角色陪你即兴共创。
 
 [![最新版本](https://img.shields.io/github/v/release/wangmikuwang/HongXu-Android?label=%E6%9C%80%E6%96%B0%E7%89%88%E6%9C%AC&color=ff2d8f)](https://github.com/wangmikuwang/HongXu-Android/releases/latest)
-![Android 8.0+](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
+![Android 6.0+](https://img.shields.io/badge/Android-6.0%2B-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.0-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285F4?logo=jetpackcompose&logoColor=white)
 ![本地优先](https://img.shields.io/badge/%E6%95%B0%E6%8D%AE-%E4%BB%85%E5%AD%98%E6%9C%AC%E6%9C%BA-2ea44f)
@@ -51,7 +51,7 @@
 
 ## 🚀 快速开始
 
-1. **安装**（Android 8.0 及以上，二选一）：
+1. **安装**（Android 6.0 及以上，二选一）：
    - **直接下载**：到 [Releases](https://github.com/wangmikuwang/HongXu-Android/releases/latest) 下载 `HongXu-v版本号.apk`，首次安装请允许本应用「安装未知应用」。之后应用会自动检查更新，在应用内下载并校验。
    - **F-Droid**：在 F-Droid 客户端「设置 → 仓库」中添加 `https://wangmikuwang.github.io/fdroid/repo`，或在手机上打开[仓库页面](https://wangmikuwang.github.io/fdroid/)一键添加。仓库指纹：`885F92BA3C2DDD5EE6F095BB3E6796A194E4EE88F558FB95FCB4C18388A5B9E6`。两种方式的安装包签名相同，可以互相覆盖升级。
 2. **开玩**：打开即可游玩内置剧情。标着「分支剧本」的故事完全离线，不需要任何配置。
@@ -270,7 +270,7 @@ sequenceDiagram
 <details>
 <summary><b>构建与测试</b></summary>
 
-环境：JDK 17、`compileSdk 36`、`minSdk 26`、`targetSdk 34`，仓库自带 Gradle Wrapper 8.9，可直接用 Android Studio 打开。
+环境：JDK 17、`compileSdk 37`、`minSdk 23`、`targetSdk 36`，Android Gradle 插件 9.4、Kotlin 2.4，仓库自带 Gradle Wrapper 9.8，可直接用 Android Studio 打开。
 
 ```bash
 ./gradlew :app:assembleDebug        # 调试包

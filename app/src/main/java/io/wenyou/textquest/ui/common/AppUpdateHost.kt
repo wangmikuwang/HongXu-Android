@@ -41,7 +41,7 @@ internal fun AppUpdateHost(vm: AppUpdateViewModel, content: @Composable () -> Un
         if (vm.consumeInstallRequest()) open(appInstallIntent(context, uri))
     }
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-        if (context.packageManager.canRequestPackageInstalls()) currentUri?.let(::install)
+        if (canInstallPackages(context)) currentUri?.let(::install)
         else vm.installPermissionDenied()
     }
     DisposableEffect(lifecycle, vm) {
@@ -57,7 +57,7 @@ internal fun AppUpdateHost(vm: AppUpdateViewModel, content: @Composable () -> Un
     }
     LaunchedEffect(state.installUri) {
         state.installUri?.let { uri ->
-            if (context.packageManager.canRequestPackageInstalls()) install(uri)
+            if (canInstallPackages(context)) install(uri)
             else try {
                 permission.launch(Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}")))
             } catch (_: Exception) { vm.consumeInstallRequest(); vm.showOpenError() }
@@ -92,3 +92,7 @@ internal fun AppUpdateGate(state: AppUpdateState, onCheck: () -> Unit, onDownloa
         }
     }
 }
+
+/** The per-app install permission exists from Android 8.0; before that the system installer asks about unknown sources itself. */
+private fun canInstallPackages(context: android.content.Context) =
+    android.os.Build.VERSION.SDK_INT < 26 || context.packageManager.canRequestPackageInstalls()
