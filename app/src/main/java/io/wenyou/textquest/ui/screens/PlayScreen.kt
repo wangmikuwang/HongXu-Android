@@ -1,4 +1,13 @@
 package io.wenyou.textquest.ui.screens
+import androidx.compose.material3.Slider
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.only
+import androidx.compose.ui.semantics.Role
 import io.wenyou.textquest.ui.common.AppIcons
 import androidx.compose.ui.platform.testTag
 
@@ -175,7 +184,23 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     }
     LaunchedEffect(nearEnd) { if (nearEnd) unseen = false }
 
-    ModalNavigationDrawer(drawerState = drawerState, drawerContent = { CharacterStateDrawer(ui) }) {
+    var usageOpen by remember { mutableStateOf(false) }
+    var paceOpen by remember { mutableStateOf(false) }
+    var directorOpen by remember { mutableStateOf(false) }
+    val dev by container.devMode.state.collectAsStateWithLifecycle()
+    if (paceOpen) PaceDialog(ui, vm) { paceOpen = false }
+    if (directorOpen) DirectorChatDialog(ui, vm) { directorOpen = false }
+    if (usageOpen) io.wenyou.textquest.ui.common.UsageDialog(container.chatClient.usage) { usageOpen = false }
+    fun fromConsole(action: () -> Unit) { scope.launch { drawerState.close() }; action() }
+    ModalNavigationDrawer(drawerState = drawerState, drawerContent = {
+        ConsoleDrawer(ui, vm, directorChat = dev.directorChatOn,
+            onPace = { fromConsole { paceOpen = true } },
+            onChapter = { fromConsole { vm.draftChapter() } },
+            onDirector = { fromConsole { directorOpen = true } },
+            onAchievements = { fromConsole { achievementsOpen = true } },
+            onProvider = { fromConsole { showProvider = true } },
+            onUsage = { fromConsole { usageOpen = true } })
+    }) {
         Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -194,34 +219,11 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
                     }
                 },
                 actions = {
-                    // Frequent actions stay visible with clear labels; occasional ones live in a labelled menu.
                     AppTextButton(onClick = { vm.saveNow() }, enabled = ui.stage != PlayStage.INIT && ui.stage != PlayStage.ROLE_SELECT,
                         modifier = Modifier.semantics { contentDescription = "存档" }) { Text("存档") }
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) { Icon(AppIcons.List, "剧情记忆与人物关系") }
-                    var moreOpen by remember { mutableStateOf(false) }
-                    var usageOpen by remember { mutableStateOf(false) }
-                    var paceOpen by remember { mutableStateOf(false) }
-                    if (paceOpen) PaceDialog(ui, vm) { paceOpen = false }
-                    val dev by container.devMode.state.collectAsStateWithLifecycle()
-                    var directorOpen by remember { mutableStateOf(false) }
-                    if (directorOpen) DirectorChatDialog(ui, vm) { directorOpen = false }
-                    if (usageOpen) io.wenyou.textquest.ui.common.UsageDialog(container.chatClient.usage) { usageOpen = false }
-                    Box {
-                        IconButton(onClick = { moreOpen = true }) { Icon(AppIcons.MoreVert, "更多") }
-                        DropdownMenu(expanded = moreOpen, onDismissRequest = { moreOpen = false }) {
-                            val pace = io.wenyou.textquest.data.model.ScenePace.of(ui.session?.pace.orEmpty())
-                            DropdownMenuItem(text = { Text("推进节奏：${pace.label}") }, enabled = ui.session != null,
-                                onClick = { moreOpen = false; paceOpen = true })
-                            if (ui.aiMode) DropdownMenuItem(text = { Text("总结并开启新篇章") },
-                                enabled = ui.session != null && ui.stage != PlayStage.AI_WORKING && ui.stage != PlayStage.ROLE_SELECT,
-                                onClick = { moreOpen = false; vm.draftChapter() })
-                            if (dev.directorChatOn) DropdownMenuItem(text = { Text("与导演对话") }, enabled = ui.session != null,
-                                onClick = { moreOpen = false; directorOpen = true })
-                            DropdownMenuItem(text = { Text("🏆 成就馆") }, onClick = { moreOpen = false; achievementsOpen = true })
-                            DropdownMenuItem(text = { Text("切换 AI 服务") }, enabled = ui.providers.isNotEmpty(),
-                                onClick = { moreOpen = false; showProvider = true })
-                            DropdownMenuItem(text = { Text("生成用量与费用统计") }, onClick = { moreOpen = false; usageOpen = true })
-                        }
+                    // Everything else (pacing, chapters, achievements, AI service, usage, character states) is in the console.
+                    IconButton(onClick = { scope.launch { drawerState.open() } }, modifier = Modifier.testTag("open-console")) {
+                        Icon(AppIcons.List, "控制台")
                     }
                 }
             )
@@ -800,68 +802,133 @@ private fun rememberTranscriptExport(ui: PlayUi): () -> Unit {
     return { ui.story?.let { launcher.launch(Transcript.fileName(it.title)) } }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CharacterStateDrawer(ui: PlayUi) {
+private fun ConsoleDrawer(ui: PlayUi, vm: PlayViewModel, directorChat: Boolean, onPace: () -> Unit, onChapter: () -> Unit,
+    onDirector: () -> Unit, onAchievements: () -> Unit, onProvider: () -> Unit, onUsage: () -> Unit) {
     Surface(
-        modifier = Modifier.fillMaxHeight().width(300.dp),
+        modifier = Modifier.fillMaxHeight().width(320.dp),
         color = MaterialTheme.colorScheme.surfaceContainerLow
     ) {
         Column(
-            Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
+            // The drawer draws behind the system bars (edge to edge); keep its content clear of them.
+            Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical + WindowInsetsSides.Start))
+                .padding(16.dp).verticalScroll(rememberScrollState()).testTag("console"),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("剧情记忆与人物关系", style = MaterialTheme.typography.titleLarge)
+            Text("控制台", style = MaterialTheme.typography.titleLarge)
+            val hasSession = ui.session != null
+            val pace = io.wenyou.textquest.data.model.ScenePace.of(ui.session?.pace.orEmpty())
             val export = rememberTranscriptExport(ui)
-            AppOutlinedButton(onClick = export, enabled = !ui.session?.history.isNullOrEmpty()) { Text("导出对局文本") }
+            Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
+                ConsoleOption("推进节奏：${pace.label}", hasSession, onPace)
+                if (ui.aiMode) ConsoleOption("总结并开启新篇章",
+                    hasSession && ui.stage != PlayStage.AI_WORKING && ui.stage != PlayStage.ROLE_SELECT, onChapter)
+                if (directorChat) ConsoleOption("与导演对话", hasSession, onDirector)
+                ConsoleOption("🏆 成就馆", true, onAchievements)
+                ConsoleOption("切换 AI 服务", ui.providers.isNotEmpty(), onProvider)
+                ConsoleOption("生成用量与费用统计", true, onUsage)
+                ConsoleOption("导出对局文本", !ui.session?.history.isNullOrEmpty(), export)
+            }
             Text("剧情记忆", style = MaterialTheme.typography.titleMedium)
             io.wenyou.textquest.ui.common.AppText(ui.session?.memory?.ifBlank { "AI 续写后会自动记录关键事件，随存档保存。" } ?: "暂无剧情记忆", style = MaterialTheme.typography.bodySmall)
             Text("人物关系与状态", style = MaterialTheme.typography.titleMedium)
-            if (ui.session?.characterStates.isNullOrEmpty()) {
-                Text("还没有角色状态。剧情里为角色设置「好感度/身体状况/穿着」等效果后，这里会实时显示。",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
+            Text("点「调整」可以手动修改人物状态，之后的剧情会按新状态继续。",
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             ui.characters.forEach { c ->
-                val st = ui.session?.characterStates?.get(c.id) ?: io.wenyou.textquest.data.model.CharacterState()
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-                ) {
-                    Column(Modifier.padding(12.dp)) {
-                        Text("${c.emoji} ${c.name}", style = MaterialTheme.typography.titleSmall)
-                        Spacer(Modifier.height(6.dp))
-                        Text("对玩家的好感、信任及当前状态", style = MaterialTheme.typography.labelSmall)
-                        CharacterMetrics.defs.forEach { d ->
-                            val v = st.metrics[d.key] ?: return@forEach
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("${d.icon} ${d.label}",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.weight(1f))
-                                io.wenyou.textquest.ui.common.RawText(GameEngine.formatNumber(CharacterMetrics.clamp(v)),
-                                    style = MaterialTheme.typography.bodySmall)
-                            }
-                            LinearProgressIndicator(
-                                progress = { (CharacterMetrics.clamp(v) / 100.0).toFloat() },
-                                modifier = Modifier.fillMaxWidth().height(6.dp).padding(top = 2.dp)
-                            )
-                            Spacer(Modifier.height(4.dp))
-                        }
-                        if (st.metrics.isEmpty()) Text("尚未记录状态变化", style = MaterialTheme.typography.bodySmall)
-                        if (st.lastChangeReason.isNotBlank()) Text("变化原因：${st.lastChangeReason}", style = MaterialTheme.typography.bodySmall)
-                        st.relationships.forEach { (id, relation) ->
-                            val target = ui.characters.firstOrNull { it.id == id }
-                            if (target != null) Text("对${target.name}：$relation", style = MaterialTheme.typography.bodySmall)
-                        }
-                        if (st.flags.isNotEmpty())
-                            Text("标记：${st.flags.joinToString("、")}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        if (st.description.isNotBlank())
-                            Text("穿着/外观：${st.description}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                CharacterStateCard(ui, c, editable = hasSession && ui.stage != PlayStage.AI_WORKING) { vm.setCharacterState(c.id, it) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ConsoleOption(label: String, enabled: Boolean, onClick: () -> Unit) {
+    Text(label, style = MaterialTheme.typography.bodyLarge,
+        color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = .38f),
+        modifier = Modifier.fillMaxWidth().clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp))
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun CharacterStateCard(ui: PlayUi, c: io.wenyou.textquest.data.model.CharacterData, editable: Boolean,
+    onSave: (io.wenyou.textquest.data.model.CharacterState) -> Unit) {
+    val st = ui.session?.characterStates?.get(c.id) ?: io.wenyou.textquest.data.model.CharacterState()
+    // Edits stay a draft until saved, so a slider dragged while scrolling changes nothing.
+    var draft by remember(c.id) { mutableStateOf<io.wenyou.textquest.data.model.CharacterState?>(null) }
+    var flagsText by remember(c.id) { mutableStateOf("") }
+    val editing = draft
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        modifier = Modifier.testTag("state-${c.id}")
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                io.wenyou.textquest.ui.common.RawText("${c.emoji} ${c.name}", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                if (editing == null) AppTextButton(onClick = { draft = st; flagsText = st.flags.joinToString("、") }, enabled = editable,
+                    modifier = Modifier.testTag("adjust-${c.id}")) { Text("调整") }
+            }
+            if (editing == null) {
+                Text("对玩家的好感、信任及当前状态", style = MaterialTheme.typography.labelSmall)
+                CharacterMetrics.defs.forEach { d ->
+                    val v = st.metrics[d.key] ?: return@forEach
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("${d.icon} ${d.label}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        io.wenyou.textquest.ui.common.RawText(GameEngine.formatNumber(CharacterMetrics.clamp(v)), style = MaterialTheme.typography.bodySmall)
                     }
+                    LinearProgressIndicator(
+                        progress = { (CharacterMetrics.clamp(v) / 100.0).toFloat() },
+                        modifier = Modifier.fillMaxWidth().height(6.dp).padding(top = 2.dp)
+                    )
+                    Spacer(Modifier.height(4.dp))
+                }
+                if (st.metrics.isEmpty()) Text("尚未记录状态变化", style = MaterialTheme.typography.bodySmall)
+                if (st.lastChangeReason.isNotBlank()) Text("变化原因：${st.lastChangeReason}", style = MaterialTheme.typography.bodySmall)
+                st.relationships.forEach { (id, relation) ->
+                    val target = ui.characters.firstOrNull { it.id == id }
+                    if (target != null) Text("对${target.name}：$relation", style = MaterialTheme.typography.bodySmall)
+                }
+                if (st.flags.isNotEmpty())
+                    Text("标记：${st.flags.joinToString("、")}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (st.description.isNotBlank())
+                    Text("穿着/外观：${st.description}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            } else {
+                // Atmosphere-only values are offered for adult stories, as in the story editor.
+                val offered = CharacterMetrics.defs.filter { it.key != "arousal" || ui.story?.adult == true || it.key in editing.metrics }
+                offered.filter { it.key in editing.metrics }.forEach { d ->
+                    val v = editing.metrics.getValue(d.key)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("${d.icon} ${d.label}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
+                        io.wenyou.textquest.ui.common.RawText(GameEngine.formatNumber(v), style = MaterialTheme.typography.bodySmall)
+                        IconButton(onClick = { draft = editing.copy(metrics = editing.metrics - d.key) }) {
+                            Icon(AppIcons.Close, "移除${d.label}")
+                        }
+                    }
+                    Slider(value = v.toFloat(), onValueChange = { draft = editing.copy(metrics = editing.metrics + (d.key to Math.round(it).toDouble())) },
+                        valueRange = 0f..100f, modifier = Modifier.testTag("slider-${c.id}-${d.key}"))
+                }
+                val missing = offered.filter { it.key !in editing.metrics }
+                if (missing.isNotEmpty()) {
+                    Text("添加状态", style = MaterialTheme.typography.labelSmall)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        missing.forEach { d ->
+                            io.wenyou.textquest.ui.common.FilterTag("＋${d.label}", false,
+                                { draft = editing.copy(metrics = editing.metrics + (d.key to 50.0)) })
+                        }
+                    }
+                }
+                io.wenyou.textquest.ui.common.AppField(value = flagsText, onValueChange = { flagsText = it },
+                    label = "标记", placeholder = "用顿号或逗号分隔，例如：成年、已和好", modifier = Modifier.fillMaxWidth())
+                Spacer(Modifier.height(6.dp))
+                io.wenyou.textquest.ui.common.AppField(value = editing.description, onValueChange = { draft = editing.copy(description = it) },
+                    label = "穿着/外观", modifier = Modifier.fillMaxWidth())
+                Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                    AppTextButton(onClick = { draft = null }) { Text("取消") }
+                    AppTextButton(onClick = {
+                        onSave(editing.copy(flags = flagsText.split('、', ',', '，', '\n').toSet(), lastChangeReason = "玩家手动调整"))
+                        draft = null
+                    }, modifier = Modifier.testTag("save-${c.id}")) { Text("保存") }
                 }
             }
         }

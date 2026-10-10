@@ -1103,4 +1103,15 @@ private fun english5(m: MutableMap<String, String>) {
     m["🏆 解锁成就：{0}"] = "🏆 Achievement unlocked: {0}"
     m["🧠 AI 思考过程"] = "🧠 AI reasoning"
     m["🪄 第四面墙\n旁白：你长按了标题。\n角色：等等，谁在故事外面戳我们？\n导演：嘘，这是主角的新能力。"] = "🪄 The fourth wall\nNarrator: you long-pressed the title.\nCharacter: wait, who's poking us from outside the story?\nDirector: shh, it's the lead's new power."
+    // Play console (7.1.0).
+    m["控制台"] = "Console"
+    m["点「调整」可以手动修改人物状态，之后的剧情会按新状态继续。"] = "Tap “Adjust” to change a character's state by hand; the story continues from the new state."
+    m["调整"] = "Adjust"
+    m["移除{0}"] = "Remove {0}"
+    m["添加状态"] = "Add a state"
+    m["＋{0}"] = "+ {0}"
+    m["标记"] = "Tags"
+    m["用顿号或逗号分隔，例如：成年、已和好"] = "Separate with commas, e.g. adult, made up"
+    m["穿着/外观"] = "Outfit / appearance"
+    m["玩家手动调整"] = "Adjusted by the player"
 }
