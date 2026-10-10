@@ -45,7 +45,7 @@ class MainActivity : ComponentActivity() {
                 }.getOrNull()
             }
             if (text == null || !(application as WenYouApp).container.shareInbox.offer(text)) {
-                Toast.makeText(this@MainActivity, "没有找到可导入的分享内容", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, io.wenyou.textquest.ui.common.tr("没有找到可导入的分享内容"), Toast.LENGTH_SHORT).show()
             }
         }
     }

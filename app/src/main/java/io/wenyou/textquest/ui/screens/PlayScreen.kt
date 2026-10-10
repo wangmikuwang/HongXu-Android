@@ -181,7 +181,7 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
             CenterAlignedTopAppBar(
                 title = {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        io.wenyou.textquest.ui.common.RawText(ui.story?.title ?: "对局", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        io.wenyou.textquest.ui.common.AppText(ui.story?.title ?: "对局", style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         if (ui.nodeTitle.isNotBlank() && ui.nodeTitle != ui.story?.title) {
                             io.wenyou.textquest.ui.common.RawText(ui.nodeTitle, style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -654,7 +654,7 @@ private fun DirectorChatDialog(ui: PlayUi, vm: PlayViewModel, onDismiss: () -> U
                         Text(if (m.fromPlayer) "你" else "导演", style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         SelectionContainer { io.wenyou.textquest.ui.common.RawText(m.text, style = MaterialTheme.typography.bodyMedium) }
-                        if (m.note.isNotBlank()) io.wenyou.textquest.ui.common.RawText("已记为备忘：${m.note}",
+                        if (m.note.isNotBlank()) io.wenyou.textquest.ui.common.AppText("已记为备忘：${m.note}",
                             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.readableAccent())
                     }
                 }
@@ -662,7 +662,7 @@ private fun DirectorChatDialog(ui: PlayUi, vm: PlayViewModel, onDismiss: () -> U
             if (ui.directorChatBusy) Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp); Spacer(Modifier.width(8.dp)); Text("导演正在回复……")
             }
-            if (ui.directorChatError.isNotBlank()) io.wenyou.textquest.ui.common.RawText(ui.directorChatError,
+            if (ui.directorChatError.isNotBlank()) io.wenyou.textquest.ui.common.AppText(ui.directorChatError,
                 color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             OutlinedTextField(text, { text = it.take(1000) }, modifier = Modifier.fillMaxWidth().testTag("director-chat-input"),
                 placeholder = { Text("例如：接下来让陆晚先发现线索") }, maxLines = 4)
@@ -696,7 +696,7 @@ private fun ChapterDialog(draft: ChapterDraft, vm: PlayViewModel, title: String)
                     Spacer(Modifier.width(8.dp)); Text("正在整理剧情……")
                 }
                 else -> {
-                    if (draft.error.isNotBlank()) io.wenyou.textquest.ui.common.RawText(draft.error, color = MaterialTheme.colorScheme.error,
+                    if (draft.error.isNotBlank()) io.wenyou.textquest.ui.common.AppText(draft.error, color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.bodySmall)
                     OutlinedTextField(text, { text = it.take(io.wenyou.textquest.data.ai.AiDirector.RECAP_LIMIT) }, modifier = Modifier.fillMaxWidth(),
                         label = { Text("前情提要（可修改）") }, minLines = 6)
@@ -704,7 +704,7 @@ private fun ChapterDialog(draft: ChapterDraft, vm: PlayViewModel, title: String)
                         AppOutlinedButton(enabled = text.isNotBlank(), onClick = {
                             context.getSystemService(android.content.ClipboardManager::class.java)
                                 ?.setPrimaryClip(android.content.ClipData.newPlainText("前情提要", text))
-                            Toast.makeText(context, "已复制前情提要", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, io.wenyou.textquest.ui.common.tr("已复制前情提要"), Toast.LENGTH_SHORT).show()
                         }) { Text("复制") }
                         AppOutlinedButton(enabled = text.isNotBlank(), onClick = {
                             val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType("text/plain")
@@ -746,9 +746,9 @@ private fun StoppedPanel(ui: PlayUi, vm: PlayViewModel, nav: NavHostController) 
         modifier = Modifier.fillMaxWidth().padding(12.dp)
     ) {
         Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            io.wenyou.textquest.ui.common.RawText(ui.stoppedTitle.ifBlank { "这一局结束了" },
+            io.wenyou.textquest.ui.common.AppText(ui.stoppedTitle.ifBlank { "这一局结束了" },
                 style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.SemiBold)
-            io.wenyou.textquest.ui.common.RawText(ui.stoppedMessage, style = MaterialTheme.typography.bodyMedium)
+            io.wenyou.textquest.ui.common.AppText(ui.stoppedMessage, style = MaterialTheme.typography.bodyMedium)
             Spacer(Modifier.height(10.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (ui.providerMissing) Button(onClick = { nav.navigate(io.wenyou.textquest.ui.R.providerEdit("new")) }, modifier = Modifier.fillMaxWidth()) {
@@ -794,7 +794,7 @@ private fun rememberTranscriptExport(ui: PlayUi): () -> Unit {
             val saved = withContext(Dispatchers.IO) {
                 runCatching { context.contentResolver.openOutputStream(uri)!!.use { it.write(text.toByteArray()) } }.isSuccess
             }
-            Toast.makeText(context, if (saved) "已导出对局文本" else "导出失败，请换个位置重试", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, io.wenyou.textquest.ui.common.tr(if (saved) "已导出对局文本" else "导出失败，请换个位置重试"), Toast.LENGTH_SHORT).show()
         }
     }
     return { ui.story?.let { launcher.launch(Transcript.fileName(it.title)) } }
@@ -815,7 +815,7 @@ private fun CharacterStateDrawer(ui: PlayUi) {
             val export = rememberTranscriptExport(ui)
             AppOutlinedButton(onClick = export, enabled = !ui.session?.history.isNullOrEmpty()) { Text("导出对局文本") }
             Text("剧情记忆", style = MaterialTheme.typography.titleMedium)
-            io.wenyou.textquest.ui.common.RawText(ui.session?.memory?.ifBlank { "AI 续写后会自动记录关键事件，随存档保存。" } ?: "暂无剧情记忆", style = MaterialTheme.typography.bodySmall)
+            io.wenyou.textquest.ui.common.AppText(ui.session?.memory?.ifBlank { "AI 续写后会自动记录关键事件，随存档保存。" } ?: "暂无剧情记忆", style = MaterialTheme.typography.bodySmall)
             Text("人物关系与状态", style = MaterialTheme.typography.titleMedium)
             if (ui.session?.characterStates.isNullOrEmpty()) {
                 Text("还没有角色状态。剧情里为角色设置「好感度/身体状况/穿着」等效果后，这里会实时显示。",
@@ -886,7 +886,7 @@ private fun ThinkingBlock(reasoning: String) {
                 modifier = Modifier.fillMaxWidth().clickable { expanded = !expanded }
             ) {
                 Text("🧠 AI 思考过程", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                io.wenyou.textquest.ui.common.RawText(if (expanded) "收起" else "展开",
+                io.wenyou.textquest.ui.common.AppText(if (expanded) "收起" else "展开",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.readableAccent())
             }

@@ -27,7 +27,7 @@ class GenerationService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (updates?.isActive == true) return START_NOT_STICKY
         seen.clear()
-        if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel(CHANNEL, "AI生成进度", NotificationManager.IMPORTANCE_LOW))
+        if (Build.VERSION.SDK_INT >= 26) manager.createNotificationChannel(NotificationChannel(CHANNEL, io.wenyou.textquest.ui.common.tr("AI生成进度"), NotificationManager.IMPORTANCE_LOW))
         protocol = runCatching { Settings.System.getInt(contentResolver, "notification_focus_protocol", 0) }.getOrDefault(0)
         // Start immediately; even a request that finishes before service startup must satisfy the FGS deadline.
         try { startForeground(ONGOING_ID, notification("AI正在生成", "点击返回应用", true)) }
@@ -63,11 +63,11 @@ class GenerationService : Service() {
             Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val builder = builder()
-            .setSmallIcon(R.drawable.ic_generation).setContentTitle(title).setContentText(text)
+            .setSmallIcon(R.drawable.ic_generation).setContentTitle(io.wenyou.textquest.ui.common.tr(title)).setContentText(io.wenyou.textquest.ui.common.tr(text))
             .setContentIntent(open).setOnlyAlertOnce(true).setOngoing(ongoing)
             .setVisibility(Notification.VISIBILITY_PRIVATE).setShowWhen(false)
             .setPublicVersion(builder().setSmallIcon(R.drawable.ic_generation)
-                .setContentTitle("AI生成").setContentText("点击返回应用").setContentIntent(open).build())
+                .setContentTitle(io.wenyou.textquest.ui.common.tr("AI生成")).setContentText(io.wenyou.textquest.ui.common.tr("点击返回应用")).setContentIntent(open).build())
         if (ongoing) {
             if (Build.VERSION.SDK_INT >= 31) builder.setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
             if (Build.VERSION.SDK_INT >= 36) {

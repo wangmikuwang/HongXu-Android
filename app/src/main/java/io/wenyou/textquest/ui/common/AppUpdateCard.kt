@@ -26,7 +26,7 @@ internal fun AppUpdateCard(state: AppUpdateState, onCheck: () -> Unit, onDownloa
                 Text("${(state.receivedBytes * 100 / state.totalBytes).coerceIn(0, 100)}% · ${String.format(Locale.ROOT, "%.1f / %.1f MB", state.receivedBytes / 1_048_576.0, state.totalBytes / 1_048_576.0)}")
             } else LinearProgressIndicator(Modifier.fillMaxWidth())
         }
-        if (state.message.isNotBlank()) io.wenyou.textquest.ui.common.RawText(state.message, style = MaterialTheme.typography.bodyMedium)
+        if (state.message.isNotBlank()) io.wenyou.textquest.ui.common.AppText(state.message, style = MaterialTheme.typography.bodyMedium)
         state.release?.let { release ->
             Text("新版 ${release.version} · ${String.format(Locale.ROOT, "%.1f", release.size / 1_048_576.0)} MB")
             if (release.notes.isNotBlank()) io.wenyou.textquest.ui.common.RawText(release.notes, style = MaterialTheme.typography.bodySmall,
@@ -35,7 +35,7 @@ internal fun AppUpdateCard(state: AppUpdateState, onCheck: () -> Unit, onDownloa
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Button(onClick = onCheck, enabled = !state.busy && !state.downloading) { Text("检查更新") }
             if (state.release != null) AppOutlinedButton(onClick = onDownload, enabled = !state.busy && !state.downloading) {
-                io.wenyou.textquest.ui.common.RawText(if (state.downloaded) "重新下载" else "下载并升级")
+                io.wenyou.textquest.ui.common.AppText(if (state.downloaded) "重新下载" else "下载并升级")
             }
             if (state.downloaded) Button(onClick = onInstall, enabled = !state.busy) { Text("安装升级") }
             AppOutlinedButton(onClick = onOpenDownloads) { Text("查看下载") }

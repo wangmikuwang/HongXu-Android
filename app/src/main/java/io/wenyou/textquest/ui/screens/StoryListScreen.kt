@@ -1,4 +1,5 @@
 package io.wenyou.textquest.ui.screens
+import io.wenyou.textquest.ui.common.uiLabel
 import io.wenyou.textquest.ui.common.ShareActions
 import io.wenyou.textquest.ui.common.SearchField
 import io.wenyou.textquest.ui.common.AppField
@@ -134,7 +135,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             scope.launch {
                 val text = withContext(Dispatchers.IO) { QrCode.decodeShareImages(context, uris) }
                 if (text.isNullOrBlank() || !container.shareInbox.offer(text)) {
-                    android.widget.Toast.makeText(context, "未识别到完整分享码，请选择分享海报或同一套的全部二维码", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, io.wenyou.textquest.ui.common.tr("未识别到完整分享码，请选择分享海报或同一套的全部二维码"), android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -281,7 +282,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
             onResult = { text ->
                 scanning = false
                 if (!container.shareInbox.offer(text)) {
-                    android.widget.Toast.makeText(context, "没有识别到有效的分享码", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, io.wenyou.textquest.ui.common.tr("没有识别到有效的分享码"), android.widget.Toast.LENGTH_SHORT).show()
                 }
             },
             onDismiss = { scanning = false }
@@ -291,7 +292,7 @@ fun StoryListScreen(container: WenYouApp.AppContainer, nav: NavHostController) {
 
 /** Runs a share action, or explains why content too large for a share code cannot be shared this way. */
 internal fun shareOut(context: android.content.Context, code: String, action: (String) -> Unit) {
-    if (code.isBlank()) android.widget.Toast.makeText(context, "内容超过分享上限，请使用设置中的整包导出", android.widget.Toast.LENGTH_SHORT).show()
+    if (code.isBlank()) android.widget.Toast.makeText(context, io.wenyou.textquest.ui.common.tr("内容超过分享上限，请使用设置中的整包导出"), android.widget.Toast.LENGTH_SHORT).show()
     else action(code)
 }
 
@@ -417,7 +418,7 @@ private fun ConnectingIndicator(label: String, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(9.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary.copy(alpha = alpha)))
         Spacer(Modifier.width(8.dp))
-        io.wenyou.textquest.ui.common.RawText(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.readableAccent())
+        io.wenyou.textquest.ui.common.AppText(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.readableAccent())
     }
 }
 
@@ -470,7 +471,7 @@ fun ShareQrDialog(title: String, code: String, onDismiss: () -> Unit) {
                 )
                 if (copied) {
                     Spacer(Modifier.height(4.dp))
-                    io.wenyou.textquest.ui.common.RawText("已复制分享码文字", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                    io.wenyou.textquest.ui.common.AppText("已复制分享码文字", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
                 }
             }
         },
@@ -484,7 +485,7 @@ fun ShareQrDialog(title: String, code: String, onDismiss: () -> Unit) {
                     val poster = QrCode.poster(title, appName, pages)
                     val location = poster?.let { QrCode.saveToGallery(context, it, "${title}_分享海报") }
                     poster?.recycle()
-                    android.widget.Toast.makeText(context, if (location != null) "分享海报已保存到 $location" else "保存失败",
+                    android.widget.Toast.makeText(context, io.wenyou.textquest.ui.common.tr(if (location != null) "分享海报已保存到 $location" else "保存失败"),
                         android.widget.Toast.LENGTH_SHORT).show()
                 }) { Text("保存海报") }
                 AppTextButton(onClick = onDismiss) { Text("关闭") }
@@ -537,7 +538,7 @@ fun ImportTextDialog(onDismiss: () -> Unit, onImport: (String, (String) -> Unit)
                 )
                 if (result.isNotBlank()) {
                     Spacer(Modifier.height(6.dp))
-                    io.wenyou.textquest.ui.common.RawText(result, style = MaterialTheme.typography.bodySmall,
+                    io.wenyou.textquest.ui.common.AppText(result, style = MaterialTheme.typography.bodySmall,
                         color = if (result.startsWith("导入成功")) MaterialTheme.colorScheme.primary
                         else MaterialTheme.colorScheme.error)
                 }
@@ -586,9 +587,9 @@ private fun FilterEmptyState(title: String, body: String, showReset: Boolean, on
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        io.wenyou.textquest.ui.common.RawText(title, style = MaterialTheme.typography.titleLarge)
+        io.wenyou.textquest.ui.common.AppText(title, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))
-        io.wenyou.textquest.ui.common.RawText(body, style = MaterialTheme.typography.bodyMedium,
+        io.wenyou.textquest.ui.common.AppText(body, style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center)
         Spacer(Modifier.height(6.dp))
@@ -714,10 +715,11 @@ private fun StoryCard(story: Story, onEdit: () -> Unit, onPlay: () -> Unit, onSa
                         if (story.adult) Pill(ContentClass.ADULT.label,
                             container = MaterialTheme.colorScheme.primaryContainer, accentIndex = 1)
                     }
+                    val language = io.wenyou.textquest.ui.theme.LocalAppearance.current.language
                     io.wenyou.textquest.ui.common.RawText(buildList {
                         if (story.genre.isNotBlank()) add(story.genre)
-                        add("${story.nodes.size} 场景")
-                        if (story.characterIds.isNotEmpty()) add("${story.characterIds.size} 位人物")
+                        add(uiLabel("${story.nodes.size} 场景", language))
+                        if (story.characterIds.isNotEmpty()) add(uiLabel("${story.characterIds.size} 位人物", language))
                     }.joinToString(" · "), style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }

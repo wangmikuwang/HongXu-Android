@@ -159,6 +159,8 @@ fun WenYouTheme(
     val typography = androidx.compose.runtime.remember(style, appearance.fontFile, appearance.fontWeight, appearance.fontBold, context) {
         appearanceTypography(if (style == ThemeStyle.APPLE) AppleTypography else AppTypography, appearance, context)
     }
+    // Toasts and notifications are shown outside composition; they read the language from here.
+    androidx.compose.runtime.SideEffect { io.wenyou.textquest.ui.common.appLanguage = appearance.language }
     CompositionLocalProvider(LocalThemeStyle provides style, LocalAppearance provides appearance, LocalGlassEnabled provides appearance.glassEnabled,
         androidx.compose.ui.platform.LocalDensity provides androidx.compose.ui.unit.Density(systemDensity.density * densityScale, systemDensity.fontScale * appearance.fontScale),
         LocalAccentPalette provides (prideTheme?.let { theme ->

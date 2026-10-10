@@ -101,7 +101,7 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
             scope.launch {
                 val text = withContext(Dispatchers.IO) { QrCode.decodeShareImages(context, uris) }
                 if (text.isNullOrBlank() || !container.shareInbox.offer(text)) {
-                    android.widget.Toast.makeText(context, "未识别到完整分享码，请选择分享海报或同一套的全部二维码", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, io.wenyou.textquest.ui.common.tr("未识别到完整分享码，请选择分享海报或同一套的全部二维码"), android.widget.Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -219,7 +219,7 @@ fun CharactersScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
             onResult = { text ->
                 scanning = false
                 if (!container.shareInbox.offer(text)) {
-                    android.widget.Toast.makeText(context, "没有识别到有效的分享码", android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast.makeText(context, io.wenyou.textquest.ui.common.tr("没有识别到有效的分享码"), android.widget.Toast.LENGTH_SHORT).show()
                 }
             },
             onDismiss = { scanning = false }
@@ -257,9 +257,9 @@ private fun CharacterEmptyState(title: String, body: String, showReset: Boolean,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        io.wenyou.textquest.ui.common.RawText(title, style = MaterialTheme.typography.titleLarge)
+        io.wenyou.textquest.ui.common.AppText(title, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))
-        io.wenyou.textquest.ui.common.RawText(body, style = MaterialTheme.typography.bodyMedium,
+        io.wenyou.textquest.ui.common.AppText(body, style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center)
         Spacer(Modifier.height(6.dp))

@@ -75,7 +75,7 @@ internal fun AppUpdateHost(vm: AppUpdateViewModel, content: @Composable () -> Un
             text = { Column(Modifier.verticalScroll(rememberScrollState())) {
                 AppUpdateCard(state, { vm.check() }, vm::download, openDownloads, openRelease, vm::install)
             } },
-            confirmButton = { AppTextButton(onClick = vm::dismissPrompt) { io.wenyou.textquest.ui.common.RawText(if (state.downloading) "后台下载" else "稍后再说") } })
+            confirmButton = { AppTextButton(onClick = vm::dismissPrompt) { io.wenyou.textquest.ui.common.AppText(if (state.downloading) "后台下载" else "稍后再说") } })
     }
 }
 

@@ -96,7 +96,7 @@ fun CustomIconCard() {
         if (uri != null) scope.launch {
             withContext(Dispatchers.IO) { runCatching { CustomIcon.render(context, uri) } }
                 .onSuccess { icon = it }
-                .onFailure { Toast.makeText(context, it.message ?: "无法读取这张图片", Toast.LENGTH_SHORT).show() }
+                .onFailure { Toast.makeText(context, io.wenyou.textquest.ui.common.tr(it.message ?: "无法读取这张图片"), Toast.LENGTH_SHORT).show() }
         }
     }
     TonalCard {
@@ -123,7 +123,7 @@ fun CustomIconCard() {
             confirmButton = {
                 AppTextButton(enabled = label.isNotBlank(), onClick = {
                     val ok = CustomIcon.pin(context, label.trim(), bitmap)
-                    Toast.makeText(context, if (ok) "已请求添加；若桌面没有出现，请在系统设置中允许本应用创建桌面快捷方式" else "当前桌面不支持添加快捷图标", Toast.LENGTH_LONG).show()
+                    Toast.makeText(context, io.wenyou.textquest.ui.common.tr(if (ok) "已请求添加；若桌面没有出现，请在系统设置中允许本应用创建桌面快捷方式" else "当前桌面不支持添加快捷图标"), Toast.LENGTH_LONG).show()
                     icon = null
                 }) { Text("添加") }
             },

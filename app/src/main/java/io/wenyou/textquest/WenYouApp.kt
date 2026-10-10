@@ -32,6 +32,8 @@ class WenYouApp : Application() {
         init {
             // Every AI request built by this client carries the player's baseline.
             chatClient.baseline = library::currentBaseline
+            // AI writes new content in the interface language.
+            chatClient.outputLanguage = { io.wenyou.textquest.ui.common.resolveLanguage(settings.state.value.appearance.language) }
         }
         val shareInbox = io.wenyou.textquest.data.repo.ShareInbox(context)
         val devMode = io.wenyou.textquest.data.repo.DevMode(context)

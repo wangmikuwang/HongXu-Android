@@ -159,7 +159,7 @@ internal fun downloadAppRelease(context: Context, release: AppRelease): Long {
         }
     }
     val request = DownloadManager.Request(Uri.parse(release.url)).setTitle("${context.getString(io.wenyou.textquest.R.string.app_name)} ${release.version}")
-        .setDescription("${context.getString(io.wenyou.textquest.R.string.app_name)}更新安装包").setMimeType("application/vnd.android.package-archive")
+        .setDescription(io.wenyou.textquest.ui.common.tr("${context.getString(io.wenyou.textquest.R.string.app_name)}更新安装包")).setMimeType("application/vnd.android.package-archive")
         .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
     // Android 8/9 use the app's download directory without requesting broad storage access.
     val destinationName = "${System.currentTimeMillis()}-${release.fileName}"
