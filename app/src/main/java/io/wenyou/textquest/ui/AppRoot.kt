@@ -26,6 +26,7 @@ import io.wenyou.textquest.ui.vm.AppUpdateViewModel
 import io.wenyou.textquest.ui.common.AppUpdateHost
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.widthIn
@@ -304,7 +305,8 @@ private val MAX_CONTENT_WIDTH = 840.dp
 /** Keeps every page a readable column on wide windows instead of stretching lines and controls edge to edge. */
 @Composable
 private fun ReadableWidth(content: @Composable () -> Unit) {
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    // The margins take the page color so the column blends into wide windows.
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentAlignment = Alignment.TopCenter) {
         Box(Modifier.fillMaxHeight().widthIn(max = MAX_CONTENT_WIDTH)) { content() }
     }
 }

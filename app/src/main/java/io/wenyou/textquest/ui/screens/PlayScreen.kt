@@ -157,10 +157,21 @@ fun PlayScreen(container: WenYouApp.AppContainer, nav: NavHostController, storyI
     } }
     var unseen by remember { mutableStateOf(false) }
     val lastItem = history.size - 1 + if (live) 1 else 0
+    // The list as it was before the latest change: a reply of several lines must not count as "scrolled away".
+    var shownSize by remember { mutableStateOf(-1) }
+    var shownLast by remember { mutableStateOf(-1) }
     LaunchedEffect(history.size, live) {
+        val oldSize = shownSize
+        val oldLast = shownLast
+        shownSize = history.size
+        shownLast = lastItem
         if (capturing || lastItem < 0) return@LaunchedEffect
-        if (nearEnd || history.lastOrNull()?.kind == EntryKind.CHOICE) { listState.scrollToItem(lastItem); unseen = false }
-        else unseen = true
+        val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+        if (oldLast < 0 || lastVisible >= oldLast - 2 || history.lastOrNull()?.kind == EntryKind.CHOICE) {
+            // Land on the first new line so a long reply reads from its start; the list stops at its end anyway.
+            listState.scrollToItem(if (oldSize in 0 until history.size) oldSize else lastItem)
+            unseen = false
+        } else unseen = true
     }
     LaunchedEffect(nearEnd) { if (nearEnd) unseen = false }
 

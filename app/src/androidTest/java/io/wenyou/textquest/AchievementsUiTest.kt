@@ -54,8 +54,10 @@ class AchievementsUiTest {
         }
         compose.onNodeWithText("已解锁 3 / 7").assertIsDisplayed()
         compose.onNodeWithText("🏆 初次启程").assertIsDisplayed()
-        compose.onNodeWithText("🏆 命运抉择").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("🏆 旅途终章").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithTag("achievements-list").performScrollToNode(hasText("🏆 命运抉择"))
+        compose.onNodeWithText("🏆 命运抉择").assertIsDisplayed()
+        compose.onNodeWithTag("achievements-list").performScrollToNode(hasText("🏆 旅途终章"))
+        compose.onNodeWithText("🏆 旅途终章").assertIsDisplayed()
         compose.onNodeWithTag("achievements-list").performScrollToKey("ENDING_COLLECTOR")
         compose.onNodeWithText("🔒 结局收藏家").assertIsDisplayed()
         compose.onAllNodesWithText("未解锁 · 1 / 3").onFirst().assertExists()
