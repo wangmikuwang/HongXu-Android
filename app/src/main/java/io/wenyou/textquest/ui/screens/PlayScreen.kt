@@ -926,7 +926,7 @@ private fun CharacterStateCard(ui: PlayUi, c: io.wenyou.textquest.data.model.Cha
                 Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth().padding(top = 6.dp)) {
                     AppTextButton(onClick = { draft = null }) { Text("取消") }
                     AppTextButton(onClick = {
-                        onSave(editing.copy(flags = flagsText.split('、', ',', '，', '\n').toSet(), lastChangeReason = "玩家手动调整"))
+                        onSave(editing.copy(flags = flagsText.split('、', ',', '，', '\n').toSet()))
                         draft = null
                     }, modifier = Modifier.testTag("save-${c.id}")) { Text("保存") }
                 }
