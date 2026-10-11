@@ -1,6 +1,7 @@
 @file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class, androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 package io.wenyou.textquest.ui.screens
 
+import io.wenyou.textquest.ui.common.AppTextButton
 import io.wenyou.textquest.ui.common.AppIcons
 import android.content.Context
 import android.graphics.Color as AndroidColor
@@ -72,7 +73,7 @@ fun AppearanceScreen(container: WenYouApp.AppContainer, nav: NavHostController) 
         }
     }
     Scaffold(topBar = {
-        TopAppBar(title = { Text(if (iconsPage) "应用图标" else "外观与主题") }, navigationIcon = {
+        CenterAlignedTopAppBar(title = { Text(if (iconsPage) "应用图标" else "外观与主题") }, navigationIcon = {
             IconButton(onClick = { if (iconsPage) iconsPage = false else nav.popBackStack() }) { Icon(AppIcons.ArrowBack, "返回") }
         })
     }) { padding ->
@@ -129,10 +130,10 @@ fun AppearanceContent(prefs: AppearancePrefs, style: ThemeStyle, mode: ThemeMode
                         val colors = remember(preset, dark, prefs.colorSpec) { customColors(current, prefs.copy(seed = preset.seed, paletteStyle = preset.style), dark) }
                         val selected = prefs.colorSource == "custom" && prefs.seed == preset.seed && prefs.paletteStyle == preset.style
                         Surface(Modifier.width(76.dp).clickable { setDynamic(false); update { it.copy(seed = preset.seed, paletteStyle = preset.style, colorSource = "custom") } },
-                            shape = RoundedCornerShape(16.dp), color = colors.surfaceContainerHigh,
+                            shape = MaterialTheme.shapes.medium, color = colors.surfaceContainerHigh,
                             border = if (selected) BorderStroke(2.dp, colors.primary) else null) {
-                            Column(Modifier.padding(vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                            Column(Modifier.padding(vertical = 12.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                                     listOf(colors.primary, colors.secondary, colors.tertiary).forEach { Box(Modifier.size(16.dp).background(it, CircleShape)) }
                                 }
                                 Text(preset.name, color = colors.onSurface, style = MaterialTheme.typography.labelMedium)
@@ -192,7 +193,7 @@ fun AppearanceContent(prefs: AppearancePrefs, style: ThemeStyle, mode: ThemeMode
             Toggle("随机展示开屏壁纸", prefs.splashRandom, { value -> update { it.copy(splashRandom = value) } })
             if (prefs.splashEnabled && prefs.splashRandom) {
                 Text("随机池预览")
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { listOf("ink", "paper", "dawn", "stars").forEach { WallpaperPreview(it, Modifier.weight(1f).height(70.dp)) } }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { listOf("ink", "paper", "dawn", "stars").forEach { WallpaperPreview(it, Modifier.weight(1f).height(70.dp)) } }
             }
             Toggle("开屏图标遮罩动画", prefs.splashAnimation, { value -> update { it.copy(splashAnimation = value) } })
             if (prefs.splashEnabled) {
@@ -235,7 +236,7 @@ fun AppearanceContent(prefs: AppearancePrefs, style: ThemeStyle, mode: ThemeMode
 
 @Composable
 private fun <T> Choice(title: String, options: List<Pair<String, T>>, selected: T, onSelect: (T) -> Unit) {
-    AppDropdown(title, options, selected, onSelect, Modifier.padding(vertical = 6.dp))
+    AppDropdown(title, options, selected, onSelect, Modifier.padding(vertical = 8.dp))
 }
 
 @Composable
@@ -275,11 +276,11 @@ private fun ColorPickerDialog(initial: String, onDismiss: () -> Unit, onApply: (
     fun sync() { hex = "#%06X".format(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, brightness)) and 0xFFFFFF) }
     AlertDialog(onDismissRequest = onDismiss, title = { Text("自定义主题颜色") }, text = {
         Column {
-            Box(Modifier.fillMaxWidth().height(50.dp).background(Color(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, brightness))), RoundedCornerShape(12.dp)))
+            Box(Modifier.fillMaxWidth().height(50.dp).background(Color(AndroidColor.HSVToColor(floatArrayOf(hue, saturation, brightness))), MaterialTheme.shapes.medium))
             Text("色相"); Slider(hue, { hue = it; sync() }, valueRange = 0f..360f)
             Text("饱和度"); Slider(saturation, { saturation = it; sync() })
             Text("亮度"); Slider(brightness, { brightness = it; sync() })
             OutlinedTextField(hex, { raw -> hex = raw; normalizeHex(raw)?.let { valid -> AndroidColor.colorToHSV(AndroidColor.parseColor(valid), hsv); hue = hsv[0]; saturation = hsv[1]; brightness = hsv[2] } }, label = { Text("#RRGGBB") }, singleLine = true, isError = normalizeHex(hex) == null)
         }
-    }, confirmButton = { TextButton(onClick = { normalizeHex(hex)?.let(onApply) }, enabled = normalizeHex(hex) != null) { Text("确定") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } })
+    }, confirmButton = { AppTextButton(onClick = { normalizeHex(hex)?.let(onApply) }, enabled = normalizeHex(hex) != null) { Text("确定") } }, dismissButton = { AppTextButton(onClick = onDismiss) { Text("取消") } })
 }
