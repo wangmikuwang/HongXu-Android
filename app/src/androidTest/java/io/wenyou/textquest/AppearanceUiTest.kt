@@ -69,7 +69,7 @@ class AppearanceUiTest {
     }
     @Test fun bundledWenKaiIsDefaultAndImportedFontStillOverridesIt() {
         val context = compose.activity
-        val asset = androidx.core.content.res.ResourcesCompat.getFont(context, R.font.bundled_kai_regular)!!
+        val asset = androidx.core.content.res.ResourcesCompat.getFont(context, R.font.lxgw_wenkai_regular)!!
         assertTrue("Bundled font must contain Chinese glyphs", android.graphics.Paint().apply { typeface = asset }.hasGlyph("叙"))
         val base = androidx.compose.material3.Typography()
         val defaults = appearanceTypography(base, AppearancePrefs(), context)

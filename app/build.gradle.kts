@@ -139,6 +139,7 @@ dependencies {
     compileOnly(libs.error.prone.annotations)
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
     implementation(libs.androidx.core.ktx)
+    implementation(libs.emoji2.bundled)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

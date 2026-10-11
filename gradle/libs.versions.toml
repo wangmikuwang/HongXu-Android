@@ -17,6 +17,8 @@ documentfile = "1.1.0"
 zxing = "3.5.4"
 camera = "1.6.2"
 desugarJdkLibs = "2.1.5"
+# 1.7 requires minSdk 24; 1.6.x keeps Android 6.0.
+emoji2 = "1.6.0"
 errorProne = "2.50.0"
 
 [libraries]
@@ -49,6 +51,7 @@ camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.r
 camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camera" }
 camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camera" }
 error-prone-annotations = { group = "com.google.errorprone", name = "error_prone_annotations", version.ref = "errorProne" }
+emoji2-bundled = { group = "androidx.emoji2", name = "emoji2-bundled", version.ref = "emoji2" }
 desugar-jdk-libs-nio = { group = "com.android.tools", name = "desugar_jdk_libs_nio", version.ref = "desugarJdkLibs" }
 
 [plugins]

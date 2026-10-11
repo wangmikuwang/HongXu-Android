@@ -7,10 +7,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import io.wenyou.textquest.R
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import io.wenyou.textquest.data.AppearanceFiles
 import java.io.File
 
-internal val DefaultAppFont = FontFamily(Font(R.font.bundled_kai_regular))
+/** LXGW WenKai, both weights unmodified: Regular for body text, the real Medium for medium, semibold and bold text. */
+internal val DefaultAppFont = FontFamily(
+    Font(R.font.lxgw_wenkai_regular, FontWeight.Normal),
+    Font(R.font.lxgw_wenkai_medium, FontWeight.Medium),
+    Font(R.font.lxgw_wenkai_medium, FontWeight.SemiBold),
+    Font(R.font.lxgw_wenkai_medium, FontWeight.Bold),
+)
 
 internal fun appearanceTypography(base: Typography, prefs: AppearancePrefs, context: Context): Typography {
     val family = if (prefs.fontFile.isEmpty()) null else runCatching {

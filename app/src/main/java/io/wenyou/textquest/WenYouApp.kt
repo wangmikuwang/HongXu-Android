@@ -46,6 +46,9 @@ class WenYouApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Every emoji (covers, avatars, stories) draws from the bundled Noto Color Emoji, so old and new Android match.
+        androidx.emoji2.text.EmojiCompat.init(androidx.emoji2.bundled.BundledEmojiCompatConfig(this,
+            java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "emoji-load").apply { isDaemon = true } }).setReplaceAll(true))
         container = AppContainer(this)
         installCrashLogger()
         appScope.launch {
@@ -75,7 +78,8 @@ class WenYouApp : Application() {
                     "presets/wenyou-romance-presets.json",
                     "presets/wenyou-extended-presets.json",
                     "presets/wenyou-diverse-presets.json",
-                    "presets/wenyou-spectrum-presets.json"
+                    "presets/wenyou-spectrum-presets.json",
+                    "presets/wenyou-voyage-presets.json"
                 ), markLgbt = true)
                 // 非异性向的 18+ 内容：受「显示 LGBT」与「成人内容」两个开关共同约束。
                 applyPresetAssets(
