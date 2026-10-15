@@ -35,7 +35,7 @@ fun GenerationNotificationSettings(store: SettingsStore) {
                 Text("显示阶段和耗时，点击返回应用。支持的系统可显示实时更新或小米超级岛；其余显示普通通知。", style = MaterialTheme.typography.bodySmall)
             }
             Spacer(Modifier.width(12.dp))
-            Switch(checked = prefs.generationNotifications, onCheckedChange = { on ->
+            io.wenyou.textquest.ui.common.AppSwitch(checked = prefs.generationNotifications, onCheckedChange = { on ->
                 if (on && Build.VERSION.SDK_INT >= 33 && context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
                     permission.launch(Manifest.permission.POST_NOTIFICATIONS)
                 else store.setGenerationNotifications(on)

@@ -71,3 +71,10 @@ AI 服务管理位于设置的二级页面；设置首页采用搜索和分类�
 ## 5.4.7 剧情卡片信息层次
 
 标题/一句话简介保持原头部位置，已有世界观摘要作为两行正文介绍，必要时回退到简介/开场，不调用AI或写回剧情。去除重复简介。胶囊仅表示玩法和必要内容标记，全年龄与AI场景计数不作额外标签；题材、场景/人物统计使用一段次要文字。头像、菜单、游玩及筛选逻辑保留，介绍不显示导演私有规则，长文字省略，大字体/窄屏仍保证按钮触控。
+
+## 7.4.0 Apple 主题（参照 Apple Human Interface Guidelines）
+
+- 液态玻璃只属于 Apple 主题：`LocalGlassEnabled = style == APPLE && glassEnabled`；选择 Apple 时开启玻璃，「降低透明度」关闭玻璃改用不透明底栏。玻璃材质、底栏标签只在 Apple 下显示；其他风格不提供玻璃。
+- 色板 `appleHigColors`：顶栏/页面为 systemGroupedBackground（浅 #F2F2F7 / 深 #000000），分组卡片白色 / #1C1C1E，分隔线 #C6C6C8 / #38383A，错误为加强对比度 systemRed（#D70015 / #FF6961）。浅色强调色 #0060C8，保证在最深的分组填充 #E4E4E9 上仍有 4.5:1（readableAccent 不回落为黑色）；深色保留 #80B8FF。Miuix 不受影响。
+- 字阶 `AppleTypography`：按 iOS 文本样式（Large Title 34 / Title1 28 / Title2 22 / Title3 20 / Headline 17 / Body 17 / Subheadline 15 / Footnote 13 / Caption 12、11）取字号，行高为中文放宽，正文保留长文阅读行距；字体仍为霞鹜文楷或导入字体。
+- 组件：Hub 页 `HubTopBar` 左对齐大标题；`AppSwitch` systemGreen 轨道、白色滑块；`AppDropdown` 2–4 个短选项为分段控件，其余为「标题 · 当前值 ›」列表行（弹出菜单带勾选）；`SectionHeader` 为脚注字号次要色、与单元格内容对齐；搜索框、筛选标签、`AppAssistChip` 为无描边灰色填充胶囊；输入框为填充样式。触控区保持 ≥48dp。
