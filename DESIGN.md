@@ -72,6 +72,11 @@ AI 服务管理位于设置的二级页面；设置首页采用搜索和分类�
 
 标题/一句话简介保持原头部位置，已有世界观摘要作为两行正文介绍，必要时回退到简介/开场，不调用AI或写回剧情。去除重复简介。胶囊仅表示玩法和必要内容标记，全年龄与AI场景计数不作额外标签；题材、场景/人物统计使用一段次要文字。头像、菜单、游玩及筛选逻辑保留，介绍不显示导演私有规则，长文字省略，大字体/窄屏仍保证按钮触控。
 
+## 7.4.1 设置首页与分段控件
+
+- 设置首页的分类放进一张 TonalCard 分组卡片（与主页、剧情、角色的卡片一致），图标为 44dp 圆形徽标：普通主题用 secondaryContainer 底 + 图标样式决定字形色（单色 onSurfaceVariant / 彩色 readableAccent）；骄傲主题用 distributedAccent 旗帜色填充、accentForeground 字形色并加 outlineVariant 描边，保证白色条纹上可见。
+- Apple 分段控件的选中滑块是单独一层，选中变化时按 AppMotion.selection() 滑动；横向拖动时跟随手指（与底栏相同的 detectHorizontalDragGestures 逻辑），松手吸附到最近选项。
+
 ## 7.4.0 Apple 主题（参照 Apple Human Interface Guidelines）
 
 - 液态玻璃只属于 Apple 主题：`LocalGlassEnabled = style == APPLE && glassEnabled`；选择 Apple 时开启玻璃，「降低透明度」关闭玻璃改用不透明底栏。玻璃材质、底栏标签只在 Apple 下显示；其他风格不提供玻璃。
