@@ -25,7 +25,6 @@ import io.wenyou.textquest.ui.common.AppText
 import io.wenyou.textquest.ui.common.uiLabel
 import io.wenyou.textquest.ui.theme.LocalAppearance
 import io.wenyou.textquest.ui.theme.LocalAccentPalette
-import io.wenyou.textquest.ui.theme.accentForeground
 import io.wenyou.textquest.ui.theme.readableAccent
 import io.wenyou.textquest.ui.theme.distributedAccent
 import io.wenyou.textquest.ui.common.TonalCard
@@ -71,16 +70,20 @@ internal fun SettingsMenuContent(onOpen: (String) -> Unit, modifier: Modifier = 
             TonalCard(Modifier.testTag("settings-group")) {
                 visible.forEach { section ->
                     // Round tonal badges like the rest of the app; flag themes fill them with flag colors.
-                    val tile = if (flag) distributedAccent(settingsSections.indexOf(section), section.color) else MaterialTheme.colorScheme.secondaryContainer
+                    // Flag themes draw the exact flag color as a ring, so every glyph keeps one color.
+                    val ring = distributedAccent(settingsSections.indexOf(section), section.color)
+                    // Flag themes repaint secondaryContainer with a stripe; keep the inner fill neutral there.
+                    val tile = if (flag) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.secondaryContainer
                     if (section != visible.first())
                         HorizontalDivider(Modifier.padding(start = 60.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
                     Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).testTag("settings-${section.id}").clickable { onOpen(section.id) }
                         .padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(44.dp).background(tile, CircleShape)
-                            .then(if (flag) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape) else Modifier),
+                        Box(Modifier.size(44.dp)
+                            .then(if (flag) Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape).padding(1.dp)
+                                .background(tile, CircleShape).border(3.5.dp, ring, CircleShape) else Modifier.background(tile, CircleShape)),
                             contentAlignment = Alignment.Center) {
                             Icon(section.icon, null, Modifier.size(24.dp), tint = when {
-                                flag -> accentForeground(tile)
+                                flag -> MaterialTheme.colorScheme.onSurface
                                 LocalAppearance.current.iconStyle == "color" -> MaterialTheme.colorScheme.readableAccent()
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
                             })

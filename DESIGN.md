@@ -74,7 +74,7 @@ AI 服务管理位于设置的二级页面；设置首页采用搜索和分类�
 
 ## 7.4.1 设置首页与分段控件
 
-- 设置首页的分类放进一张 TonalCard 分组卡片（与主页、剧情、角色的卡片一致），图标为 44dp 圆形徽标：普通主题用 secondaryContainer 底 + 图标样式决定字形色（单色 onSurfaceVariant / 彩色 readableAccent）；骄傲主题用 distributedAccent 旗帜色填充、accentForeground 字形色并加 outlineVariant 描边，保证白色条纹上可见。
+- 设置首页的分类放进一张 TonalCard 分组卡片（与主页、剧情、角色的卡片一致），图标为 44dp 圆形徽标：普通主题用 secondaryContainer 底 + 图标样式决定字形色（单色 onSurfaceVariant / 彩色 readableAccent）；骄傲主题（7.4.2 起）内部用中性 surfaceContainerHighest 填充、字形统一 onSurface，旗帜色画成 3.5dp 外圈，外加 1dp outlineVariant 细边（白色条纹也可见）；不再按每个底色挑黑/白字形，避免黑白混杂。
 - Apple 分段控件的选中滑块是单独一层，选中变化时按 AppMotion.selection() 滑动；横向拖动时跟随手指（与底栏相同的 detectHorizontalDragGestures 逻辑），松手吸附到最近选项。
 
 ## 7.4.0 Apple 主题（参照 Apple Human Interface Guidelines）
