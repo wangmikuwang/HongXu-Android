@@ -55,6 +55,7 @@ class AppUpdateViewModel @JvmOverloads constructor(application: Application, pri
     }
 
     fun check(automatic: Boolean = false) {
+        if (BuildConfig.PLAY_STORE) return  // Play delivers updates.
         if (state.value.busy || state.value.downloading) return
         lastCheck = SystemClock.elapsedRealtime()
         state.value = state.value.copy(busy = true, message = "正在检查更新…")

@@ -39,7 +39,8 @@ internal val settingsSections = listOf(
     SettingsSection("content", "内容偏好", "管理预置剧情与人物的内容范围", AppIcons.Person, Color(0xFFFFA000), "剧情 人物 成人"),
     SettingsSection("rules", "底层基调", "所有 AI 生成都必须遵守的安全规则", AppIcons.Build, Color(0xFF2789EF), "底层基调 规则 安全"),
     SettingsSection("backup", "存储与备份", "导入、导出剧情、人物、服务与存档", AppIcons.Create, Color(0xFFAA55DC), "数据 导出 导入 迁移 恢复"),
-    SettingsSection("system", "系统与关于", "检查更新、管理日志并查看应用信息", AppIcons.Info, Color(0xFF4CC5DF), "版本 更新 下载 安装 崩溃 日志 关于")
+    SettingsSection("system", "系统与关于",
+        if (io.wenyou.textquest.BuildConfig.PLAY_STORE) "查看更新内容、管理日志与应用信息" else "检查更新、管理日志并查看应用信息", AppIcons.Info, Color(0xFF4CC5DF), "版本 更新 下载 安装 崩溃 日志 关于")
 )
 
 @OptIn(ExperimentalMaterial3Api::class)

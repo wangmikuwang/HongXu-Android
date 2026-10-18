@@ -53,7 +53,7 @@ class SettingsStore(context: Context) {
         dynamicColor = prefs.getBoolean(KEY_DYNAMIC, true),
         defaultProviderId = prefs.getString(KEY_PROVIDER, null),
         showLgbt = prefs.getBoolean(KEY_SHOW_LGBT, true),
-        adultContent = prefs.getBoolean(KEY_ADULT, true),
+        adultContent = !io.wenyou.textquest.BuildConfig.PLAY_STORE && prefs.getBoolean(KEY_ADULT, true),
         prideThemesUnlocked = unlocked,
         prideThemesEnabled = enabled,
         prideTheme = if (enabled) PrideTheme.fromStored(prefs.getString("pride_theme", null)) else null,

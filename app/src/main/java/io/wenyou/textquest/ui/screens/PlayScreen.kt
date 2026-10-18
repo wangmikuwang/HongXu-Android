@@ -102,6 +102,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.launch
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -395,6 +397,7 @@ private fun StoryEntry(entry: LogEntry, characters: List<CharacterData>) {
                     SelectionContainer {
                         io.wenyou.textquest.ui.common.RawText(text, style = MaterialTheme.typography.bodyLarge)
                     }
+                    ReportButton(text)
                 }
             }
         }
@@ -428,6 +431,7 @@ private fun StoryEntry(entry: LogEntry, characters: List<CharacterData>) {
                         io.wenyou.textquest.ui.common.RawText(text, style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onTertiaryContainer)
                     }
+                    ReportButton(text)
                 }
             }
         }
@@ -449,6 +453,25 @@ private fun StoryEntry(entry: LogEntry, characters: List<CharacterData>) {
                     color = MaterialTheme.colorScheme.onErrorContainer)
             }
         }
+    }
+}
+
+/** Play builds let players flag generated text by email (Google Play AI-generated content policy). */
+@Composable
+private fun ReportButton(text: String) {
+    if (!io.wenyou.textquest.BuildConfig.PLAY_STORE) return
+    val context = LocalContext.current
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+        AppTextButton(onClick = {
+            val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")).apply {
+                putExtra(Intent.EXTRA_EMAIL, arrayOf(io.wenyou.textquest.BuildConfig.REPORT_EMAIL))
+                putExtra(Intent.EXTRA_SUBJECT, io.wenyou.textquest.ui.common.tr("举报 AI 生成内容"))
+                putExtra(Intent.EXTRA_TEXT, text.take(4000))
+            }
+            try { context.startActivity(intent) } catch (_: Exception) {
+                Toast.makeText(context, io.wenyou.textquest.ui.common.tr("未找到邮件应用"), Toast.LENGTH_SHORT).show()
+            }
+        }, modifier = Modifier.testTag("report-entry")) { Text("举报", style = MaterialTheme.typography.labelSmall) }
     }
 }
 
