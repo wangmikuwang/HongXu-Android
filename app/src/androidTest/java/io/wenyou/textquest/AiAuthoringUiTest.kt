@@ -93,16 +93,20 @@ class AiAuthoringUiTest {
             runBlocking {
                 container.library.upsertCharacter(CharacterData("rain", "阿雨"))
                 container.library.upsertStory(Story("recommend", "雨城", mode = StoryMode.AI_DIRECTOR, characterIds = listOf("rain")))
-                container.library.upsertSave(SaveSlot("recommend-save", "测试对话", 1, 1, SessionState("recommend",
-                    history = listOf(LogEntry(text = "雨还在下。")), pendingAiChoices = listOf(ChoiceData("在窗边坐下")), aiAwaitingChoice = true)))
             }
             for (style in listOf(ThemeStyle.APPLE, ThemeStyle.MATERIAL)) {
                 calls.set(0)
+                // Each style starts from its own save: play autosaves, so a shared save would carry on the first run.
+                val saveId = "recommend-save-${style.name}"
+                runBlocking {
+                    container.library.upsertSave(SaveSlot(saveId, "测试对话", 1, 1, SessionState("recommend",
+                        history = listOf(LogEntry(text = "雨还在下。")), pendingAiChoices = listOf(ChoiceData("在窗边坐下")), aiAwaitingChoice = true)))
+                }
                 compose.runOnIdle { compose.activity.viewModelStore.clear(); compose.activity.setContent {
                     // A different owner key creates a separate synthetic session for each appearance.
                     androidx.compose.runtime.key(style) {
                         WenYouTheme(style = style, dynamicColor = false) {
-                            io.wenyou.textquest.ui.screens.PlayScreen(container, rememberNavController(), "recommend", "recommend-save")
+                            io.wenyou.textquest.ui.screens.PlayScreen(container, rememberNavController(), "recommend", saveId)
                         }
                     }
                 } }
