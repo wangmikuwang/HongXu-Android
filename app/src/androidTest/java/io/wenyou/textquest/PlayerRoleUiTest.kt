@@ -76,6 +76,8 @@ class PlayerRoleUiTest {
             compose.onNodeWithText("这扇门已经打开。").assertIsDisplayed()
             compose.onNodeWithText("选择扮演的角色").assertDoesNotExist()
             compose.onNodeWithText("再来一次").performScrollTo().performClick()
+            // Restarting asks first; the finished run keeps its own save.
+            compose.onNodeWithTag("confirm-restart").performClick()
             compose.onNodeWithText("选择扮演的角色").assertIsDisplayed()
             compose.onNodeWithTag("role-start").assertIsNotEnabled()
             compose.onNodeWithTag("role-free").performClick()
